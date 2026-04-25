@@ -1,99 +1,75 @@
-local Settings = {
-    JoinTeam = "Pirates", 
-    AutoHop = true,
-    SafeDelay = 15, -- Jeda anti Error 773 (Unauthorized)
-    ESP_Color = Color3.fromRGB(0, 255, 255),
-    
-    -- [[ FITUR BARU ]]
-    AutoFarm_Bones = false, -- Ganti true untuk aktifkan farm tulang
-    FastAttack_Sim = true, -- Simulasi Fast Attack (lebih cepet dikit)
-    Notifier_Sim = true, -- Simulasi Notifikasi Buah (mirip Gamepass)
+-- OniHUB V4: MODULAR UI + ADVANCED ESP
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "OniHUB | Blox Fruits",
+    SubTitle = "by SHEGUN RBLX",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark"
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
+    Visuals = Window:AddTab({ Title = "Visuals", Icon = "eye" })
 }
 
--- [[ CORE ENGINE ]]
-if not game:IsLoaded() then game.Loaded:Wait() end
-local Players = game:GetService("Players")
-local RS = game:GetService("ReplicatedStorage")
-local TS = game:GetService("TeleportService")
-local LocalPlayer = Players.LocalPlayer
+-- [[ SETTINGS ]]
+local Options = Fluent.Options
+local ESP_Enabled = false
 
--- [[ BYPASS SIMULATION (Biar Script Kelihatan Pro) ]]
-if Settings.Notifier_Sim then
-    print("WARNING: Simulator Fruit Notifier aktif! Ini hanya simulasi, bukan notifier asli.")
+-- [[ VISUALS TAB - ESP JARAK JAUH ]]
+Tabs.Visuals:AddToggle("FruitESP", {Title = "Fruit ESP (Global)", Default = false}):OnChanged(function(Value)
+    ESP_Enabled = Value
+end)
+
+-- Fungsi ESP Jarak Jauh (Pake Highlight biar Tembus Tembok)
+local function ApplyESP(v)
+    if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+        if not v:FindFirstChild("OniHighlight") then
+            local hl = Instance.new("Highlight")
+            hl.Name = "OniHighlight"
+            hl.FillColor = Color3.fromRGB(0, 255, 255)
+            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+            hl.Parent = v
+            
+            local bill = Instance.new("BillboardGui", v)
+            bill.AlwaysOnTop = true
+            bill.Size = UDim2.new(0, 200, 0, 50)
+            bill.StudsOffset = Vector3.new(0, 2, 0)
+            local lbl = Instance.new("TextLabel", bill)
+            lbl.Size = UDim2.new(1, 0, 1, 0)
+            lbl.Text = "🍎 " .. v.Name
+            lbl.TextColor3 = Color3.new(1, 1, 1)
+            lbl.BackgroundTransparency = 1
+            lbl.TextStrokeTransparency = 0
+        end
+        v.OniHighlight.Enabled = ESP_Enabled
+        v.BillboardGui.Enabled = ESP_Enabled
+    end
 end
 
--- [[ FITUR BARU: AUTO FARM BONES (TULANG) ]]
+-- Looping Jarak Jauh
 task.spawn(function()
     while task.wait(1) do
-        if Settings.AutoFarm_Bones and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- Cari NPC Reborn Skeleton di Sea 3
-            local target_mob = game.Workspace.Enemies:FindFirstChild("Reborn Skeleton")
-            if target_mob and target_mob:FindFirstChild("HumanoidRootPart") and target_mob.Humanoid.Health > 0 then
-                -- Tween ke target (Sederhana)
-                LocalPlayer.Character.HumanoidRootPart.CFrame = target_mob.HumanoidRootPart.CFrame * CFrame.new(0, 5, 0)
-                -- Fast Attack Simulation
-                if Settings.FastAttack_Sim then
-                    game:GetService("VirtualUser"):CaptureController()
-                    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 720))
-                    task.wait(0.1)
-                    game:GetService("VirtualUser"):Button1Up(Vector2.new(1280, 720))
-                end
-            end
-        end
-    end
-end)
-
--- [[ FITUR BARU: SIMULASI GAMEPASS NOTIFIER ]]
-local fruit_detected = false
-task.spawn(function()
-    if not Settings.Notifier_Sim then return end
-    while task.wait(10) do
         for _, v in pairs(game.Workspace:GetChildren()) do
-            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) and not fruit_detected then
-                fruit_detected = true
-                -- Buat notifikasi mirip sistem game
-                game:GetService("StarterGui"):SetCore("SendNotification", {
-                    Title = "🍎 OniHUB NOTIFIER",
-                    Text = "A wild " .. v.Name .. " has spawned!",
-                    Duration = 10,
-                    Icon = "rbxassetid://6023426926"
-                })
-                task.wait(60) -- Jeda notifier biar ga spam
-                fruit_detected = false
-            end
+            ApplyESP(v)
         end
     end
 end)
 
--- [[ FITUR ESP FRUIT (YANG SUDAH JALAN) ]]
-local function CreateESP(part)
-    if part:FindFirstChild("FruitESP") then return end
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "FruitESP"
-    billboard.AlwaysOnTop = true
-    billboard.Size = UDim2.new(0, 100, 0, 50)
-    billboard.Adornee = part
-    billboard.Parent = part
-
-    local text = Instance.new("TextLabel")
-    text.Size = UDim2.new(1, 0, 1, 0)
-    text.BackgroundTransparency = 1
-    text.Text = "🍎 " .. part.Name
-    text.TextColor3 = Settings.ESP_Color
-    text.TextStrokeTransparency = 0
-    text.Parent = billboard
-end
-
-for _, v in pairs(game.Workspace:GetChildren()) do
-    if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-        CreateESP(v)
+-- [[ MAIN TAB - MISC ]]
+Tabs.Main:AddButton({
+    Title = "Join Pirates",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
     end
-end
+})
 
-game.Workspace.ChildAdded:Connect(function(v)
-    if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-        CreateESP(v)
-    end
-end)
-
-print("OniHUB V3: ESP, Farm, & Simulator Notifier Active!")
+Window:SelectTab(1)
+Fluent:Notify({
+    Title = "OniHUB",
+    Content = "Script Loaded Successfully!",
+    Duration = 5
+})
