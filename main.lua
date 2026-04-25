@@ -1,75 +1,56 @@
--- OniHUB V4: MODULAR UI + ADVANCED ESP
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+-- OniHUB V5: INTERNAL UI + MAX ESP
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local ToggleESP = Instance.new("TextButton")
 
-local Window = Fluent:CreateWindow({
-    Title = "OniHUB | Blox Fruits",
-    SubTitle = "by SHEGUN RBLX",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
-    Theme = "Dark"
-})
+-- [UI SETUP - BIAR GA DOWNLOAD DARI LUAR]
+ScreenGui.Parent = game.CoreGui
+MainFrame.Name = "OniHUB_Menu"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
+MainFrame.Size = UDim2.new(0, 200, 0, 100)
+MainFrame.Active = true
+MainFrame.Draggable = true
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-    Visuals = Window:AddTab({ Title = "Visuals", Icon = "eye" })
-}
+Title.Parent = MainFrame
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "OniHUB PRO"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 
--- [[ SETTINGS ]]
-local Options = Fluent.Options
-local ESP_Enabled = false
+ToggleESP.Parent = MainFrame
+ToggleESP.Position = UDim2.new(0.1, 0, 0.4, 0)
+ToggleESP.Size = UDim2.new(0.8, 0, 0.4, 0)
+ToggleESP.Text = "ENABLE ESP"
+ToggleESP.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 
--- [[ VISUALS TAB - ESP JARAK JAUH ]]
-Tabs.Visuals:AddToggle("FruitESP", {Title = "Fruit ESP (Global)", Default = false}):OnChanged(function(Value)
-    ESP_Enabled = Value
-end)
-
--- Fungsi ESP Jarak Jauh (Pake Highlight biar Tembus Tembok)
-local function ApplyESP(v)
-    if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-        if not v:FindFirstChild("OniHighlight") then
-            local hl = Instance.new("Highlight")
-            hl.Name = "OniHighlight"
-            hl.FillColor = Color3.fromRGB(0, 255, 255)
-            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-            hl.Parent = v
-            
-            local bill = Instance.new("BillboardGui", v)
-            bill.AlwaysOnTop = true
-            bill.Size = UDim2.new(0, 200, 0, 50)
-            bill.StudsOffset = Vector3.new(0, 2, 0)
-            local lbl = Instance.new("TextLabel", bill)
-            lbl.Size = UDim2.new(1, 0, 1, 0)
-            lbl.Text = "🍎 " .. v.Name
-            lbl.TextColor3 = Color3.new(1, 1, 1)
-            lbl.BackgroundTransparency = 1
-            lbl.TextStrokeTransparency = 0
-        end
-        v.OniHighlight.Enabled = ESP_Enabled
-        v.BillboardGui.Enabled = ESP_Enabled
+-- [ESP JARAK JAUH TANPA BUG]
+local ESP_Active = false
+local function CreateAdvancedESP(obj)
+    if obj:IsA("Tool") and (obj.Name:find("Fruit") or obj:FindFirstChild("Handle")) then
+        local highlight = obj:FindFirstChild("OniHigh") or Instance.new("Highlight")
+        highlight.Name = "OniHigh"
+        highlight.FillColor = Color3.fromRGB(0, 255, 255)
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- INI BIAR JARAK JAUH TEMBUS
+        highlight.Enabled = ESP_Active
+        highlight.Parent = obj
     end
 end
 
--- Looping Jarak Jauh
-task.spawn(function()
-    while task.wait(1) do
-        for _, v in pairs(game.Workspace:GetChildren()) do
-            ApplyESP(v)
-        end
+ToggleESP.MouseButton1Click:Connect(function()
+    ESP_Active = not ESP_Active
+    ToggleESP.Text = ESP_Active and "ESP: ON" or "ESP: OFF"
+    for _, v in pairs(game.Workspace:GetChildren()) do
+        CreateAdvancedESP(v)
     end
 end)
 
--- [[ MAIN TAB - MISC ]]
-Tabs.Main:AddButton({
-    Title = "Join Pirates",
-    Callback = function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
-    end
-})
+-- Auto-detect buat buah baru yang muncul
+game.Workspace.ChildAdded:Connect(function(child)
+    task.wait(0.5)
+    CreateAdvancedESP(child)
+end)
 
-Window:SelectTab(1)
-Fluent:Notify({
-    Title = "OniHUB",
-    Content = "Script Loaded Successfully!",
-    Duration = 5
-})
+print("OniHUB V5 Loaded - No More Downgrade!")
