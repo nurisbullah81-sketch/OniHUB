@@ -1,21 +1,32 @@
--- OniHUB PRO V9: FINAL STABLE (SINGLE FILE)
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-local Window = OrionLib:MakeWindow({Name = "OniHUB PRO", HidePremium = false, SaveConfig = true, IntroText = "OniHUB Loading..."})
+-- OniHUB PRO V10: REDZ STYLE (PERMANENT FIX)
+local RedzLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/realredz/RedzLibV5/main/Source.lua"))()
 
--- [[ TAB VISUALS ]]
-local Tab1 = Window:MakeTab({Name = "Visuals", Icon = "rbxassetid://4483345998"})
-
-_G.ESP = false
-Tab1:AddToggle({
-    Name = "Fruit ESP (Jarak Jauh)",
-    Default = false,
-    Callback = function(v) _G.ESP = v end
+local Window = RedzLib:MakeWindow({
+  Name = "OniHUB PRO | Blox Fruits",
+  SubTitle = "by SHEGUN RBLX",
+  SaveFolder = "OniHUB_Config.json"
 })
 
--- LOGIKA ESP ANTI-BUG (Highlight Tembus Tembok)
+Window:AddMinimizeButton({
+  Button = { Image = "rbxassetid://4483345998", BackgroundTransparency = 0 },
+  Corner = { CornerRadius = UDim.new(0, 6) }
+})
+
+local MainTab = Window:MakeTab({ Name = "Visual", Icon = "eye" })
+
+_G.ESP_Fruit = false
+MainTab:AddToggle({
+  Name = "Fruit ESP (Tembus Tembok)",
+  Default = false,
+  Callback = function(Value)
+    _G.ESP_Fruit = Value
+  end
+})
+
+-- LOGIKA ESP PRO (ALWAYS ON TOP)
 task.spawn(function()
     while task.wait(1) do
-        if _G.ESP then
+        if _G.ESP_Fruit then
             for _, v in pairs(game.Workspace:GetChildren()) do
                 if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
                     if not v:FindFirstChild("OniHigh") then
@@ -34,8 +45,13 @@ task.spawn(function()
     end
 end)
 
--- [[ TAB SETTINGS ]]
-local Tab2 = Window:MakeTab({Name = "Settings", Icon = "rbxassetid://4483345998"})
-Tab2:AddLabel("Tekan G untuk Buka/Tutup Menu")
+local SetTab = Window:MakeTab({ Name = "Settings", Icon = "settings" })
+SetTab:AddSection({ Name = "Menu Controls" })
+SetTab:AddLabel({ Name = "Tekan G buat Buka/Tutup" })
 
-OrionLib:Init()
+-- BIND TOMBOL G
+game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.G then
+        -- Library Redz punya fitur minimize otomatis
+    end
+end)
