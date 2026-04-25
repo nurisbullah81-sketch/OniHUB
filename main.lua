@@ -1,28 +1,31 @@
--- OniHUB PRO V6: ALL-IN-ONE (REDZ STYLE)
+-- OniHUB PRO V7: REDZ STYLE (SINGLE FILE VERSION)
 local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 local Window = OrionLib:MakeWindow({
     Name = "OniHUB PRO | Blox Fruits", 
     HidePremium = false, 
     SaveConfig = true, 
     ConfigFolder = "OniHUB_Data",
-    IntroText = "Executing OniHUB..."
+    IntroText = "Welcome to OniHUB PRO"
 })
 
--- [[ TAB UTAMA ]]
+-- [[ TAB MAIN ]]
 local MainTab = Window:MakeTab({
-    Name = "Main",
+    Name = "Farm",
     Icon = "rbxassetid://4483345998",
     Premium = false
 })
 
-MainTab:AddButton({
-    Name = "Join Pirates",
-    Callback = function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+MainTab:AddToggle({
+    Name = "Auto Join Pirates",
+    Default = true,
+    Callback = function(Value)
+        if Value then
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+        end
     end    
 })
 
--- [[ TAB VISUALS (ESP PRO) ]]
+-- [[ TAB VISUALS ]]
 local VisualTab = Window:MakeTab({
     Name = "Visuals",
     Icon = "rbxassetid://4483345998",
@@ -38,18 +41,20 @@ VisualTab:AddToggle({
     end    
 })
 
--- LOGIKA ESP ANTI-BUG (Jarak Jauh & Always On Top)
+-- LOGIKA ESP PRO (ALWAYS ON TOP & JARAK JAUH)
 task.spawn(function()
     while task.wait(1) do
         if _G.ESP_Fruit then
             for _, v in pairs(game.Workspace:GetChildren()) do
                 if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
                     if not v:FindFirstChild("OniHigh") then
+                        -- Sinar Tembus Tembok
                         local hl = Instance.new("Highlight", v)
                         hl.Name = "OniHigh"
                         hl.FillColor = Color3.fromRGB(0, 255, 255)
-                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- TEMBUS PANDANG JARAK JAUH
+                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                         
+                        -- Label Nama Jarak Jauh
                         local bill = Instance.new("BillboardGui", v)
                         bill.Name = "OniLabel"
                         bill.AlwaysOnTop = true
@@ -64,6 +69,7 @@ task.spawn(function()
                 end
             end
         else
+            -- Hapus ESP kalau dimatiin biar gak berat
             for _, v in pairs(game.Workspace:GetChildren()) do
                 if v:FindFirstChild("OniHigh") then v.OniHigh:Destroy() end
                 if v:FindFirstChild("OniLabel") then v.OniLabel:Destroy() end
@@ -79,13 +85,16 @@ local SettingsTab = Window:MakeTab({
     Premium = false
 })
 
-SettingsTab:AddLabel("Tekan G untuk Buka/Tutup Menu")
+SettingsTab:AddLabel("Keybind Utama: G")
 
--- Keybind Manual (Ctrl + G)
-game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.G then
-        -- Library Orion punya toggle internal otomatis
-    end
-end)
+-- Tombol Close/Open Menu
+SettingsTab:AddBind({
+    Name = "Toggle Menu",
+    Default = Enum.KeyCode.G,
+    Hold = false,
+    Callback = function()
+        -- Orion otomatis handle show/hide
+    end    
+})
 
 OrionLib:Init()
