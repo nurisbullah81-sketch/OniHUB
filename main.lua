@@ -1,76 +1,91 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 
-local Window = Rayfield:CreateWindow({
-   Name = "OniHUB PRO | Blox Fruits",
-   LoadingTitle = "Executing OniHUB...",
-   LoadingSubtitle = "by SHEGUN RBLX",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "OniHUB_Data",
-      FileName = "Config"
-   }
+local Window = OrionLib:MakeWindow({
+    Name = "OniHUB | Blox Fruits", 
+    HidePremium = false, 
+    SaveConfig = true, 
+    ConfigFolder = "OniHUB_Configs",
+    IntroText = "Welcome to OniHUB PRO"
 })
 
-local MainTab = Window:CreateTab("Main Features", 4483362458) -- Icon ID
-local VisualTab = Window:CreateTab("Visuals", 4483345998)
-
--- [[ VARIABLE ESP ]]
-local ESP_Enabled = false
-
--- [[ TAB VISUALS - ESP JARAK JAUH ]]
-VisualTab:CreateToggle({
-   Name = "Fruit ESP (Full Bright)",
-   CurrentValue = false,
-   Flag = "FruitESP",
-   Callback = function(Value)
-      ESP_Enabled = Value
-   end,
+-- [[ TAB MAIN ]]
+local MainTab = Window:MakeTab({
+    Name = "Main",
+    Icon = "rbxassetid://4483345998",
+    Premium = false
 })
 
--- SCRIPT ESP ANTI BUG
+MainTab:AddButton({
+    Name = "Join Pirates",
+    Callback = function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+    end    
+})
+
+-- [[ TAB VISUALS ]]
+local VisualTab = Window:MakeTab({
+    Name = "Visuals",
+    Icon = "rbxassetid://4483345998",
+    Premium = false
+})
+
+_G.ESP_Fruit = false
+VisualTab:AddToggle({
+    Name = "Fruit ESP (Global)",
+    Default = false,
+    Callback = function(Value)
+        _G.ESP_Fruit = Value
+    end    
+})
+
+-- [[ LOGIKA ESP TEMBUS PANDANG ]]
 task.spawn(function()
     while task.wait(1) do
-        for _, v in pairs(game.Workspace:GetChildren()) do
-            if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
-                local hl = v:FindFirstChild("OniHighlight") or Instance.new("Highlight")
-                hl.Name = "OniHighlight"
-                hl.FillColor = Color3.fromRGB(255, 0, 0)
-                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                hl.Parent = v
-                hl.Enabled = ESP_Enabled
-                
-                -- Tambah Label Nama
-                if not v:FindFirstChild("OniLabel") then
-                    local bill = Instance.new("BillboardGui", v)
-                    bill.Name = "OniLabel"
-                    bill.AlwaysOnTop = true
-                    bill.Size = UDim2.new(0, 200, 0, 50)
-                    bill.StudsOffset = Vector3.new(0, 3, 0)
-                    local lbl = Instance.new("TextLabel", bill)
-                    lbl.Size = UDim2.new(1, 0, 1, 0)
-                    lbl.Text = "🍎 " .. v.Name
-                    lbl.TextColor3 = Color3.new(1, 1, 1)
-                    lbl.BackgroundTransparency = 1
-                    lbl.TextStrokeTransparency = 0
+        if _G.ESP_Fruit then
+            for _, v in pairs(game.Workspace:GetChildren()) do
+                if v:IsA("Tool") and (v.Name:find("Fruit") or v:FindFirstChild("Handle")) then
+                    if not v:FindFirstChild("OniHigh") then
+                        local hl = Instance.new("Highlight", v)
+                        hl.Name = "OniHigh"
+                        hl.FillColor = Color3.fromRGB(0, 255, 255)
+                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        
+                        local bill = Instance.new("BillboardGui", v)
+                        bill.AlwaysOnTop = true
+                        bill.Size = UDim2.new(0, 100, 0, 50)
+                        bill.StudsOffset = Vector3.new(0, 2, 0)
+                        local lbl = Instance.new("TextLabel", bill)
+                        lbl.Size = UDim2.new(1, 0, 1, 0)
+                        lbl.Text = "🍎 " .. v.Name
+                        lbl.TextColor3 = Color3.new(1, 1, 1)
+                        lbl.BackgroundTransparency = 1
+                    end
                 end
-                v.OniLabel.Enabled = ESP_Enabled
+            end
+        else
+            -- Hapus ESP kalau dimatiin
+            for _, v in pairs(game.Workspace:GetChildren()) do
+                if v:FindFirstChild("OniHigh") then v.OniHigh:Destroy() end
+                if v:FindFirstChild("BillboardGui") then v.BillboardGui:Destroy() end
             end
         end
     end
 end)
 
--- [[ TAB MAIN - MISC ]]
-MainTab:CreateButton({
-   Name = "Join Pirates Team",
-   Callback = function()
-      game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
-   end,
+-- [[ SETTINGS & KEYBIND ]]
+local SettingsTab = Window:MakeTab({
+    Name = "Settings",
+    Icon = "rbxassetid://4483345998",
+    Premium = false
 })
 
-Rayfield:Notify({
-   Title = "OniHUB Ready!",
-   Content = "ESP and UI loaded successfully.",
-   Duration = 5,
-   Image = 4483345998,
+SettingsTab:AddBind({
+    Name = "Open/Close Menu",
+    Default = Enum.KeyCode.G, -- Lu tinggal tekan G atau kombinasi Ctrl+G di executor lu
+    Hold = false,
+    Callback = function()
+        -- Library Orion otomatis handle hide/show pake Bind ini
+    end    
 })
+
+OrionLib:Init()
