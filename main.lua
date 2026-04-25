@@ -1,5 +1,5 @@
 -- OniHUB PRO V7: REDZ STYLE (SINGLE FILE VERSION)
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/main.lua')))()
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
 local Window = OrionLib:MakeWindow({
     Name = "OniHUB PRO | Blox Fruits", 
     HidePremium = false, 
