@@ -14,7 +14,6 @@ local function FormatNum(num)
     return formatted
 end
 
--- Super Reader: Baca IntValue, NumberValue, StringValue, IntConstrainedValue
 local function ReadValue(obj)
     if not obj then return 0 end
     if obj:IsA("ValueBase") then
@@ -67,45 +66,33 @@ task.spawn(function()
             ScanFolder(ls)
             ScanFolder(dataFolder)
             
-            -- Update UI
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
-            
             local displayMoney = (moneyName == "$" or string.lower(moneyName) == "money") and "Money" or moneyName
             Labels.Money.Text = displayMoney .. ": $" .. FormatNum(money)
-            
             Labels.Fragments.Text = "Fragments: " .. FormatNum(frag)
-            
             Labels.Bounty.Text = bountyName .. ": " .. FormatNum(bounty)
-            
             Labels.Players.Text = "Players: " .. #Players:GetPlayers()
             
-            -- LOGIC WAKTU & CUACA (FIXED)
+            -- LOGIC WAKTU & CUACA
             local clockTime = Lighting.ClockTime
             local h = math.floor(clockTime)
             local m = math.floor((clockTime % 1) * 60)
             local timeStr = string.format("%02d:%02d", h, m)
             
-            -- Di Blox Fruits, malem itu jam 18:00 sampai 06:00
             if clockTime >= 18 or clockTime < 6 then
                 Labels.Time.Text = "Time: " .. timeStr .. " (Night)"
-                
-                -- FULL MOON DETECTION BLOX FRUITS
-                -- Pas Full Moon, game otomatis nge-raise Lighting.Brightness jadi di atas 2
-                -- Malem biasa Brightness cuma sekitar 0.5 - 1.2
                 local isFull = Lighting.Brightness >= 2
-                Labels.Moon.Text = isFull and "Moon: Full Moon 🌕" or "Moon: Normal 🌑"
+                -- FIX TEXT BULAN
+                Labels.Moon.Text = isFull and "Moon: Full Moon" or "Moon: Not Full Moon"
             else
                 Labels.Time.Text = "Time: " .. timeStr .. " (Day)"
                 Labels.Moon.Text = "Moon: -"
             end
             
-            -- LOGIC NAMA BUAH
             local fruitList = _G.Cat.GetFruitsList and _G.Cat.GetFruitsList() or {}
             if #fruitList > 0 then
                 local fruitText = table.concat(fruitList, ", ")
-                if string.len(fruitText) > 35 then
-                    fruitText = string.sub(fruitText, 1, 35) .. "..."
-                end
+                if string.len(fruitText) > 35 then fruitText = string.sub(fruitText, 1, 35) .. "..." end
                 Labels.Fruits.Text = "Fruits: " .. fruitText
             else
                 Labels.Fruits.Text = "Fruits: None"
