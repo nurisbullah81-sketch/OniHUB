@@ -1,4 +1,4 @@
--- CatHUB v12.1: FINAL STABIL + OUTLINE TAB KIRI
+-- CatHUB vFINAL PERFECT: Fix Kotak Cat (Transparan, Bulat, Draggable Full)
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -13,95 +13,142 @@ Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- ==========================================
--- PALETTE
+-- THEME / PALETTE (Tetap Sempurna seperti sebelumnya)
 -- ==========================================
 local Theme = {
     MainBG      = Color3.fromRGB(10, 10, 10),   
-    SideBG      = Color3.fromRGB(15, 15, 16),   
+    SideBG      = Color3.fromRGB(14, 14, 16),   
     TopBG       = Color3.fromRGB(10, 10, 10),
-    TabOn       = Color3.fromRGB(38, 38, 42),   
-    TabOff      = Color3.fromRGB(15, 15, 16),   
-    PageBG      = Color3.fromRGB(28, 28, 32),   
-    CardBG      = Color3.fromRGB(38, 38, 44),   
-    CardHov     = Color3.fromRGB(46, 46, 52),
-    Text        = Color3.fromRGB(250, 250, 250),
-    TextDim     = Color3.fromRGB(150, 150, 155),
+    TabOn       = Color3.fromRGB(32, 32, 38),   
+    TabOff      = Color3.fromRGB(14, 14, 16),   
+    PageBG      = Color3.fromRGB(18, 18, 20),   
+    CardBG      = Color3.fromRGB(28, 28, 32),   
+    CardHov     = Color3.fromRGB(36, 36, 42),
+    Text        = Color3.fromRGB(245, 245, 245),
+    TextDim     = Color3.fromRGB(140, 140, 145),
     ToggleOn    = Color3.fromRGB(138, 43, 226), 
-    ToggleOff   = Color3.fromRGB(90, 90, 95),
+    ToggleOff   = Color3.fromRGB(75, 75, 80),
+    Accent      = Color3.fromRGB(138, 43, 226), 
     CatPurple   = Color3.fromRGB(160, 100, 255),
     Gold        = Color3.fromRGB(255, 200, 50), 
-    Accent      = Color3.fromRGB(138, 43, 226), 
-    Line        = Color3.fromRGB(45, 45, 50)    
+    Line        = Color3.fromRGB(40, 40, 45)    
 }
 
 -- ==========================================
--- WIDGET "Cat" & DRAG TRANSPARAN
+-- WIDGET "Cat" (FIX: TRANPARAN, BULAT, BISA DIGESER)
 -- ==========================================
-local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Size = UDim2.new(0, 70, 0, 40) 
-FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
-FloatCont.BackgroundTransparency = 1
-FloatCont.ZIndex = 99999 
-
-local FloatBtn = Instance.new("TextButton", FloatCont)
-FloatBtn.Size = UDim2.new(0, 40, 1, 0)
-FloatBtn.Position = UDim2.new(0, 30, 0, 0) 
-FloatBtn.BackgroundColor3 = Theme.CardBG
+local FloatBtn = Instance.new("TextButton", Gui)
+FloatBtn.Size = UDim2.new(0, 45, 0, 45) -- Sedikit Kotak tapi Bulat
+FloatBtn.Position = UDim2.new(0, 20, 0.5, -20)
+FloatBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Warna Gelap
+FloatBtn.BackgroundTransparency = 0.3 -- SEDIKIT TRANSPARAN SESUAI REQUEST
 FloatBtn.Text = "Cat"
 FloatBtn.TextColor3 = Theme.CatPurple 
 FloatBtn.Font = Enum.Font.GothamBold 
 FloatBtn.TextSize = 16
 FloatBtn.BorderSizePixel = 0
 FloatBtn.AutoButtonColor = false
-Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
+FloatBtn.ZIndex = 99999 
+Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 12) -- SEDIKIT BULAT
 local FloatStroke = Instance.new("UIStroke", FloatBtn)
 FloatStroke.Color = Theme.Line
+FloatStroke.Transparency = 0.3
 
-local FloatDrag = Instance.new("TextButton", FloatCont)
-FloatDrag.Size = UDim2.new(0, 30, 1, 0)
-FloatDrag.Position = UDim2.new(0, 0, 0, 0)
-FloatDrag.BackgroundTransparency = 1 
-FloatDrag.Text = ""
+-- LOGIC DRAG KOTAK "Cat" (Anti Macet & Anti Salah Klik)
+local isUIOpen = true
+local draggingFloat = false
+local dragStartMouse, dragStartPosFloat
 
-local draggingFloat, dragStartFloat, startPosFloat
-FloatDrag.InputBegan:Connect(function(input)
+FloatBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         draggingFloat = true
-        dragStartFloat = input.Position
-        startPosFloat = FloatCont.Position
+        dragStartMouse = UserInput:GetMouseLocation()
+        dragStartPosFloat = FloatBtn.Position
     end
 end)
-FloatDrag.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingFloat = false end
-end)
+
 UserInput.InputChanged:Connect(function(input)
     if draggingFloat and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStartFloat
-        FloatCont.Position = UDim2.new(startPosFloat.X.Scale, startPosFloat.X.Offset + delta.X, startPosFloat.Y.Scale, startPosFloat.Y.Offset + delta.Y)
+        local delta = UserInput:GetMouseLocation() - dragStartMouse
+        FloatBtn.Position = UDim2.new(
+            dragStartPosFloat.X.Scale, dragStartPosFloat.X.Offset + delta.X,
+            dragStartPosFloat.Y.Scale, dragStartPosFloat.Y.Offset + delta.Y
+        )
     end
 end)
 
 -- ==========================================
--- MAIN FRAME
+-- MAIN FRAME & SHADOW
 -- ==========================================
 local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 550, 0, 340)
 Main.Position = UDim2.new(0.5, -275, 0.5, -170)
 Main.BackgroundColor3 = Theme.MainBG
 Main.BorderSizePixel = 0
-Main.ClipsDescendants = true 
-Main.Visible = true 
+Main.ClipsDescendants = false 
+Main.Visible = false 
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 local MainStroke = Instance.new("UIStroke", Main)
 MainStroke.Color = Theme.Line
-MainStroke.Thickness = 1
 
-FloatBtn.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
+-- Drop Shadow
+local Shadow = Instance.new("ImageLabel", Main)
+Shadow.Name = "Shadow"
+Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+Shadow.BackgroundTransparency = 1
+Shadow.Position = UDim2.new(0.5, 0, 0.5, 4) 
+Shadow.Size = UDim2.new(1, 40, 1, 40) 
+Shadow.ZIndex = -1
+Shadow.Image = "rbxassetid://6015897733"
+Shadow.ImageColor3 = Color3.new(0, 0, 0)
+Shadow.ImageTransparency = 0.4
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(97, 97, 97, 97)
+
+-- Logic Animasi Buka/Tutup
+local normalSize = UDim2.new(0, 550, 0, 340)
+local smallSize = UDim2.new(0, 500, 0, 300)
+
+local function OpenUI()
+    isUIOpen = true
+    Main.Visible = true
+    Main.Size = smallSize
+    TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = normalSize}):Play()
+end
+
+local function CloseUI()
+    isUIOpen = false
+    local tw = TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = smallSize})
+    tw:Play()
+    tw.Completed:Wait()
+    if not isUIOpen then Main.Visible = false end
+end
+
+-- Klik FloatBtn (Cek jika Mouse bergerak sedikit = Klik, jika jauh = Drag)
+UserInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and draggingFloat then
+        draggingFloat = false
+        local dist = (UserInput:GetMouseLocation() - dragStartMouse).Magnitude
+        if dist < 5 then -- Cuma dihitung klik kalo ga digeser jauh
+            if isUIOpen then CloseUI() else OpenUI() end
+        end
+    end
 end)
 
--- Topbar
-local Top = Instance.new("Frame", Main)
+-- Default Open UI pas Execute
+OpenUI()
+
+-- Inner Frame 
+local MainInner = Instance.new("Frame", Main)
+MainInner.Size = UDim2.new(1, 0, 1, 0)
+MainInner.BackgroundTransparency = 1
+MainInner.ClipsDescendants = true
+Instance.new("UICorner", MainInner).CornerRadius = UDim.new(0, 6)
+
+-- ==========================================
+-- TOPBAR & DRAG MAIN UI
+-- ==========================================
+local Top = Instance.new("Frame", MainInner)
 Top.Size = UDim2.new(1, 0, 0, 35)
 Top.BackgroundColor3 = Theme.TopBG
 Top.BorderSizePixel = 0
@@ -113,6 +160,7 @@ TopFix.Position = UDim2.new(0, 0, 1, -10)
 TopFix.BackgroundColor3 = Theme.TopBG
 TopFix.BorderSizePixel = 0
 
+-- JUDUL (Ungu Bold, Putih, Emas)
 local TitleContainer = Instance.new("Frame", Top)
 TitleContainer.Size = UDim2.new(0, 350, 1, 0)
 TitleContainer.Position = UDim2.new(0, 15, 0, 0)
@@ -123,7 +171,7 @@ TitleList.FillDirection = Enum.FillDirection.Horizontal
 TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
 TitleList.Padding = UDim.new(0, 4) 
 
-local function CreateTitlePart(text, color, font)
+local function CreateTitlePart(text, color, font, order)
     local label = Instance.new("TextLabel", TitleContainer)
     label.Text = text
     label.TextColor3 = color
@@ -131,11 +179,12 @@ local function CreateTitlePart(text, color, font)
     label.TextSize = 13
     label.BackgroundTransparency = 1
     label.AutomaticSize = Enum.AutomaticSize.XY
+    label.LayoutOrder = order
 end
 
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
-CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium)
-CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium) 
+CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold, 1) 
+CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium, 2)
+CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium, 3) 
 
 local BtnX = Instance.new("TextButton", Top)
 BtnX.Size = UDim2.new(0, 35, 0, 35)
@@ -163,41 +212,89 @@ BtnM.MouseEnter:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15)
 BtnM.MouseLeave:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play() end)
 
 BtnX.MouseButton1Click:Connect(function()
-    Main.Visible = false
+    CloseUI()
 end)
 
 local isMin = false
-local lastSize = Main.Size
 BtnM.MouseButton1Click:Connect(function()
     isMin = not isMin
     if isMin then
-        lastSize = Main.Size
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, Main.Size.X.Offset, 0, 35)}):Play()
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, normalSize.X.Offset, 0, 35)}):Play()
     else
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = lastSize}):Play()
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = normalSize}):Play()
     end
 end)
 
-local draggingMain, dragStartMain, startPosMain
+-- Drag Main Frame Logic Mulus
+local draggingMain = false
+local dragStartMainMouse, dragStartMainPos
+
 Top.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         draggingMain = true
-        dragStartMain = input.Position
-        startPosMain = Main.Position
+        dragStartMainMouse = UserInput:GetMouseLocation()
+        dragStartMainPos = Main.Position
     end
 end)
-Top.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingMain = false end end)
+
 UserInput.InputChanged:Connect(function(input)
     if draggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStartMain
-        Main.Position = UDim2.new(startPosMain.X.Scale, startPosMain.X.Offset + delta.X, startPosMain.Y.Scale, startPosMain.Y.Offset + delta.Y)
+        local delta = UserInput:GetMouseLocation() - dragStartMainMouse
+        Main.Position = UDim2.new(dragStartMainPos.X.Scale, dragStartMainPos.X.Offset + delta.X, dragStartMainPos.Y.Scale, dragStartMainPos.Y.Offset + delta.Y)
+    end
+end)
+
+UserInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingMain = false
+    end
+end)
+
+-- ==========================================
+-- RESIZER
+-- ==========================================
+local Resizer = Instance.new("TextButton", MainInner)
+Resizer.Size = UDim2.new(0, 20, 0, 20)
+Resizer.Position = UDim2.new(1, -20, 1, -20)
+Resizer.BackgroundTransparency = 1
+Resizer.Text = "⌟"
+Resizer.TextColor3 = Theme.TextDim
+Resizer.TextSize = 16
+Resizer.Font = Enum.Font.Gotham
+Resizer.ZIndex = 50
+Resizer.AutoButtonColor = false
+
+local isResizing = false
+local resizeStartPos, resizeStartSize
+
+Resizer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then
+        isResizing = true
+        resizeStartPos = UserInput:GetMouseLocation()
+        resizeStartSize = Main.Size
+    end
+end)
+
+UserInput.InputChanged:Connect(function(input)
+    if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = UserInput:GetMouseLocation() - resizeStartPos
+        local newX = math.clamp(resizeStartSize.X.Offset + delta.X, 480, 900)
+        local newY = math.clamp(resizeStartSize.Y.Offset + delta.Y, 280, 700)
+        normalSize = UDim2.new(0, newX, 0, newY)
+        Main.Size = normalSize
+    end
+end)
+
+UserInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isResizing = false
     end
 end)
 
 -- ==========================================
 -- DYNAMIC SIDEBAR & KONTEN
 -- ==========================================
-local ContentContainer = Instance.new("Frame", Main)
+local ContentContainer = Instance.new("Frame", MainInner)
 ContentContainer.Size = UDim2.new(1, 0, 1, -35)
 ContentContainer.Position = UDim2.new(0, 0, 0, 35)
 ContentContainer.BackgroundTransparency = 1
@@ -246,12 +343,6 @@ local function CreateTab(name, isFirst)
     Btn.AutoButtonColor = false
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
-    -- REQUEST: Outline tipis biar kelihatan batasnya
-    local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Color = Theme.Line
-    BtnStroke.Thickness = 1
-    BtnStroke.Transparency = isFirst and 0 or 0.5 -- Kalau off, outlinennya sedikit transparan
-    
     local Indicator = Instance.new("Frame", Btn)
     Indicator.Size = UDim2.new(0, 3, 0, 14)
     Indicator.Position = UDim2.new(0, 4, 0.5, -7)
@@ -277,7 +368,6 @@ local function CreateTab(name, isFirst)
     Page.Visible = isFirst
     Page.BorderSizePixel = 0
     Instance.new("UICorner", Page).CornerRadius = UDim.new(0, 6)
-    
     local PageStroke = Instance.new("UIStroke", Page)
     PageStroke.Color = Theme.Line
     PageStroke.Thickness = 1
@@ -290,23 +380,24 @@ local function CreateTab(name, isFirst)
     Pad.PaddingRight = UDim.new(0, 14) 
     Pad.PaddingBottom = UDim.new(0, 10)
     
-    Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator, Stroke = BtnStroke}
+    Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator}
     
     Btn.MouseButton1Click:Connect(function()
+        if Indicator.Visible then return end
+        
         for tName, data in pairs(Pages) do
             local active = (tName == name)
             data.Page.Visible = active
             data.Ind.Visible = active
-            
-            -- Update background dan outline tab
             TweenService:Create(data.Btn, TweenInfo.new(0.15), {
                 BackgroundColor3 = active and Theme.TabOn or Theme.TabOff,
                 TextColor3 = active and Theme.Text or Theme.TextDim
             }):Play()
             
-            TweenService:Create(data.Stroke, TweenInfo.new(0.15), {
-                Transparency = active and 0 or 0.5
-            }):Play()
+            if active then
+                data.Page.Position = UDim2.new(0, 8, 0, 25)
+                TweenService:Create(data.Page, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 8, 0, 8)}):Play()
+            end
         end
     end)
     
@@ -337,10 +428,8 @@ local function CreateToggle(parent, text, stateRef, callback)
     F.Text = ""
     F.AutoButtonColor = false
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
-    
     local Stroke = Instance.new("UIStroke", F)
     Stroke.Color = Theme.Line
-    Stroke.Thickness = 1
     
     local L = Instance.new("TextLabel", F)
     L.Size = UDim2.new(1, -60, 1, 0)
@@ -385,10 +474,10 @@ local DevilFruitsTab = CreateTab("Devil Fruits", false)
 
 CreateSection(StatusTab, "PLAYER STATUS")
 CreateToggle(StatusTab, "Tampilkan Statistik Pemain", false, function(state)
-    -- Logic 
+    -- Logic
 end)
 
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
 CreateToggle(DevilFruitsTab, "ESP Buah (Teks Saja)", false, function(state)
-    -- Logic 
+    -- Logic
 end)
