@@ -1,4 +1,4 @@
--- CatHUB v11.0: GOLD & PURPLE EDITION (Modern "Cat" Widget, Darker Inner BG)
+-- CatHUB v12.0: Ultimate Premium (Shadow, Pop-up Anims, Solid Cat, Dark Inner BG)
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -13,36 +13,34 @@ Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- ==========================================
--- THEME / PALETTE (Updated Colors)
+-- THEME / PALETTE 
 -- ==========================================
 local Theme = {
-    MainBG      = Color3.fromRGB(10, 10, 10),   -- Hitam Pekat Dasar
-    SideBG      = Color3.fromRGB(14, 14, 16),   -- Sidebar Gelap
+    MainBG      = Color3.fromRGB(10, 10, 10),   
+    SideBG      = Color3.fromRGB(14, 14, 16),   
     TopBG       = Color3.fromRGB(10, 10, 10),
-    TabOn       = Color3.fromRGB(32, 32, 38),   -- Tab Aktif
-    TabOff      = Color3.fromRGB(14, 14, 16),   -- Tab Mati (Nyatu Side)
+    TabOn       = Color3.fromRGB(32, 32, 38),   
+    TabOff      = Color3.fromRGB(14, 14, 16),   
     
-    -- REQUEST 1: Background besar di dalam sedikit hitam ke abu-abuan (Gelap)
-    PageBG      = Color3.fromRGB(17, 18, 22),   -- Gelap Elegant, Gak abu-abu banget
+    -- BACKGROUND KANAN: Hitam keabu-abuan gelap (Gak nyatu & gak terlalu abu)
+    PageBG      = Color3.fromRGB(18, 18, 20),   
     
-    CardBG      = Color3.fromRGB(28, 28, 32),   -- Kotak Toggle
+    CardBG      = Color3.fromRGB(28, 28, 32),   
     CardHov     = Color3.fromRGB(36, 36, 42),
     Text        = Color3.fromRGB(245, 245, 245),
     TextDim     = Color3.fromRGB(140, 140, 145),
     
-    ToggleOn    = Color3.fromRGB(138, 43, 226), -- Ungu Accent
+    ToggleOn    = Color3.fromRGB(138, 43, 226), 
     ToggleOff   = Color3.fromRGB(75, 75, 80),
-    Accent      = Color3.fromRGB(138, 43, 226), -- Ungu
+    Accent      = Color3.fromRGB(138, 43, 226), 
     
-    -- REQUEST 3 & 4 (Colors for Text)
-    CatPurple   = Color3.fromRGB(160, 100, 255),-- Ungu Cerah buat CatHUB
-    Gold        = Color3.fromRGB(255, 200, 50), -- Emas buat Freemium
-    
-    Line        = Color3.fromRGB(40, 40, 45)    -- Garis Pembatas
+    CatPurple   = Color3.fromRGB(160, 100, 255),
+    Gold        = Color3.fromRGB(255, 200, 50), 
+    Line        = Color3.fromRGB(40, 40, 45)    
 }
 
 -- ==========================================
--- FUNGSI DRAG STABIL
+-- FUNGSI DRAG 
 -- ==========================================
 local function MakeDraggable(dragArea, objectToMove)
     local dragging = false
@@ -77,51 +75,103 @@ local function MakeDraggable(dragArea, objectToMove)
 end
 
 -- ==========================================
--- REQUEST 3 & 4: MODERN "Cat" WIDGET (Transparan & Draggable)
+-- WIDGET "Cat" SOLID & INVISIBLE GRIP
 -- ==========================================
-local FloatBtn = Instance.new("TextButton", Gui)
-FloatBtn.Size = UDim2.new(0, 55, 0, 35) -- Sedikit lebih lebar buat tulisan "Cat"
-FloatBtn.Position = UDim2.new(0, 20, 0.5, -17)
--- Request 4: Background sedikit saja tapi transparan
-FloatBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-FloatBtn.BackgroundTransparency = 0.5 
--- Request 3: Ganti jadi Cat yang keren dan modern
+local FloatCont = Instance.new("Frame", Gui)
+FloatCont.Size = UDim2.new(0, 65, 0, 40) -- Area lebih panjang buat grip
+FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
+FloatCont.BackgroundTransparency = 1
+FloatCont.ZIndex = 99999 
+
+-- Tombol Solid Simetris
+local FloatBtn = Instance.new("TextButton", FloatCont)
+FloatBtn.Size = UDim2.new(0, 40, 0, 40) -- KOTAK SIMETRIS 40x40
+FloatBtn.Position = UDim2.new(0, 25, 0, 0) -- Digeser ngasih ruang buat invisible grip
+FloatBtn.BackgroundColor3 = Theme.CardBG
+FloatBtn.BackgroundTransparency = 0 -- SOLID, gak transparan lagi
 FloatBtn.Text = "Cat"
-FloatBtn.TextColor3 = Theme.CatPurple -- Pake warna ungu
-FloatBtn.Font = Enum.Font.GothamBold -- Modern & Bold
-FloatBtn.TextSize = 18
+FloatBtn.TextColor3 = Theme.CatPurple 
+FloatBtn.Font = Enum.Font.GothamBold 
+FloatBtn.TextSize = 16
 FloatBtn.BorderSizePixel = 0
-FloatBtn.AutoButtonColor = false -- Tetap dimatiin biar ga kedap-kedip norak
-FloatBtn.ZIndex = 99999 
+FloatBtn.AutoButtonColor = false
 Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
 local FloatStroke = Instance.new("UIStroke", FloatBtn)
 FloatStroke.Color = Theme.Line
-FloatStroke.Thickness = 1
 
--- Aktifin fungsi drag buat tombol "Cat" biar bisa digeser sembunyiin
-MakeDraggable(FloatBtn, FloatBtn)
+-- Grip Invisible (Transparan 100%, khusus ditarik)
+local GripInvisible = Instance.new("TextButton", FloatCont)
+GripInvisible.Size = UDim2.new(0, 25, 1, 0)
+GripInvisible.Position = UDim2.new(0, 0, 0, 0)
+GripInvisible.BackgroundTransparency = 1 -- 100% GAK KELIHATAN
+GripInvisible.Text = ""
+MakeDraggable(GripInvisible, FloatCont)
 
 -- ==========================================
--- MAIN FRAME
+-- MAIN FRAME & SHADOW
 -- ==========================================
 local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 550, 0, 340)
 Main.Position = UDim2.new(0.5, -275, 0.5, -170)
 Main.BackgroundColor3 = Theme.MainBG
 Main.BorderSizePixel = 0
-Main.ClipsDescendants = true 
-Main.Visible = true 
+Main.ClipsDescendants = false -- Harus false biar shadow ga kepotong
+Main.Visible = false 
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 local MainStroke = Instance.new("UIStroke", Main)
 MainStroke.Color = Theme.Line
 MainStroke.Thickness = 1
 
+-- EFEK DROP SHADOW MEWAH DI LUAR UI
+local Shadow = Instance.new("ImageLabel", Main)
+Shadow.Name = "Shadow"
+Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+Shadow.BackgroundTransparency = 1
+Shadow.Position = UDim2.new(0.5, 0, 0.5, 4) -- Sedikit turun
+Shadow.Size = UDim2.new(1, 40, 1, 40) -- Lebih besar dari Main frame
+Shadow.ZIndex = -1
+Shadow.Image = "rbxassetid://6015897733"
+Shadow.ImageColor3 = Color3.new(0, 0, 0)
+Shadow.ImageTransparency = 0.4
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(97, 97, 97, 97)
+
+-- Animasi Buka/Tutup UI (Pop-up)
+local isUIOpen = true
+local normalSize = UDim2.new(0, 550, 0, 340)
+local smallSize = UDim2.new(0, 500, 0, 300)
+
+local function OpenUI()
+    isUIOpen = true
+    Main.Visible = true
+    Main.Size = smallSize
+    TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = normalSize}):Play()
+end
+
+local function CloseUI()
+    isUIOpen = false
+    local tw = TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = smallSize})
+    tw:Play()
+    tw.Completed:Wait()
+    if not isUIOpen then Main.Visible = false end
+end
+
 FloatBtn.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
+    if isUIOpen then CloseUI() else OpenUI() end
 end)
 
+-- Langsung buka pakai animasi
+OpenUI()
+
+-- Main Frame Inner (Biar kontentnya bisa terclip tanpa motong shadow)
+local MainInner = Instance.new("Frame", Main)
+MainInner.Size = UDim2.new(1, 0, 1, 0)
+MainInner.BackgroundTransparency = 1
+MainInner.ClipsDescendants = true
+Instance.new("UICorner", MainInner).CornerRadius = UDim.new(0, 6)
+
 -- Topbar
-local Top = Instance.new("Frame", Main)
+local Top = Instance.new("Frame", MainInner)
 Top.Size = UDim2.new(1, 0, 0, 35)
 Top.BackgroundColor3 = Theme.TopBG
 Top.BorderSizePixel = 0
@@ -133,9 +183,6 @@ TopFix.Position = UDim2.new(0, 0, 1, -10)
 TopFix.BackgroundColor3 = Theme.TopBG
 TopFix.BorderSizePixel = 0
 
--- ==========================================
--- REQUEST 2: CatHUB (Ungu Bold) & Freemium (Emas)
--- ==========================================
 local TitleContainer = Instance.new("Frame", Top)
 TitleContainer.Size = UDim2.new(0, 350, 1, 0)
 TitleContainer.Position = UDim2.new(0, 15, 0, 0)
@@ -143,9 +190,8 @@ TitleContainer.BackgroundTransparency = 1
 
 local TitleList = Instance.new("UIListLayout", TitleContainer)
 TitleList.FillDirection = Enum.FillDirection.Horizontal
-TitleList.SortOrder = Enum.SortOrder.LayoutOrder
 TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
-TitleList.Padding = UDim.new(0, 4) -- Jarak antar kata
+TitleList.Padding = UDim.new(0, 4) 
 
 local function CreateTitlePart(text, color, font, order)
     local label = Instance.new("TextLabel", TitleContainer)
@@ -158,9 +204,9 @@ local function CreateTitlePart(text, color, font, order)
     label.LayoutOrder = order
 end
 
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold, 1) -- Request 3: Sedikit unguan & bold
+CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold, 1) 
 CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium, 2)
-CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium, 3) -- Request 2: Warna Freemium Emas
+CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium, 3) 
 
 local BtnX = Instance.new("TextButton", Top)
 BtnX.Size = UDim2.new(0, 35, 0, 35)
@@ -188,18 +234,16 @@ BtnM.MouseEnter:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15)
 BtnM.MouseLeave:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play() end)
 
 BtnX.MouseButton1Click:Connect(function()
-    Main.Visible = false
+    CloseUI()
 end)
 
 local isMin = false
-local lastSize = Main.Size
 BtnM.MouseButton1Click:Connect(function()
     isMin = not isMin
     if isMin then
-        lastSize = Main.Size
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, Main.Size.X.Offset, 0, 35)}):Play()
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, normalSize.X.Offset, 0, 35)}):Play()
     else
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = lastSize}):Play()
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = normalSize}):Play()
     end
 end)
 
@@ -208,7 +252,7 @@ MakeDraggable(Top, Main)
 -- ==========================================
 -- RESIZER 
 -- ==========================================
-local Resizer = Instance.new("TextButton", Main)
+local Resizer = Instance.new("TextButton", MainInner)
 Resizer.Size = UDim2.new(0, 20, 0, 20)
 Resizer.Position = UDim2.new(1, -20, 1, -20)
 Resizer.BackgroundTransparency = 1
@@ -235,15 +279,15 @@ UserInput.InputChanged:Connect(function(input)
         local delta = input.Position - resizeStart
         local newX = math.clamp(startSizeR.X.Offset + delta.X, 480, 900)
         local newY = math.clamp(startSizeR.Y.Offset + delta.Y, 280, 700)
-        Main.Size = UDim2.new(0, newX, 0, newY)
-        lastSize = Main.Size
+        normalSize = UDim2.new(0, newX, 0, newY)
+        Main.Size = normalSize
     end
 end)
 
 -- ==========================================
--- SIDEBAR & KONTEN
+-- DYNAMIC SIDEBAR & KONTEN
 -- ==========================================
-local ContentContainer = Instance.new("Frame", Main)
+local ContentContainer = Instance.new("Frame", MainInner)
 ContentContainer.Size = UDim2.new(1, 0, 1, -35)
 ContentContainer.Position = UDim2.new(0, 0, 0, 35)
 ContentContainer.BackgroundTransparency = 1
@@ -311,10 +355,10 @@ local function CreateTab(name, isFirst)
     Page.Size = UDim2.new(1, -16, 1, -16) 
     Page.Position = UDim2.new(0, 8, 0, 8) 
     
-    -- Request 1: Ganti warna background besar di dalam jadi sedikit hitam ke abu-abuan
-    Page.BackgroundColor3 = Theme.PageBG -- Gelap Elegant
-    
+    -- KOTAK KANAN GELAP (Hitam Keabu-abuan)
+    Page.BackgroundColor3 = Theme.PageBG 
     Page.BackgroundTransparency = 0 
+    
     Page.ScrollBarThickness = 2
     Page.ScrollBarImageColor3 = Theme.TextDim 
     Page.Visible = isFirst
@@ -336,6 +380,8 @@ local function CreateTab(name, isFirst)
     Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator}
     
     Btn.MouseButton1Click:Connect(function()
+        if Indicator.Visible then return end -- Kalo udah aktif gausah diapa-apain
+        
         for tName, data in pairs(Pages) do
             local active = (tName == name)
             data.Page.Visible = active
@@ -344,6 +390,12 @@ local function CreateTab(name, isFirst)
                 BackgroundColor3 = active and Theme.TabOn or Theme.TabOff,
                 TextColor3 = active and Theme.Text or Theme.TextDim
             }):Play()
+            
+            -- ANIMASI SLIDE UP HALUS PAS PINDAH TAB
+            if active then
+                data.Page.Position = UDim2.new(0, 8, 0, 25) -- Mulai agak ke bawah
+                TweenService:Create(data.Page, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0, 8, 0, 8)}):Play()
+            end
         end
     end)
     
@@ -422,10 +474,10 @@ local DevilFruitsTab = CreateTab("Devil Fruits", false)
 
 CreateSection(StatusTab, "PLAYER STATUS")
 CreateToggle(StatusTab, "Tampilkan Statistik Pemain", false, function(state)
-    -- Logic placeholder
+    -- Logic 
 end)
 
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
 CreateToggle(DevilFruitsTab, "ESP Buah (Teks Saja)", false, function(state)
-    print("Fruit ESP:", state)
+    -- Logic 
 end)
