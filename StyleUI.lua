@@ -403,4 +403,4 @@ end)
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
 CreateToggle(DevilFruitsTab, "ESP Buah (Teks Saja)", false, function(state)
     print("Fruit ESP:", state)
-end)
+end) -- < ga tau mau ngapain
