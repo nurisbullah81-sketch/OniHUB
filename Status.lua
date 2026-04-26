@@ -15,35 +15,66 @@ local function FormatNum(num)
     return formatted
 end
 
+-- FUNGSI PINTER: Baca stat berdasarkan keyword, ga peduli nama aslinya apa
+local function GetStat(ls, keywords)
+    if not ls then return 0, "Unknown" end
+    for _, child in pairs(ls:GetChildren()) do
+        if child:IsA("IntValue") or child:IsA("NumberValue") then
+            local nameLower = string.lower(child.Name)
+            for _, keyword in pairs(keywords) do
+                if string.find(nameLower, string.lower(keyword)) then
+                    return child.Value, child.Name
+                end
+            end
+        end
+    end
+    return 0, "Unknown"
+end
+
+local hasPrinted = false
+
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
             local ls = LocalPlayer:FindFirstChild("leaderstats")
-            if not ls then return end -- Nunggu leaderstats muncul
             
-            -- Cari Level (Blox Fruits namanya "Level")
-            local lvlVal = ls:FindFirstChild("Level")
-            local lvl = lvlVal and lvlVal.Value or 0
+            -- DEBUG: Print isi leaderstats 1 kali aja biar lu tau isinya apa
+            if ls and not hasPrinted then
+                hasPrinted = true
+                print("[CatHUB DEBUG] Leaderstats ditemukan:")
+                for _, child in pairs(ls:GetChildren()) do
+                    print(" -> " .. child.Name .. " (Tipe: " .. child.ClassName .. ") = " .. tostring(child.Value))
+                end
+            end
             
-            -- Cari Uang (Bisa nama "$" atau "Belly")
-            local moneyVal = ls:FindFirstChild("$") or ls:FindFirstChild("Belly")
-            local money = moneyVal and moneyVal.Value or 0
+            -- Scan Level (Cari kata "level" atau "lvl")
+            local lvl, lvlName = GetStat(ls, {"Level", "Lvl"})
             
-            -- Cari Fragment (Bisa "Fragments" atau "Fragment")
-            local fragVal = ls:FindFirstChild("Fragments") or ls:FindFirstChild("Fragment")
-            local frag = fragVal and fragVal.Value or 0
+            -- Scan Uang (Cari kata "$", "money", "belly", "cash")
+            local money, moneyName = GetStat(ls, {"$", "Money", "Belly", "Cash"})
             
-            -- Cari Bounty/Honor
-            local bountyVal = ls:FindFirstChild("Bounty") or ls:FindFirstChild("Honor")
-            local bounty = bountyVal and bountyVal.Value or 0
+            -- Scan Fragment (Cari kata "fragment" atau "frag")
+            local frag, fragName = GetStat(ls, {"Fragment", "Frag"})
             
+            -- Scan Bounty/Honor (Cari kata "bounty" atau "honor")
+            local bounty, bountyName = GetStat(ls, {"Bounty", "Honor"})
+            
+            -- Update UI Labels
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
-            Labels.Money.Text = "Money: $" .. FormatNum(money)
-            Labels.Fragments.Text = "Fragments: " .. FormatNum(frag)
-            Labels.Bounty.Text = (bountyVal and bountyVal.Name or "Bounty") .. ": " .. FormatNum(bounty)
+            
+            -- Rapihin nama uang kalau ketemu simbol aneh
+            local displayMoneyName = (moneyName == "$" or string.lower(moneyName) == "money") and "Money" or moneyName
+            Labels.Money.Text = displayMoneyName .. ": $" .. FormatNum(money)
+            
+            local displayFragName = (fragName ~= "Unknown" and fragName or "Fragments")
+            Labels.Fragments.Text = displayFragName .. ": " .. FormatNum(frag)
+            
+            local displayBountyName = (bountyName ~= "Unknown" and bountyName or "Bounty")
+            Labels.Bounty.Text = displayBountyName .. ": " .. FormatNum(bounty)
             
             Labels.Players.Text = "Players: " .. #Players:GetPlayers()
             
+            -- Logic Waktu & Cuaca
             local clockTime = Lighting.ClockTime
             local h = math.floor(clockTime)
             local m = math.floor((clockTime % 1) * 60)
@@ -58,6 +89,7 @@ task.spawn(function()
                 Labels.Moon.Text = isFull and "Moon: Full Moon" or "Moon: Normal"
             end
             
+            -- Logic Hitung Buah
             local count = 0
             for _, v in pairs(Workspace:GetChildren()) do
                 if v:IsA("Tool") and v.Name:lower():find("fruit") then
