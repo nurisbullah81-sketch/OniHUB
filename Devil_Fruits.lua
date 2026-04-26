@@ -1,7 +1,6 @@
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Me = _G.Cat.Player
@@ -155,44 +154,14 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- ROBUST SERVER HOPPER (ANTI BOT & ANTI FULL)
+-- 773-PROOF SERVER HOPPER
 -- ==========================================
 function _G.Cat.HopServer()
     pcall(function()
-        local cursor = ""
-        local found = false
-        
-        while not found do
-            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-            if cursor ~= "" then url = url .. "&cursor=" .. cursor end
-            
-            local success, response = pcall(function()
-                return HttpService:JSONDecode(game:HttpGet(url))
-            end)
-            
-            if success and response and response.data then
-                for _, s in pairs(response.data) do
-                    -- FILTER PINTAR: Cari server yang ada orangnya (>2 pemain biar ga bot), dan belum penuh
-                    if s.playing < s.maxPlayers and s.playing > 2 and s.id ~= game.JobId then
-                        pcall(function()
-                            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, Me)
-                        end)
-                        task.wait(5) -- Nunggu 5 detik biar teleportasi selesai, ga nge-spam
-                        found = true
-                        break
-                    end
-                end
-                
-                if not found and response.nextPageCursor then
-                    cursor = response.nextPageCursor -- Cari halaman server berikutnya
-                else
-                    cursor = "" -- Ulang dari awal kalau ga nemu
-                    task.wait(2)
-                end
-            else
-                task.wait(5)
-            end
-        end
+        -- Pakai PlaceId lu saat ini. 
+        -- Ini 100% aman dari Error 773 karena cuma cari server di Sea yang SAMA persis.
+        -- Kerjanya seperti klik tombol "Find Server" di game.
+        TeleportService:Teleport(game.PlaceId, Me)
     end)
 end
 
