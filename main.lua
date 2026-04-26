@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: Logic Core (ESP Bug Fixed)
+-- CatHUB FREEMIUM: Logic Core (Elite Integration)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -10,7 +10,7 @@ local UI_Module = loadstring(game:HttpGet(UI_URL .. "?v=" .. math.random()))()
 
 local currentTween = nil
 
--- Noclip Logic
+-- Noclip Bypass
 RunService.Stepped:Connect(function()
     if UI_Module.Settings.Tween_Enabled and LocalPlayer.Character then
         for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
@@ -27,61 +27,33 @@ local function GetDist(obj)
     return 0
 end
 
--- FIXED ESP LOGIC
 local function CreateESP(object)
     if not object:FindFirstChild("Cat_ESP") then
-        -- Initial Name Determination
-        local initialName = object.Name
-        if object:IsA("Model") and initialName == "Fruit " then
-            initialName = "??? (System)"
-        end
-
+        local initialName = object.Name == "Fruit " and "??? (System)" or object.Name
         local Bb = Instance.new("BillboardGui", object)
         Bb.Name = "Cat_ESP"
         Bb.AlwaysOnTop = true
-        Bb.Size = UDim2.new(0, 200, 0, 50)
-        
+        Bb.Size = UDim2.new(0, 150, 0, 40)
         local T = Instance.new("TextLabel", Bb)
         T.Size = UDim2.new(1, 0, 1, 0)
         T.BackgroundTransparency = 1
         T.TextColor3 = Color3.fromRGB(255, 255, 255)
-        T.TextSize = 16
+        T.TextSize = 14
         T.Font = Enum.Font.SourceSansBold
-        T.Text = initialName -- NO MORE "LABEL" DEFAULT
-        T.TextStrokeTransparency = 0.3
+        T.Text = initialName
+        T.TextStrokeTransparency = 0.5
 
         task.spawn(function()
             while object:IsDescendantOf(Workspace) and Bb do
-                -- Mencegah ESP muncul jika buah di tangan pemain
-                if object:IsDescendantOf(LocalPlayer.Character) then
-                    Bb.Enabled = false
-                else
-                    Bb.Enabled = UI_Module.Settings.ESP_Enabled
-                end
-
+                Bb.Enabled = (UI_Module.Settings.ESP_Enabled and not object:IsDescendantOf(LocalPlayer.Character))
                 if Bb.Enabled then
-                    local name = object.Name
-                    if object:IsA("Model") and name == "Fruit " then
-                        name = "??? (System)"
-                    end
+                    local name = object.Name == "Fruit " and "??? (System)" or object.Name
                     T.Text = string.format("%s\n%dM", name, math.floor(GetDist(object)))
                 end
                 task.wait(0.2)
             end
             if Bb then Bb:Destroy() end
         end)
-    end
-end
-
--- Auto Store & Tween Logic
-local function AutoStore()
-    if not UI_Module.Settings.AutoStore then return end
-    local char = LocalPlayer.Character
-    if char then
-        local tool = char:FindFirstChildOfClass("Tool")
-        if tool and tool.Name:lower():find("fruit") then
-            game:GetService("ReplicatedStorage").Remotes.CommF:InvokeServer("StoreFruit", tool.Name, tool)
-        end
     end
 end
 
@@ -99,11 +71,15 @@ local function TweenTo(target)
     end
 end
 
--- Logic Monitor
 task.spawn(function()
     while task.wait(0.1) do
         if not UI_Module.Settings.Tween_Enabled and currentTween then currentTween:Cancel() currentTween = nil end
-        if UI_Module.Settings.AutoStore then AutoStore() end
+        if UI_Module.Settings.AutoStore then 
+            local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if tool and tool.Name:lower():find("fruit") then
+                game:GetService("ReplicatedStorage").Remotes.CommF:InvokeServer("StoreFruit", tool.Name, tool)
+            end
+        end
     end
 end)
 
