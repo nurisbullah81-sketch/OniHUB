@@ -1,4 +1,4 @@
--- CatHUB v9.9: Perfect RedzHub Clone (Purple Toggle, Clear Borders, Fluid Scale)
+-- CatHUB v10.0: RedzHub Style Page Backgrounds, Purple Toggle, fluid Scale
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,19 +12,20 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Palette: Hitam Pekat, Ungu, dan Abu Terang buat OFF
+-- Palette Update: Tambah PageBG buat background dalem tab
 local Theme = {
-    MainBG      = Color3.fromRGB(12, 12, 12),
-    SideBG      = Color3.fromRGB(16, 16, 16),
+    MainBG      = Color3.fromRGB(12, 12, 12),   -- Hitam Pekat (Background Utama)
+    SideBG      = Color3.fromRGB(16, 16, 16),   -- Hitam sedikit terang (Sidebar)
     TopBG       = Color3.fromRGB(12, 12, 12),
-    CardBG      = Color3.fromRGB(24, 24, 26),   -- Background list/toggle
+    PageBG      = Color3.fromRGB(20, 20, 20),   -- UPGRADE: Background khusus area konten dalem tab
+    CardBG      = Color3.fromRGB(26, 26, 28),   -- Background list/toggle (sedikit lebih terang dari PageBG)
     CardHov     = Color3.fromRGB(32, 32, 35),
     Text        = Color3.fromRGB(255, 255, 255),
     TextDim     = Color3.fromRGB(150, 150, 150),
     ToggleOn    = Color3.fromRGB(138, 43, 226), -- UNGU (Purple)
     ToggleOff   = Color3.fromRGB(100, 100, 110),-- Abu-abu terang (Kontras tinggi biar kelihatan)
     Accent      = Color3.fromRGB(138, 43, 226), -- Ungu
-    Line        = Color3.fromRGB(45, 45, 50)    -- Garis pembatas (biar list ga nyatu)
+    Line        = Color3.fromRGB(45, 45, 50)    -- Garis pembatas/stroke
 }
 
 -- ==========================================
@@ -73,7 +74,9 @@ Main.BorderSizePixel = 0
 Main.ClipsDescendants = true 
 Main.Visible = false 
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", Main).Color = Theme.Line
+local MainStroke = Instance.new("UIStroke", Main)
+MainStroke.Color = Theme.Line
+MainStroke.Thickness = 1
 
 FloatBtn.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
@@ -230,6 +233,9 @@ ContentArea.BackgroundTransparency = 1
 
 local Pages = {}
 
+-- ==========================================
+-- UPGRADE: CreateTab with Page Background
+-- ==========================================
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton", SideScroll)
     Btn.Size = UDim2.new(1, 0, 0, 32)
@@ -257,20 +263,33 @@ local function CreateTab(name, isFirst)
         if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.SideBG, TextColor3 = Theme.TextDim}):Play() end
     end)
     
+    -- UPGRADE: ScrollingFrame sekarang punya background sendiri (PageBG)
     local Page = Instance.new("ScrollingFrame", ContentArea)
-    Page.Size = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
+    -- Sedikit dikecilin ukurannya biar kelihatan kontainernya misah dari background utama
+    Page.Size = UDim2.new(1, -12, 1, -12) 
+    Page.Position = UDim2.new(0, 6, 0, 6) -- Centered
+    Page.BackgroundColor3 = Theme.PageBG -- Warna kontainer dalem tab
+    Page.BackgroundTransparency = 0 -- Bikin solid
     Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Theme.Line
+    Page.ScrollBarImageColor3 = Theme.TextDim -- Warna scrollbar biar kelihatan di PageBG
     Page.Visible = isFirst
     Page.BorderSizePixel = 0
     
+    -- Kasih UICorner biar estetik ujungnya tumpul
+    Instance.new("UICorner", Page).CornerRadius = UDim.new(0, 6)
+    
+    -- Kasih stroke tipis biar makin tegas batasnya
+    local PageStroke = Instance.new("UIStroke", Page)
+    PageStroke.Color = Theme.Line
+    PageStroke.Thickness = 1
+
     local List = Instance.new("UIListLayout", Page)
     List.Padding = UDim.new(0, 6) -- Jarak antar item
     local Pad = Instance.new("UIPadding", Page)
     Pad.PaddingTop = UDim.new(0, 10)
-    Pad.PaddingLeft = UDim.new(0, 12)
-    Pad.PaddingRight = UDim.new(0, 16)
+    Pad.PaddingLeft = UDim.new(0, 10) -- Sesuaikan padding dalem kontainer
+    Pad.PaddingRight = UDim.new(0, 14) -- Sisain ruang buat scrollbar
+    Pad.PaddingBottom = UDim.new(0, 10)
     
     Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator}
     
