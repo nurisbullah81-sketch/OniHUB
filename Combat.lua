@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: Combat Module (v5.0 Fix)
+-- CatHUB FREEMIUM: Combat Module (v7.0)
 local UI = _G.CatHUB_UI
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -9,7 +9,7 @@ local Mouse = LocalPlayer:GetMouse()
 
 local LockedTarget = nil
 
-local function IsEnemy(p)
+local function IsValidTarget(p)
     if not p or p == LocalPlayer or not p.Character or p.Character.Humanoid.Health <= 0 then return false end
     if p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines" then return false end
     if LocalPlayer:IsFriendsWith(p.UserId) then return false end
@@ -17,53 +17,40 @@ local function IsEnemy(p)
 end
 
 local function GetTarget()
-    local target, dist = nil, 180
+    local t, d = nil, 180
     for _, p in pairs(Players:GetPlayers()) do
-        if IsEnemy(p) and p.Character:FindFirstChild("HumanoidRootPart") then
+        if IsValidTarget(p) and p.Character:FindFirstChild("HumanoidRootPart") then
             local pos, vis = Camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
             if vis then
-                local mDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-                if mDist < dist then target, dist = p, mDist end
+                local mD = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                if mD < d then t, d = p, mD end
             end
         end
     end
-    return target
+    return t
 end
 
 RunService.RenderStepped:Connect(function()
     if UI.Settings.LockAim_Enabled then
-        if not LockedTarget or not IsEnemy(LockedTarget) then LockedTarget = GetTarget() end
+        if not LockedTarget or not IsValidTarget(LockedTarget) then LockedTarget = GetTarget() end
         if LockedTarget then
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, LockedTarget.Character.HumanoidRootPart.Position)
         end
     else LockedTarget = nil end
-
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        local H = LocalPlayer.Character.Humanoid
-        if UI.Settings.AntiStun_Enabled then
-            H.PlatformStand = false H.Sit = false
-            if H:GetState() == Enum.HumanoidStateType.Physics then H:ChangeState(Enum.HumanoidStateType.GettingUp) end
-        end
-        if UI.Settings.FastRun_Enabled then H.WalkSpeed = UI.Settings.Run_Speed end
-        if UI.Settings.HighJump_Enabled then H.JumpPower = UI.Settings.Jump_Power H.UseJumpPower = true end
-        
-        if UI.Settings.Tween_Enabled or _G.CatHUB_TPing then
-            for _, v in pairs(LocalPlayer.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
-        end
+    
+    -- Mobility Overrides
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then
+        if UI.Settings.FastRun_Enabled then hum.WalkSpeed = UI.Settings.Run_Speed end
+        if UI.Settings.HighJump_Enabled then hum.JumpPower = UI.Settings.Jump_Power hum.UseJumpPower = true end
     end
 end)
 
 task.spawn(function()
     local pvp = UI:CreateTab("PVP Elite")
     UI:CreateSwitch(pvp, "LockAim_Enabled", "Smart Aim Lock")
-    UI:CreateSwitch(pvp, "AntiStun_Enabled", "Anti-Stun Override")
-    UI:CreateSwitch(pvp, "FastRun_Enabled", "Enable God Speed")
+    UI:CreateSwitch(pvp, "FastRun_Enabled", "Enable Speed Hack")
     UI:CreateSlider(pvp, "Run_Speed", "Speed Value", 16, 1000)
     UI:CreateSwitch(pvp, "HighJump_Enabled", "Enable High Jump")
     UI:CreateSlider(pvp, "Jump_Power", "Jump Value", 50, 500)
-    
-    local finder = UI:CreateTab("Finder")
-    UI:CreateSwitch(finder, "ESP_Enabled", "Fruit ESP")
-    UI:CreateSwitch(finder, "PlayerESP_Enabled", "Player ESP (Team Color)")
-    UI:CreateSwitch(finder, "AutoStore", "Auto Store Fruit")
 end)
