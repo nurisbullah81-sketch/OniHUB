@@ -1,4 +1,4 @@
--- CatHUB v8.5: Fruit ESP
+-- CatHUB v8.6: Fruit ESP
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local S = _G.Cat.Settings
