@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: Professional Elite UI
+-- CatHUB FREEMIUM: UI Module (PVP Update)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -9,12 +9,19 @@ if CoreGui:FindFirstChild("CatHUB_Freemium") then CoreGui.CatHUB_Freemium:Destro
 local UI_Lib = {
     CurrentTab = nil,
     Visible = true,
-    AccentColor = Color3.fromRGB(130, 80, 255), -- Modern Violet
+    AccentColor = Color3.fromRGB(130, 80, 255),
     Settings = {
+        -- Finder Settings
         ESP_Enabled = false,
         Tween_Enabled = false,
         Tween_Speed = 300,
-        AutoStore = false
+        AutoStore = false,
+        -- PVP Settings
+        PlayerESP_Enabled = false,
+        LockAim_Enabled = false,
+        WalkWater_Enabled = false,
+        FastRun_Enabled = false,
+        Run_Speed = 16
     }
 }
 
@@ -23,27 +30,21 @@ ScreenGui.Name = "CatHUB_Freemium"
 ScreenGui.Parent = CoreGui
 UI_Lib.MainGui = ScreenGui
 
--- Main Frame (Slim Default: 450x280)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 280)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -140)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Size = UDim2.new(0, 480, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(40, 40, 40)
 
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(40, 40, 40)
-MainStroke.Thickness = 1
-MainStroke.Parent = MainFrame
-
--- Top Bar (Slim)
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 30)
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+TopBar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 TopBar.Parent = MainFrame
 Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 6)
 
@@ -51,7 +52,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -60, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "CATHUB FREEMIUM"
+Title.Text = "CATHUB FREEMIUM | ELITE"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 13
@@ -66,17 +67,12 @@ CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 CloseBtn.Font = Enum.Font.SourceSansBold
 CloseBtn.Parent = TopBar
+CloseBtn.MouseButton1Click:Connect(function() UI_Lib.Visible = false MainFrame.Visible = false end)
 
-CloseBtn.MouseButton1Click:Connect(function()
-    UI_Lib.Visible = false
-    MainFrame.Visible = false
-end)
-
--- Sidebar (Narrow)
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 110, 1, -40)
+Sidebar.Size = UDim2.new(0, 115, 1, -40)
 Sidebar.Position = UDim2.new(0, 5, 0, 35)
-Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Sidebar.Parent = MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 4)
 
@@ -86,32 +82,30 @@ TabList.Position = UDim2.new(0, 3, 0, 3)
 TabList.BackgroundTransparency = 1
 TabList.ScrollBarThickness = 0
 TabList.Parent = Sidebar
-Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 3)
+Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 4)
 
--- Content Area
 local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -125, 1, -40)
-ContentArea.Position = UDim2.new(0, 120, 0, 35)
+ContentArea.Size = UDim2.new(1, -130, 1, -40)
+ContentArea.Position = UDim2.new(0, 125, 0, 35)
 ContentArea.BackgroundTransparency = 1
 ContentArea.Parent = MainFrame
 
--- Tab System
 function UI_Lib:CreateTab(name)
     local Container = Instance.new("ScrollingFrame")
     Container.Size = UDim2.new(1, -10, 1, -10)
     Container.Position = UDim2.new(0, 5, 0, 5)
     Container.BackgroundTransparency = 1
     Container.Visible = false
-    Container.ScrollBarThickness = 1
+    Container.ScrollBarThickness = 2
     Container.Parent = ContentArea
-    Instance.new("UIListLayout", Container).Padding = UDim.new(0, 5)
+    Instance.new("UIListLayout", Container).Padding = UDim.new(0, 6)
 
     local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, 0, 0, 30)
+    Btn.Size = UDim2.new(1, 0, 0, 35)
     Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Btn.Text = name:upper()
     Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    Btn.Font = Enum.Font.SourceSans
+    Btn.Font = Enum.Font.SourceSansBold
     Btn.TextSize = 11
     Btn.Parent = TabList
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
@@ -129,28 +123,27 @@ function UI_Lib:CreateTab(name)
     return Container
 end
 
--- Component: Slim Switch (Redz/Tumadam Style)
 function UI_Lib:CreateSwitch(parent, title, callback)
     local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, 0, 0, 32) -- Slimmed down
+    Card.Size = UDim2.new(1, 0, 0, 35)
     Card.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Card.Parent = parent
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
 
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, -50, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = title
-    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-    Label.Font = Enum.Font.SourceSansBold
-    Label.TextSize = 12
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = Card
+    local L = Instance.new("TextLabel")
+    L.Size = UDim2.new(1, -50, 1, 0)
+    L.Position = UDim2.new(0, 10, 0, 0)
+    L.BackgroundTransparency = 1
+    L.Text = title
+    L.TextColor3 = Color3.fromRGB(200, 200, 200)
+    L.Font = Enum.Font.SourceSansBold
+    L.TextSize = 12
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.Parent = Card
 
     local Bg = Instance.new("TextButton")
-    Bg.Size = UDim2.new(0, 30, 0, 16)
-    Bg.Position = UDim2.new(1, -40, 0.5, -8)
+    Bg.Size = UDim2.new(0, 32, 0, 16)
+    Bg.Position = UDim2.new(1, -42, 0.5, -8)
     Bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Bg.Text = ""
     Bg.Parent = Card
@@ -172,42 +165,72 @@ function UI_Lib:CreateSwitch(parent, title, callback)
     end)
 end
 
--- Resize Handle (Functional Fix)
-local ResizeHandle = Instance.new("TextButton")
-ResizeHandle.Size = UDim2.new(0, 15, 0, 15)
-ResizeHandle.Position = UDim2.new(1, -15, 1, -15)
-ResizeHandle.BackgroundTransparency = 1
-ResizeHandle.Text = ""
-ResizeHandle.ZIndex = 5
-ResizeHandle.Parent = MainFrame
+function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, 0, 0, 50)
+    Card.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Card.Parent = parent
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
 
-local resing = false
-ResizeHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then resing = true end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then resing = false end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if resing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local mousePos = UserInputService:GetMouseLocation()
-        local newX = math.clamp(mousePos.X - MainFrame.AbsolutePosition.X, 350, 700)
-        local newY = math.clamp((mousePos.Y - 36) - MainFrame.AbsolutePosition.Y, 200, 500)
-        MainFrame.Size = UDim2.new(0, newX, 0, newY)
+    local T = Instance.new("TextLabel")
+    T.Size = UDim2.new(1, 0, 0, 20)
+    T.Position = UDim2.new(0, 10, 0, 5)
+    T.BackgroundTransparency = 1
+    T.Text = title .. ": " .. default
+    T.TextColor3 = Color3.fromRGB(255, 255, 255)
+    T.Font = Enum.Font.SourceSansBold
+    T.TextSize = 12
+    T.TextXAlignment = Enum.TextXAlignment.Left
+    T.Parent = Card
+
+    local Bar = Instance.new("Frame")
+    Bar.Size = UDim2.new(1, -20, 0, 4)
+    Bar.Position = UDim2.new(0, 10, 0, 32)
+    Bar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    Bar.Parent = Card
+    Instance.new("UICorner", Bar)
+
+    local Fill = Instance.new("Frame")
+    Fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+    Fill.BackgroundColor3 = UI_Lib.AccentColor
+    Fill.Parent = Bar
+    Instance.new("UICorner", Fill)
+
+    local dragging = false
+    local function move()
+        local mX = UserInputService:GetMouseLocation().X
+        local rX = mX - Bar.AbsolutePosition.X
+        local perc = math.clamp(rX / Bar.AbsoluteSize.X, 0, 1)
+        local val = math.floor(min + (max-min)*perc)
+        Fill.Size = UDim2.new(perc, 0, 1, 0)
+        T.Text = title .. ": " .. val
+        callback(val)
     end
-end)
+    Bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true move() end end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+    UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then move() end end)
+end
 
--- Initialize Tabs
-local TabFinder = UI_Lib:CreateTab("Fruits Finder")
-local TabSetting = UI_Lib:CreateTab("Setting")
-local TabStatus = UI_Lib:CreateTab("Status")
+-- === TABS INITIALIZATION ===
+local FinderTab = UI_Lib:CreateTab("Fruits Finder")
+local PVPTab = UI_Lib:CreateTab("PVP Elite")
+local SettingTab = UI_Lib:CreateTab("Setting")
 
-UI_Lib:CreateSwitch(TabFinder, "Fruit ESP", function(v) UI_Lib.Settings.ESP_Enabled = v end)
-UI_Lib:CreateSwitch(TabFinder, "Auto Tween", function(v) UI_Lib.Settings.Tween_Enabled = v end)
-UI_Lib:CreateSwitch(TabFinder, "Auto Store", function(v) UI_Lib.Settings.AutoStore = v end)
+-- PVP Tab Components
+UI_Lib:CreateSwitch(PVPTab, "Lock Aim (Players)", function(v) UI_Lib.Settings.LockAim_Enabled = v end)
+UI_Lib:CreateSwitch(PVPTab, "Player ESP", function(v) UI_Lib.Settings.PlayerESP_Enabled = v end)
+UI_Lib:CreateSwitch(PVPTab, "Walk On Water", function(v) UI_Lib.Settings.WalkWater_Enabled = v end)
+UI_Lib:CreateSwitch(PVPTab, "Enable Run Speed", function(v) UI_Lib.Settings.FastRun_Enabled = v end)
+UI_Lib:CreateSlider(PVPTab, "Run Speed", 16, 200, 16, function(v) UI_Lib.Settings.Run_Speed = v end)
 
-TabFinder.Visible = true
-UI_Lib.CurrentTab = TabFinder
+-- Finder Tab Components
+UI_Lib:CreateSwitch(FinderTab, "Fruit ESP", function(v) UI_Lib.Settings.ESP_Enabled = v end)
+UI_Lib:CreateSwitch(FinderTab, "Auto Tween", function(v) UI_Lib.Settings.Tween_Enabled = v end)
+UI_Lib:CreateSwitch(FinderTab, "Auto Store", function(v) UI_Lib.Settings.AutoStore = v end)
+UI_Lib:CreateSlider(SettingTab, "Tween Speed", 100, 500, 300, function(v) UI_Lib.Settings.Tween_Speed = v end)
+
+FinderTab.Visible = true
+UI_Lib.CurrentTab = FinderTab
 
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.G and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
