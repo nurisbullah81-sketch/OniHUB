@@ -12,28 +12,16 @@ local SKIP = 10
 local function Pos(f)
     if not f or not f.Parent then return nil end
     local ok, r = pcall(function()
-        -- Buah selalu Tool, jadi cuma cari Handle
-        if f:IsA("Tool") then 
-            local h = f:FindFirstChild("Handle") 
-            if h then return h.Position end
-        elseif f:IsA("Model") then 
-            if f.PrimaryPart then return f.PrimaryPart.Position end 
-            local root = f:FindFirstChild("HumanoidRootPart") or f:FindFirstChildWhichIsA("BasePart") 
-            if root then return root.Position end 
-        end
+        if f:IsA("Tool") then local h = f:FindFirstChild("Handle") if h then return h.Position end
+        elseif f:IsA("Model") then if f.PrimaryPart then return f.PrimaryPart.Position end local root = f:FindFirstChild("HumanoidRootPart") or f:FindFirstChildWhichIsA("BasePart") if root then return root.Position end end
     end)
     return ok and r or nil
 end
 
--- FILTER CERDAS: Khusus Blox Fruits (Anti Nyangkut NPC)
 local function IsF(o)
     if not o or not o.Parent then return false end
     local ok, r = pcall(function()
-        -- RAHASIANYA: Buah asli di Blox Fruits itu Tool yang di dalamnya ada Value bernama "Fruit"
-        -- NPC Dealer/Gacha tidak punya anak bernama "Fruit"
-        if o:IsA("Tool") and o:FindFirstChild("Fruit") then
-            return true
-        end
+        if o:IsA("Tool") and o:FindFirstChild("Fruit") then return true end
         return false
     end)
     return ok and r
@@ -59,7 +47,6 @@ for _, o in pairs(Workspace:GetChildren()) do if IsF(o) then Add(o) end end
 Workspace.ChildAdded:Connect(function(o) task.wait(0.5) if IsF(o) then Add(o) end end)
 Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 
--- ESP LOGIC
 RunService.RenderStepped:Connect(function()
     FC = FC + 1; if FC % SKIP ~= 0 then return end
     pcall(function()
@@ -75,7 +62,7 @@ RunService.RenderStepped:Connect(function()
     end)
 end)
 
--- SMOOTH TWEEN LOGIC
+-- SMOOTH TWEEN LOGIC (FIXED NO FALL)
 local fruitTween = nil
 
 local function GetNearestFruit()
@@ -89,7 +76,7 @@ local function GetNearestFruit()
 end
 
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.3) do -- Cek lebih cepat biar ga kaku
         pcall(function()
             if Settings.TweenFruit then
                 local nearest = GetNearestFruit()
@@ -98,13 +85,22 @@ task.spawn(function()
                     local pos = Pos(nearest)
                     if pos then
                         local dist = (pos - hrp.Position).Magnitude
-                        if dist > 15 then
+                        -- Stop kalau udah di atas buah (jarak 5 stud)
+                        if dist > 5 then
                             if fruitTween then fruitTween:Cancel() end
-                            local speed = 200 
+                            
+                            -- Kecepatan 250 studs/sec, halus dan anti-rubberband
+                            local speed = 250 
                             local timeToTween = dist / speed
-                            local targetCFrame = CFrame.new(pos + Vector3.new(0, 15, 0)) 
+                            
+                            -- RAHASIA FIX: Offset Y hanya 1.5 stud, karakter TIDAK JATUH, langsung nyentuh buah
+                            local targetCFrame = CFrame.new(pos + Vector3.new(0, 1.5, 0)) 
+                            
                             fruitTween = TweenService:Create(hrp, TweenInfo.new(timeToTween, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
                             fruitTween:Play()
+                        else
+                            -- Kalau udah deket, hentikan tween biar ga muter2
+                            if fruitTween then fruitTween:Cancel(); fruitTween = nil end
                         end
                     end
                 else
@@ -117,13 +113,10 @@ task.spawn(function()
     end
 end)
 
--- EXPORT DAFTAR BUAH BIAR DIBACA STATUS.LUA
 function _G.Cat.GetFruitsList()
     local names = {}
     for f, _ in pairs(Data) do
-        if f and f.Parent then
-            table.insert(names, f.Name)
-        end
+        if f and f.Parent then table.insert(names, f.Name) end
     end
     return names
 end
