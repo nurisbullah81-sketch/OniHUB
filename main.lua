@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM Logic Core
+-- CatHUB FREEMIUM Core
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 local UI_URL = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/UI.lua"
 local UI_Module = loadstring(game:HttpGet(UI_URL .. "?v=" .. math.random()))()
 
-local function GetDistance(obj)
+local function GetDist(obj)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local p = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.Position or obj:FindFirstChildOfClass("BasePart").Position) or (obj:IsA("BasePart") and obj.Position or obj.Handle.Position)
         return (p - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
@@ -15,25 +15,28 @@ local function GetDistance(obj)
     return 0
 end
 
+-- UPGRADED ESP: Larger & Clearer
 local function CreateESP(object)
     if not object:FindFirstChild("Cat_ESP") then
-        local Billboard = Instance.new("BillboardGui", object)
-        Billboard.Name = "Cat_ESP"
-        Billboard.AlwaysOnTop = true
-        Billboard.Size = UDim2.new(0, 100, 0, 30)
-        local TextLabel = Instance.new("TextLabel", Billboard)
-        TextLabel.Size = UDim2.new(1, 0, 1, 0)
-        TextLabel.BackgroundTransparency = 1
-        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TextLabel.TextSize = 10
-        TextLabel.Font = Enum.Font.SourceSansBold
+        local Bb = Instance.new("BillboardGui", object)
+        Bb.Name = "Cat_ESP"
+        Bb.AlwaysOnTop = true
+        Bb.Size = UDim2.new(0, 150, 0, 40)
+        
+        local T = Instance.new("TextLabel", Bb)
+        T.Size = UDim2.new(1, 0, 1, 0)
+        T.BackgroundTransparency = 1
+        T.TextColor3 = Color3.fromRGB(255, 255, 255)
+        T.TextSize = 14 -- INCREASED SIZE
+        T.Font = Enum.Font.SourceSansBold
+        T.TextStrokeTransparency = 0.5
 
         task.spawn(function()
             while object:IsDescendantOf(Workspace) do
-                Billboard.Enabled = UI_Module.Settings.ESP_Enabled
-                if Billboard.Enabled then
-                    local name = (object:IsA("Model") and object.Name == "Fruit ") and "??? (System Spawn)" or object.Name
-                    TextLabel.Text = string.format("%s\n%dM", name, math.floor(GetDistance(object)))
+                Bb.Enabled = UI_Module.Settings.ESP_Enabled
+                if Bb.Enabled then
+                    local name = (object:IsA("Model") and object.Name == "Fruit ") and "??? (System)" or object.Name
+                    T.Text = string.format("%s\n[%dM]", name, math.floor(GetDist(object)))
                 end
                 task.wait(0.2)
             end
@@ -46,19 +49,19 @@ local function TweenTo(target)
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
         if target:IsDescendantOf(char) then return end
-        local dist = GetDistance(target)
-        if dist < 5 then return end
+        local dist = GetDist(target)
+        if dist < 10 then return end
         local targetCF = target:IsA("Model") and target:GetModelCFrame() or (target:IsA("Tool") and target.Handle.CFrame or target.CFrame)
-        local tweenInfo = TweenInfo.new(dist/UI_Module.Settings.Tween_Speed, Enum.EasingStyle.Sine)
-        local tween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = targetCF})
+        local tInfo = TweenInfo.new(dist/UI_Module.Settings.Tween_Speed, Enum.EasingStyle.Sine)
+        local t = TweenService:Create(char.HumanoidRootPart, tInfo, {CFrame = targetCF})
         
         task.spawn(function()
-            while tween.PlaybackState == Enum.PlaybackState.Playing do
-                if not UI_Module.Settings.Tween_Enabled then tween:Cancel() break end
+            while t.PlaybackState == Enum.PlaybackState.Playing do
+                if not UI_Module.Settings.Tween_Enabled then t:Cancel() break end
                 task.wait(0.1)
             end
         end)
-        tween:Play()
+        t:Play()
     end
 end
 
