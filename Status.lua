@@ -14,49 +14,15 @@ local function FormatNum(num)
     return formatted
 end
 
--- SUPER SCANNER: Baca angka dari StringValue maupun IntValue
-local function GetStat(parent, keywords)
-    if not parent then return 0, "Unknown" end
-    for _, child in pairs(parent:GetChildren()) do
-        local nameLower = string.lower(child.Name)
-        for _, keyword in pairs(keywords) do
-            if string.find(nameLower, string.lower(keyword)) then
-                local val = 0
-                
-                -- Kalau IntValue langsung baca
-                if child:IsA("IntValue") or child:IsA("NumberValue") then
-                    val = child.Value
-                -- Kalau StringValue, extract angkanya (contoh: "Level: 2679" atau "2679")
-                elseif child:IsA("StringValue") then
-                    local numStr = string.match(child.Value, "%d+")
-                    if numStr then val = tonumber(numStr) or 0 end
-                end
-                
-                return val, child.Name
-            end
-        end
+-- Fungsi aman baca value (Bisa angka atau teks yang isinya angka)
+local function ReadValue(obj)
+    if not obj then return 0 end
+    if obj:IsA("IntValue") or obj:IsA("NumberValue") then return obj.Value end
+    if obj:IsA("StringValue") then
+        local num = string.match(obj.Value, "%d+")
+        return tonumber(num) or 0
     end
-    return 0, "Unknown"
-end
-
--- Fungsi cari lebih dalam kalau tidak ada di leaderstats
-local function DeepSearchStat(player, keywords)
-    local foldersToSearch = {"leaderstats", "Data", "Stats", "Values"}
-    for _, folderName in pairs(foldersToSearch) do
-        local folder = player:FindFirstChild(folderName)
-        if folder then
-            local val, name = GetStat(folder, keywords)
-            if val > 0 then return val, name end -- Hanya return kalau ketemu angkanya
-        end
-    end
-    
-    -- Terakhir, scan semua child dari Player
-    for _, child in pairs(player:GetChildren()) do
-        local val, name = GetStat(child, keywords)
-        if val > 0 then return val, name end
-    end
-    
-    return 0, "Unknown"
+    return 0
 end
 
 local hasPrinted = false
@@ -64,43 +30,61 @@ local hasPrinted = false
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            -- DEBUG CONSOLE: Print semua data 1 kali biar lu tau datanya ketemu apa kagak
-            if not hasPrinted then
+            local ls = LocalPlayer:FindFirstChild("leaderstats")
+            local dataFolder = LocalPlayer:FindFirstChild("Data")
+            
+            -- DEBUG: Print 1 kali aja biar lu tau isinya apa
+            if not hasPrinted and ls then
                 hasPrinted = true
-                print("[CatHUB] === SCANNING PLAYER DATA ===")
-                local ls = LocalPlayer:FindFirstChild("leaderstats")
-                if ls then
-                    for _, child in pairs(ls:GetChildren()) do
-                        print(" -> " .. child.Name .. " (" .. child.ClassName .. ") = " .. tostring(child.Value))
+                print("[CatHUB] === SCANNING LEADERSTATS ===")
+                for _, child in pairs(ls:GetChildren()) do
+                    print(" -> Nama: '" .. child.Name .. "' | Tipe: " .. child.ClassName .. " | Value: " .. tostring(child.Value))
+                end
+                if dataFolder then
+                    print("[CatHUB] === SCANNING DATA FOLDER ===")
+                    for _, child in pairs(dataFolder:GetChildren()) do
+                        print(" -> Nama: '" .. child.Name .. "' | Tipe: " .. child.ClassName .. " | Value: " .. tostring(child.Value))
                     end
-                else
-                    print(" -> Leaderstats not found!")
                 end
             end
             
-            -- Scan Level (Cari Level, Lvl, atau angka besar)
-            local lvl, lvlName = DeepSearchStat(LocalPlayer, {"Level", "Lvl", "Exp"})
+            -- 1. LEVEL (Pasti di leaderstats)
+            local lvlObj = ls and (ls:FindFirstChild("Level") or ls:FindFirstChild("Lvl"))
+            local lvl = ReadValue(lvlObj)
             
-            -- Scan Uang 
-            local money, moneyName = DeepSearchStat(LocalPlayer, {"$", "Money", "Belly", "Cash"})
+            -- 2. MONEY (Cari nama aneh atau simbol $)
+            local moneyObj = ls and (ls:FindFirstChild("$") or ls:FindFirstChild("Money") or ls:FindFirstChild("Belly") or ls:FindFirstChild("Cash"))
+            -- Fallback kalau ga ketemu, cari IntValue lain yang bukan Level/Bounty
+            if not moneyObj and ls then
+                for _, child in pairs(ls:GetChildren()) do
+                    local n = string.lower(child.Name)
+                    if child:IsA("IntValue") and n ~= "level" and n ~= "lvl" and n ~= "bounty" and n ~= "honor" and n ~= "fragments" then
+                        moneyObj = child
+                    end
+                end
+            end
+            local money = ReadValue(moneyObj)
+            local moneyName = moneyObj and moneyObj.Name or "Money"
             
-            -- Scan Fragment 
-            local frag, fragName = DeepSearchStat(LocalPlayer, {"Fragment", "Frag"})
+            -- 3. FRAGMENTS (Di Blox Fruits, ini ada di FOLDER DATA, bukan leaderstats!)
+            local fragObj = dataFolder and (dataFolder:FindFirstChild("Fragments") or dataFolder:FindFirstChild("Fragment"))
+            if not fragObj and ls then fragObj = ls:FindFirstChild("Fragments") or ls:FindFirstChild("Fragment") end
+            local frag = ReadValue(fragObj)
             
-            -- Scan Bounty/Honor 
-            local bounty, bountyName = DeepSearchStat(LocalPlayer, {"Bounty", "Honor"})
+            -- 4. BOUNTY / HONOR (Dinamis, tergantung Pirate/Marine)
+            local bountyObj = ls and (ls:FindFirstChild("Bounty") or ls:FindFirstChild("Honor"))
+            local bounty = ReadValue(bountyObj)
+            local bountyName = bountyObj and bountyObj.Name or "Bounty"
             
-            -- Update UI
+            -- UPDATE UI
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
             
-            local displayMoneyName = (moneyName == "$" or string.lower(moneyName) == "money") and "Money" or moneyName
-            Labels.Money.Text = displayMoneyName .. ": $" .. FormatNum(money)
+            local displayMoney = (moneyName == "$") and "Money" or moneyName
+            Labels.Money.Text = displayMoney .. ": $" .. FormatNum(money)
             
-            local displayFragName = (fragName ~= "Unknown" and fragName or "Fragments")
-            Labels.Fragments.Text = displayFragName .. ": " .. FormatNum(frag)
+            Labels.Fragments.Text = "Fragments: " .. FormatNum(frag)
             
-            local displayBountyName = (bountyName ~= "Unknown" and bountyName or "Bounty")
-            Labels.Bounty.Text = displayBountyName .. ": " .. FormatNum(bounty)
+            Labels.Bounty.Text = bountyName .. ": " .. FormatNum(bounty)
             
             Labels.Players.Text = "Players: " .. #Players:GetPlayers()
             
