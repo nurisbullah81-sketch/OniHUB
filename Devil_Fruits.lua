@@ -3,6 +3,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local Me = _G.Cat.Player
 local Settings = _G.Cat.Settings
 
@@ -154,105 +155,91 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- UI SERVER HOPPER (REDZHUB STYLE)
+-- PHYSICAL UI SERVER HOPPER (REDZHUB STYLE)
 -- ==========================================
 local isHopping = false
+
+local function ClickButton(btn)
+    if not btn or not btn.Visible then return false end
+    local pos = btn.AbsolutePosition
+    local size = btn.AbsoluteSize
+    local clickPos = pos + (size / 2)
+    
+    -- Simulasi klik mouse asli (Anti Token Block)
+    VirtualInputManager:SendMouseButtonEvent(clickPos.X, clickPos.Y, 0, true, game, 0)
+    task.wait(0.05)
+    VirtualInputManager:SendMouseButtonEvent(clickPos.X, clickPos.Y, 0, false, game, 0)
+    task.wait(0.05)
+    return true
+end
 
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
     pcall(function()
-        local pGui = Me.PlayerGui
-        if not pGui then return end
+        local pGui = Me:FindFirstChild("PlayerGui")
+        if not pGui then isHopping = false return end
         
-        local function getDescendants(parent)
-            local list = {}
-            for _, child in pairs(parent:GetChildren()) do
-                table.insert(list, child)
-                for _, desc in pairs(getDescendants(child)) do table.insert(list, desc) end
-            end
-            return list
-        end
-
-        -- 1. Cari tombol Server Browser (Biasanya ada tulisan "Server" atau di namanya "Server")
-        local browserBtn = nil
-        for _, obj in pairs(getDescendants(pGui)) do
-            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) then
-                local text = obj.Text or ""
-                local name = obj.Name or ""
-                if string.find(string.lower(text), "server") or string.find(string.lower(name), "server") then
-                    browserBtn = obj
-                    break
-                end
+        -- 1. Buka Menu Utama Game
+        local menuBtn = pGui:FindFirstChild("Main") and pGui.Main:FindFirstChild("MenuButton") or pGui.Main:FindFirstChild("Menu")
+        if menuBtn then ClickButton(menuBtn) task.wait(0.5) end
+        
+        -- 2. Cari dan klik tombol Server
+        local serverBtn = nil
+        for _, btn in pairs(pGui.Main:GetDescendants()) do
+            if btn:IsA("TextButton") and string.find(string.lower(btn.Text), "server") then
+                serverBtn = btn
+                break
             end
         end
-
-        if not browserBtn then
-            warn("[CatHUB] Tombol Server Browser tidak ditemukan!")
-            isHopping = false
-            return
-        end
-
-        -- Klik tombol buka UI Server
-        firesignal(browserBtn.MouseButton1Click)
-        task.wait(1.5)
-
-        -- 2. Cari server yang cocok (Tidak penuh, >2 pemain biar bukan bot)
+        
+        if not serverBtn then isHopping = false return end
+        ClickButton(serverBtn)
+        task.wait(1.5) -- Nunggu UI Server Browser muncul
+        
+        -- 3. Cari dan Scroll sampai nemu server yang valid
         local joined = false
-        for attempt = 1, 15 do -- Coba scroll 15 kali
-            for _, obj in pairs(getDescendants(pGui)) do
-                if obj:IsA("TextButton") and obj.Visible then
-                    local text = obj.Text or ""
-                    if string.find(string.lower(text), "join") then
-                        -- Cek jumlah pemain di sibling label (Biasanya format "X/Y")
-                        local parent = obj.Parent
-                        if parent then
-                            for _, sibling in pairs(parent:GetDescendants()) do
-                                if sibling:IsA("TextLabel") and sibling.Text then
-                                    local current, max = string.match(sibling.Text, "(%d+)/(%d+)")
-                                    if current and max then
-                                        current = tonumber(current)
-                                        max = tonumber(max)
-                                        -- Filter: Harus ada orang (>2), dan belum penuh
-                                        if current and max and current > 2 and current < max then
-                                            firesignal(obj.MouseButton1Click)
-                                            joined = true
-                                            break
-                                        end
+        for scrollAttempt = 1, 20 do
+            for _, btn in pairs(pGui.Main:GetDescendants()) do
+                if btn:IsA("TextButton") and btn.Visible and string.find(string.lower(btn.Text), "join") then
+                    local parent = btn.Parent
+                    if parent then
+                        for _, label in pairs(parent:GetDescendants()) do
+                            if label:IsA("TextLabel") then
+                                local current, max = string.match(label.Text, "(%d+)/(%d+)")
+                                if current and max then
+                                    current = tonumber(current)
+                                    max = tonumber(max)
+                                    -- Cari server yang ada orangnya (>2 pemain, biar bukan bot) dan belum penuh
+                                    if current and max and current > 2 and current < max then
+                                        ClickButton(btn)
+                                        joined = true
+                                        break
                                     end
                                 end
                             end
                         end
                     end
+                    if joined then break end
                 end
-                if joined then break end
             end
             
             if joined then break end
             
-            -- Scroll ke bawah kalau ga nemu
-            for _, obj in pairs(getDescendants(pGui)) do
-                if obj:IsA("ScrollingFrame") and obj.Visible then
-                    obj.CanvasPosition = Vector2.new(0, obj.CanvasPosition.Y + 300)
-                    break
-                end
-            end
+            -- Scroll ke bawah kalau server di atas penuh
+            VirtualInputManager:SendMouseWheelEvent(0, -3, false, game)
             task.wait(0.5)
         end
-
-        -- 3. Tutup UI Server kalau udah selesai/ketemu
+        
+        -- 4. Tutup UI kalau udah selesai
         if not joined then
-            for _, obj in pairs(getDescendants(pGui)) do
-                if obj:IsA("TextButton") and (string.find(string.lower(obj.Text), "close") or string.find(string.lower(obj.Text), "x")) then
-                    firesignal(obj.MouseButton1Click)
-                    break
-                end
-            end
+            local closeBtn = pGui.Main:FindFirstChild("Close") or pGui.Main:FindFirstChild("X")
+            if closeBtn then ClickButton(closeBtn) end
         end
     end)
     
-    task.wait(10) -- Cooldown abis klik join biar ga spam
+    task.wait(15) -- Cooldown abis klik Join biar ga spam
     isHopping = false
 end
 
