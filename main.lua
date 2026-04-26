@@ -1,23 +1,19 @@
--- CatHUB SUPREMACY v10.0: Loader
+-- CatHUB SUPREMACY v11.0: THE FINAL ARCHIVE
 _G.CatHUB_Loaded = true
 
-local function LoadFile(fileName)
-    local baseUrl = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/"
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(baseUrl .. fileName .. "?v=" .. math.random()))()
-    end)
-    if not success then 
-        warn("[CatHUB]: Failed to load " .. fileName .. " | Error: " .. tostring(result))
-    end
-    return result
+local function GetFile(name)
+    local url = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/"..name.."?v="..math.random()
+    local s, r = pcall(function() return loadstring(game:HttpGet(url))() end)
+    if not s then warn("[CatHUB]: Critical Error on "..name.." -> "..tostring(r)) end
+    return r
 end
 
--- Loading Order
-_G.UI_Lib = LoadFile("UI.lua")
-LoadFile("ESP.lua")
-LoadFile("Fruits.lua")
-LoadFile("Combat.lua")
-LoadFile("Farm.lua")
-LoadFile("Teleport.lua")
+-- LOADING SEQUENCE
+_G.UI_Lib = GetFile("UI.lua")
+GetFile("ESP.lua")
+GetFile("Fruits.lua")
+GetFile("Combat.lua")
+GetFile("Farm.lua")
+GetFile("Teleport.lua")
 
-print("[CatHUB]: Version 10.0 Fully Deployed.")
+print("[CatHUB]: v11.0 Reality Override Fully Deployed.")
