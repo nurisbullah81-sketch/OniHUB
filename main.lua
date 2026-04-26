@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: Core Engine (Target HUD Edition)
+-- CatHUB FREEMIUM: Core Engine (Precision Update)
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -13,16 +13,18 @@ local UI_Module = loadstring(game:HttpGet(UI_URL .. "?v=" .. math.random()))()
 
 local LockedTarget = nil
 
--- === TARGET HUD CONSTRUCTION ===
+-- === COMPACT COMBAT HUD ===
 local TargetHUD = Instance.new("Frame")
-TargetHUD.Size = UDim2.new(0, 200, 0, 35)
-TargetHUD.Position = UDim2.new(0.5, -100, 0, 50)
+TargetHUD.Size = UDim2.new(0, 160, 0, 26) -- Smaller, more compact
+TargetHUD.Position = UDim2.new(0.5, -80, 0, 40)
 TargetHUD.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 TargetHUD.BorderSizePixel = 0
 TargetHUD.Visible = false
 TargetHUD.Parent = CoreGui
-Instance.new("UICorner", TargetHUD).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", TargetHUD).Color = UI_Module.AccentColor
+Instance.new("UICorner", TargetHUD).CornerRadius = UDim.new(0, 4)
+local HUDStroke = Instance.new("UIStroke", TargetHUD)
+HUDStroke.Color = UI_Module.AccentColor
+HUDStroke.Thickness = 1
 
 local TargetLabel = Instance.new("TextLabel")
 TargetLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -30,19 +32,20 @@ TargetLabel.BackgroundTransparency = 1
 TargetLabel.Text = "LOCKED: NONE"
 TargetLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TargetLabel.Font = Enum.Font.SourceSansBold
-TargetLabel.TextSize = 13
+TargetLabel.TextSize = 11
 TargetLabel.Parent = TargetHUD
 
--- === PVP & PHYSICAL ENGINE ===
-local function GetClosestToMouse()
+-- === PVP LOGIC: PRECISION LOCK ===
+local function GetClosestToCursor()
     local target = nil
-    local shortestDist = math.huge
+    local shortestDist = 150 -- FOV Radius (Tighter)
+    
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.Humanoid.Health > 0 then
             local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
             if onScreen then
                 local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-                if dist < 150 then -- Radius penguncian
+                if dist < shortestDist then
                     target = player
                     shortestDist = dist
                 end
@@ -54,8 +57,9 @@ end
 
 RunService.RenderStepped:Connect(function()
     if UI_Module.Settings.LockAim_Enabled then
+        -- Sticky Logic Fix
         if not LockedTarget or not LockedTarget.Character or not LockedTarget.Character:FindFirstChild("HumanoidRootPart") or LockedTarget.Character.Humanoid.Health <= 0 then
-            LockedTarget = GetClosestToMouse()
+            LockedTarget = GetClosestToCursor()
         end
         
         if LockedTarget then
@@ -63,13 +67,15 @@ RunService.RenderStepped:Connect(function()
             TargetLabel.Text = "LOCKED: " .. LockedTarget.Name:upper()
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, LockedTarget.Character.HumanoidRootPart.Position)
         else
-            TargetHUD.Visible = false
+            TargetHUD.Visible = true
+            TargetLabel.Text = "AIM: SCANNING..."
         end
     else
         LockedTarget = nil
         TargetHUD.Visible = false
     end
     
+    -- Force Physical Overrides
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         local Hum = LocalPlayer.Character.Humanoid
         if UI_Module.Settings.FastRun_Enabled then Hum.WalkSpeed = UI_Module.Settings.Run_Speed end
@@ -80,4 +86,20 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- [Logika WalkWater, ESP Player, Fruit Finder, Auto Store tetap aktif]
+-- === FRUIT FINDER: DEBUG LOGS ===
+task.spawn(function()
+    while task.wait(5) do
+        if UI_Module.Settings.ESP_Enabled then
+            local found = false
+            for _, v in pairs(Workspace:GetChildren()) do
+                if (v:IsA("Tool") and v.Name:lower():find("fruit")) or (v:IsA("Model") and v.Name == "Fruit ") then
+                    found = true
+                    break
+                end
+            end
+            if not found then print("[CatHUB]: No fruits detected in workspace.") end
+        end
+    end
+end)
+
+-- [Logic WalkWater, ESP Player, Fruit ESP, Auto Store tetap aktif]
