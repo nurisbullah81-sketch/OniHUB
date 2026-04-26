@@ -1,6 +1,9 @@
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Me = _G.Cat.Player
 local Settings = _G.Cat.Settings
 
@@ -47,6 +50,7 @@ for _, o in pairs(Workspace:GetChildren()) do if IsF(o) then Add(o) end end
 Workspace.ChildAdded:Connect(function(o) task.wait(0.5) if IsF(o) then Add(o) end end)
 Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 
+-- ESP LOGIC
 RunService.RenderStepped:Connect(function()
     FC = FC + 1; if FC % SKIP ~= 0 then return end
     pcall(function()
@@ -62,7 +66,7 @@ RunService.RenderStepped:Connect(function()
     end)
 end)
 
--- SMOOTH TWEEN LOGIC (FIXED NO FALL)
+-- SMOOTH TWEEN LOGIC
 local fruitTween = nil
 
 local function GetNearestFruit()
@@ -76,7 +80,7 @@ local function GetNearestFruit()
 end
 
 task.spawn(function()
-    while task.wait(0.3) do -- Cek lebih cepat biar ga kaku
+    while task.wait(0.3) do
         pcall(function()
             if Settings.TweenFruit then
                 local nearest = GetNearestFruit()
@@ -85,21 +89,14 @@ task.spawn(function()
                     local pos = Pos(nearest)
                     if pos then
                         local dist = (pos - hrp.Position).Magnitude
-                        -- Stop kalau udah di atas buah (jarak 5 stud)
                         if dist > 5 then
                             if fruitTween then fruitTween:Cancel() end
-                            
-                            -- Kecepatan 250 studs/sec, halus dan anti-rubberband
                             local speed = 250 
                             local timeToTween = dist / speed
-                            
-                            -- RAHASIA FIX: Offset Y hanya 1.5 stud, karakter TIDAK JATUH, langsung nyentuh buah
                             local targetCFrame = CFrame.new(pos + Vector3.new(0, 1.5, 0)) 
-                            
                             fruitTween = TweenService:Create(hrp, TweenInfo.new(timeToTween, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
                             fruitTween:Play()
                         else
-                            -- Kalau udah deket, hentikan tween biar ga muter2
                             if fruitTween then fruitTween:Cancel(); fruitTween = nil end
                         end
                     end
@@ -113,6 +110,90 @@ task.spawn(function()
     end
 end)
 
+-- ==========================================
+-- AUTO STORE FRUITS (REDZHUB STYLE)
+-- ==========================================
+local StoreBlacklist = {} -- Buah yang gagal distore (misal udah punya/inventory penuh)
+
+local function GetFruitRealName(tool)
+    if not tool then return nil end
+    local fruitVal = tool:FindFirstChild("Fruit")
+    if fruitVal and fruitVal:IsA("StringValue") then
+        return fruitVal.Value -- Nama asli buah di Blox Fruits
+    end
+    return tool.Name
+end
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if Settings.AutoStoreFruit then
+            pcall(function()
+                local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+                if not remote then return end
+                
+                local function TryStore(tool)
+                    if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then
+                        if not table.find(StoreBlacklist, tool.Name) then
+                            local realName = GetFruitRealName(tool)
+                            local success = remote:InvokeServer("StoreFruit", realName, tool)
+                            if success ~= true then
+                                -- Gagal store = Inventory penuh atau udah punya
+                                table.insert(StoreBlacklist, tool.Name)
+                                if Settings.AutoHop then
+                                    task.wait(1)
+                                    _G.Cat.HopServer()
+                                end
+                            end
+                        end
+                    end
+                end
+
+                local backpack = Me.Backpack
+                local char = Me.Character
+                
+                if backpack then for _, tool in pairs(backpack:GetChildren()) do TryStore(tool) end end
+                if char then for _, tool in pairs(char:GetChildren()) do TryStore(tool) end end
+            end)
+        end
+    end
+end)
+
+-- ==========================================
+-- AUTO HOP SERVER (PINTER)
+-- ==========================================
+function _G.Cat.HopServer()
+    pcall(function()
+        local req = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        local servers = req.data
+        for _, s in pairs(servers) do
+            if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, Me)
+                break
+            end
+        end
+    end)
+end
+
+task.spawn(function()
+    while task.wait(10) do -- Cek tiap 10 detik
+        if Settings.AutoHop then
+            pcall(function()
+                local fruitCount = 0
+                for f, _ in pairs(Data) do
+                    if f and f.Parent then fruitCount = fruitCount + 1 end
+                end
+                
+                -- KALAU GA ADA BUAH DI MAP -> LANGSUNG HOP
+                if fruitCount == 0 then
+                    _G.Cat.HopServer()
+                end
+                -- KALAU ADA BUAH -> TUNGGU SAMPE DAPAT (JANGAN HOP)
+            end)
+        end
+    end
+end)
+
+-- EXPORT DAFTAR BUAH BIAR DIBACA STATUS.LUA
 function _G.Cat.GetFruitsList()
     local names = {}
     for f, _ in pairs(Data) do
