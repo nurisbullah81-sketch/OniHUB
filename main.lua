@@ -1,3 +1,5 @@
+local VirtualUser = game:GetService("VirtualUser")
+
 local function Load(file)
     local url = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/" .. file .. "?v=" .. math.random()
     local ok, r = pcall(function() return loadstring(game:HttpGet(url))() end)
@@ -5,15 +7,14 @@ local function Load(file)
     return r
 end
 
-local VirtualUser = game:GetService("VirtualUser")
+Load("StyleUI.lua")
+Load("Status.lua")
+Load("Devil_Fruits.lua")
+
+-- ANTI AFK SYSTEM (Paling aman, hook langsung ke signal Roblox)
 _G.Cat.Player.Idled:Connect(function()
     if _G.Cat.Settings.AntiAFK then
         VirtualUser:CaptureController()
         VirtualUser:ClickButton2(Vector2.new())
     end
 end)
-
-Load("StyleUI.lua")
-Load("Status.lua")
-Load("Devil_Fruits.lua")
-
