@@ -18,7 +18,6 @@ local UI = {
     }
 }
 
--- Save/Load Logic
 function UI:Save() pcall(function() writefile("CatHUB_Config.json", HttpService:JSONEncode(self.Settings)) end) end
 function UI:Load() 
     if isfile and isfile("CatHUB_Config.json") then 
@@ -34,45 +33,26 @@ ScreenGui.Name = "CatHUB_Freemium"
 local Main = Instance.new("Frame", ScreenGui)
 Main.Size = UDim2.new(0, 480, 0, 320)
 Main.Position = UDim2.new(0.5, -240, 0.5, -160)
-MainFrame = Main -- Global for drag
 Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 45)
 
--- Resize
-local Resizer = Instance.new("TextButton", Main)
-Resizer.Size = UDim2.new(0, 15, 0, 15)
-Resizer.Position = UDim2.new(1, -15, 1, -15)
-Resizer.BackgroundTransparency = 1
-Resizer.Text = ""
+local TopBar = Instance.new("Frame", Main)
+TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 6)
 
-local resizing = false
-Resizer.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then resizing = true end end)
-UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then resizing = false end end)
-UserInputService.InputChanged:Connect(function(i)
-    if resizing and i.UserInputType == Enum.UserInputType.MouseMovement then
-        local m = UserInputService:GetMouseLocation()
-        Main.Size = UDim2.new(0, math.max(400, m.X - Main.AbsolutePosition.X), 0, math.max(250, (m.Y-36) - Main.AbsolutePosition.Y))
-    end
-end)
+local Title = Instance.new("TextLabel", TopBar)
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Text = "CATHUB FREEMIUM"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 13
+Title.TextXAlignment = "Left"
+Title.BackgroundTransparency = 1
 
--- TopBar
-local Bar = Instance.new("Frame", Main)
-Bar.Size = UDim2.new(1, 0, 0, 30)
-Bar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Instance.new("UICorner", Bar).CornerRadius = UDim.new(0, 6)
-
-local Txt = Instance.new("TextLabel", Bar)
-Txt.Size = UDim2.new(1, -60, 1, 0)
-Txt.Position = UDim2.new(0, 15, 0, 0)
-Txt.Text = "CATHUB FREEMIUM"
-Txt.TextColor3 = Color3.fromRGB(255, 255, 255)
-Txt.Font = Enum.Font.SourceSansBold
-Txt.TextSize = 13
-Txt.TextXAlignment = Enum.TextXAlignment.Left
-Txt.BackgroundTransparency = 1
-
-local Close = Instance.new("TextButton", Bar)
+local Close = Instance.new("TextButton", TopBar)
 Close.Size = UDim2.new(0, 30, 0, 30)
 Close.Position = UDim2.new(1, -30, 0, 0)
 Close.Text = "X"
@@ -80,7 +60,23 @@ Close.TextColor3 = Color3.fromRGB(150, 150, 150)
 Close.BackgroundTransparency = 1
 Close.MouseButton1Click:Connect(function() UI.Visible = false Main.Visible = false end)
 
--- Modular Tab Engine
+-- Handle Resize
+local Resizer = Instance.new("TextButton", Main)
+Resizer.Size = UDim2.new(0, 15, 0, 15)
+Resizer.Position = UDim2.new(1, -15, 1, -15)
+Resizer.BackgroundTransparency = 1
+Resizer.Text = ""
+
+local isResizing = false
+Resizer.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = true end end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end end)
+UserInputService.InputChanged:Connect(function(i)
+    if isResizing and i.UserInputType == Enum.UserInputType.MouseMovement then
+        local m = UserInputService:GetMouseLocation()
+        Main.Size = UDim2.new(0, math.clamp(m.X - Main.AbsolutePosition.X, 350, 700), 0, math.clamp((m.Y-36) - Main.AbsolutePosition.Y, 200, 500))
+    end
+end)
+
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 120, 1, -40)
 Sidebar.Position = UDim2.new(0, 5, 0, 35)
@@ -96,12 +92,11 @@ Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 4)
 
 local Content = Instance.new("Frame", Main)
 Content.Size = UDim2.new(1, -135, 1, -40)
-ContentArea = Content -- Global
 Content.Position = UDim2.new(0, 130, 0, 35)
 Content.BackgroundTransparency = 1
 
 function UI:CreateTab(name)
-    local Container = Instance.new("ScrollingFrame", ContentArea)
+    local Container = Instance.new("ScrollingFrame", Content)
     Container.Size = UDim2.new(1, -10, 1, -10)
     Container.Position = UDim2.new(0, 5, 0, 5)
     Container.BackgroundTransparency = 1
@@ -110,7 +105,7 @@ function UI:CreateTab(name)
     Instance.new("UIListLayout", Container).Padding = UDim.new(0, 6)
 
     local B = Instance.new("TextButton", TabList)
-    B.Size = UDim2.new(1, 0, 0, 32)
+    B.Size = UDim2.new(1, 0, 0, 38)
     B.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     B.Text = name:upper()
     B.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -128,7 +123,6 @@ function UI:CreateTab(name)
     return Container
 end
 
--- Switches and Sliders
 function UI:CreateSwitch(parent, set, title, cb)
     local C = Instance.new("Frame", parent)
     C.Size = UDim2.new(1, 0, 0, 38)
@@ -187,7 +181,6 @@ function UI:CreateSlider(parent, set, title, min, max, cb)
     B.Size = UDim2.new(1, -24, 0, 4)
     B.Position = UDim2.new(0, 12, 0, 32)
     B.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    
     local F = Instance.new("Frame", B)
     F.Size = UDim2.new((self.Settings[set]-min)/(max-min), 0, 1, 0)
     F.BackgroundColor3 = self.AccentColor
