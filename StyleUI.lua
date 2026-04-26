@@ -1,4 +1,4 @@
--- CatHUB vFINAL PREMIUM: English UI, Search Bar, Dark Inner BG, Fixed Resizer
+-- CatHUB v12.0 FINAL: Global Search, All-Direction Drag, English UI
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,24 +12,17 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- ==========================================
--- PALETTE: WARNA SEMPURNA (Gelap Modern)
--- ==========================================
 local Theme = {
     MainBG      = Color3.fromRGB(10, 10, 10),   
     SideBG      = Color3.fromRGB(14, 14, 16),   
     TopBG       = Color3.fromRGB(10, 10, 10),
     TabOn       = Color3.fromRGB(38, 38, 42),   
     TabOff      = Color3.fromRGB(14, 14, 16),   
-    
-    -- FIX KOTAK DALAM: Hitam keabu-abuan modern yang lu suka
     PageBG      = Color3.fromRGB(17, 18, 22),   
-    
     CardBG      = Color3.fromRGB(28, 28, 32),   
     CardHov     = Color3.fromRGB(36, 36, 42),
     Text        = Color3.fromRGB(250, 250, 250),
     TextDim     = Color3.fromRGB(140, 140, 145),
-    
     ToggleOn    = Color3.fromRGB(138, 43, 226), 
     ToggleOff   = Color3.fromRGB(75, 75, 80),
     CatPurple   = Color3.fromRGB(160, 100, 255),
@@ -39,50 +32,48 @@ local Theme = {
 }
 
 -- ==========================================
--- WIDGET "Cat" & DRAG TRANSPARAN
+-- WIDGET "Cat" (FIX: ALL DIRECTION DRAG)
 -- ==========================================
 local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Size = UDim2.new(0, 70, 0, 40) 
-FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
+FloatCont.Size = UDim2.new(0, 60, 0, 60) -- Lebih gede buat area transparan sekeliling
+FloatCont.Position = UDim2.new(0, 20, 0.5, -30)
 FloatCont.BackgroundTransparency = 1
 FloatCont.ZIndex = 99999 
 
 local FloatBtn = Instance.new("TextButton", FloatCont)
-FloatBtn.Size = UDim2.new(0, 40, 1, 0)
-FloatBtn.Position = UDim2.new(0, 30, 0, 0) 
-FloatBtn.BackgroundColor3 = Theme.CardBG
+FloatBtn.Size = UDim2.new(0, 45, 0, 45)
+FloatBtn.Position = UDim2.new(0.5, -22, 0.5, -22) -- Center di dalem kontainer
+FloatBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+FloatBtn.BackgroundTransparency = 0.3
 FloatBtn.Text = "Cat"
 FloatBtn.TextColor3 = Theme.CatPurple 
 FloatBtn.Font = Enum.Font.GothamBold 
 FloatBtn.TextSize = 16
 FloatBtn.BorderSizePixel = 0
 FloatBtn.AutoButtonColor = false
-Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
-local FloatStroke = Instance.new("UIStroke", FloatBtn)
-FloatStroke.Color = Theme.Line
+Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 12)
+Instance.new("UIStroke", FloatBtn).Color = Theme.Line
 
-local FloatDrag = Instance.new("TextButton", FloatCont)
-FloatDrag.Size = UDim2.new(0, 30, 1, 0)
-FloatDrag.Position = UDim2.new(0, 0, 0, 0)
-FloatDrag.BackgroundTransparency = 1 
-FloatDrag.Text = ""
-
-local draggingFloat, dragStartFloat, startPosFloat
-FloatDrag.InputBegan:Connect(function(input)
+-- LOGIC DRAG (Lancar di seluruh kontainer transparan)
+local draggingFloat = false
+local dragStartMouse, dragStartPosFloat
+FloatCont.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         draggingFloat = true
-        dragStartFloat = input.Position
-        startPosFloat = FloatCont.Position
+        dragStartMouse = UserInput:GetMouseLocation()
+        dragStartPosFloat = FloatCont.Position
     end
-end)
-FloatDrag.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingFloat = false end
 end)
 UserInput.InputChanged:Connect(function(input)
     if draggingFloat and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStartFloat
-        FloatCont.Position = UDim2.new(startPosFloat.X.Scale, startPosFloat.X.Offset + delta.X, startPosFloat.Y.Scale, startPosFloat.Y.Offset + delta.Y)
+        local delta = UserInput:GetMouseLocation() - dragStartMouse
+        FloatCont.Position = UDim2.new(dragStartPosPosFloatX, dragStartPosFloat.X.Offset + delta.X, 0.5, dragStartPosFloat.Y.Offset + delta.Y)
+        -- Fallback manual offset for easier control
+        FloatCont.Position = UDim2.new(dragStartPosFloat.X.Scale, dragStartPosFloat.X.Offset + delta.X, dragStartPosFloat.Y.Scale, dragStartPosFloat.Y.Offset + delta.Y)
     end
+end)
+UserInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingFloat = false end
 end)
 
 -- ==========================================
@@ -93,12 +84,9 @@ Main.Size = UDim2.new(0, 550, 0, 340)
 Main.Position = UDim2.new(0.5, -275, 0.5, -170)
 Main.BackgroundColor3 = Theme.MainBG
 Main.BorderSizePixel = 0
-Main.ClipsDescendants = true 
 Main.Visible = true 
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
-local MainStroke = Instance.new("UIStroke", Main)
-MainStroke.Color = Theme.Line
-MainStroke.Thickness = 1
+Instance.new("UIStroke", Main).Color = Theme.Line
 
 FloatBtn.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
@@ -111,381 +99,133 @@ Top.BackgroundColor3 = Theme.TopBG
 Top.BorderSizePixel = 0
 Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 6)
 
-local TopFix = Instance.new("Frame", Top)
-TopFix.Size = UDim2.new(1, 0, 0, 10)
-TopFix.Position = UDim2.new(0, 0, 1, -10)
-TopFix.BackgroundColor3 = Theme.TopBG
-TopFix.BorderSizePixel = 0
-
 local TitleContainer = Instance.new("Frame", Top)
 TitleContainer.Size = UDim2.new(0, 350, 1, 0)
 TitleContainer.Position = UDim2.new(0, 15, 0, 0)
 TitleContainer.BackgroundTransparency = 1
-
 local TitleList = Instance.new("UIListLayout", TitleContainer)
-TitleList.FillDirection = Enum.FillDirection.Horizontal
-TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
-TitleList.Padding = UDim.new(0, 4) 
+TitleList.FillDirection = "Horizontal"; TitleList.VerticalAlignment = "Center"; TitleList.Padding = UDim.new(0, 4)
 
-local function CreateTitlePart(text, color, font)
-    local label = Instance.new("TextLabel", TitleContainer)
-    label.Text = text
-    label.TextColor3 = color
-    label.Font = font
-    label.TextSize = 13
-    label.BackgroundTransparency = 1
-    label.AutomaticSize = Enum.AutomaticSize.XY
+local function AddTitle(txt, col, font)
+    local l = Instance.new("TextLabel", TitleContainer)
+    l.Text = txt; l.TextColor3 = col; l.Font = font; l.TextSize = 13; l.BackgroundTransparency = 1; l.AutomaticSize = "XY"
 end
+AddTitle("CatHUB", Theme.CatPurple, "GothamBold")
+AddTitle("Blox Fruits", Theme.Text, "GothamMedium")
+AddTitle("[Freemium]", Theme.Gold, "GothamMedium")
 
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
-CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium)
-CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium) 
-
+-- Control Buttons
 local BtnX = Instance.new("TextButton", Top)
-BtnX.Size = UDim2.new(0, 35, 0, 35)
-BtnX.Position = UDim2.new(1, -35, 0, 0)
-BtnX.Text = "X" 
-BtnX.TextColor3 = Theme.TextDim
-BtnX.BackgroundTransparency = 1
-BtnX.Font = Enum.Font.Gotham
-BtnX.TextSize = 15
-BtnX.AutoButtonColor = false
+BtnX.Size = UDim2.new(0, 35, 0, 35); BtnX.Position = UDim2.new(1, -35, 0, 0); BtnX.Text = "X"; BtnX.TextColor3 = Theme.TextDim; BtnX.BackgroundTransparency = 1; BtnX.Font = "GothamBold"; BtnX.AutoButtonColor = false
+BtnX.MouseButton1Click:Connect(function() Main.Visible = false end)
 
-local BtnM = Instance.new("TextButton", Top)
-BtnM.Size = UDim2.new(0, 35, 0, 35)
-BtnM.Position = UDim2.new(1, -70, 0, 0)
-BtnM.Text = "—"
-BtnM.TextColor3 = Theme.TextDim
-BtnM.BackgroundTransparency = 1
-BtnM.Font = Enum.Font.GothamBold
-BtnM.TextSize = 13
-BtnM.AutoButtonColor = false
-
-BtnX.MouseEnter:Connect(function() TweenService:Create(BtnX, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(255, 80, 80)}):Play() end)
-BtnX.MouseLeave:Connect(function() TweenService:Create(BtnX, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play() end)
-BtnM.MouseEnter:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.Text}):Play() end)
-BtnM.MouseLeave:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play() end)
-
-BtnX.MouseButton1Click:Connect(function()
-    Main.Visible = false
-end)
-
-local isMin = false
-local lastSize = Main.Size
-BtnM.MouseButton1Click:Connect(function()
-    isMin = not isMin
-    if isMin then
-        lastSize = Main.Size
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, Main.Size.X.Offset, 0, 35)}):Play()
-    else
-        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = lastSize}):Play()
-    end
-end)
-
-local draggingMain, dragStartMain, startPosMain
-Top.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingMain = true
-        dragStartMain = input.Position
-        startPosMain = Main.Position
-    end
-end)
-Top.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingMain = false end end)
-UserInput.InputChanged:Connect(function(input)
-    if draggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStartMain
-        Main.Position = UDim2.new(startPosMain.X.Scale, startPosMain.X.Offset + delta.X, startPosMain.Y.Scale, startPosMain.Y.Offset + delta.Y)
-    end
-end)
-
--- ==========================================
--- RESIZER (FIXED 100%)
--- ==========================================
+-- Resizer
 local Resizer = Instance.new("TextButton", Main)
-Resizer.Size = UDim2.new(0, 20, 0, 20)
-Resizer.Position = UDim2.new(1, -20, 1, -20)
-Resizer.BackgroundTransparency = 1
-Resizer.Text = "⌟"
-Resizer.TextColor3 = Theme.TextDim
-Resizer.TextSize = 16
-Resizer.Font = Enum.Font.Gotham
-Resizer.ZIndex = 50
-Resizer.AutoButtonColor = false
-
+Resizer.Size = UDim2.new(0, 20, 0, 20); Resizer.Position = UDim2.new(1, -20, 1, -20); Resizer.BackgroundTransparency = 1; Resizer.Text = "⌟"; Resizer.TextColor3 = Theme.TextDim; Resizer.ZIndex = 50
 local isResizing = false
 local resizeStartPos, startSizeR
-
 Resizer.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then
-        isResizing = true
-        resizeStartPos = UserInput:GetMouseLocation()
-        startSizeR = Main.Size
-    end
-end)
-
-UserInput.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isResizing = false
+        isResizing = true; resizeStartPos = UserInput:GetMouseLocation(); startSizeR = Main.Size
     end
 end)
-
 UserInput.InputChanged:Connect(function(input)
     if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = UserInput:GetMouseLocation() - resizeStartPos
-        local newX = math.clamp(startSizeR.X.Offset + delta.X, 480, 900)
-        local newY = math.clamp(startSizeR.Y.Offset + delta.Y, 280, 700)
-        Main.Size = UDim2.new(0, newX, 0, newY)
-        lastSize = Main.Size
+        local d = UserInput:GetMouseLocation() - resizeStartPos
+        Main.Size = UDim2.new(0, math.clamp(startSizeR.X.Offset + d.X, 480, 900), 0, math.clamp(startSizeR.Y.Offset + d.Y, 280, 700))
     end
 end)
+UserInput.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end end)
 
--- ==========================================
--- DYNAMIC SIDEBAR, SEARCH & KONTEN
--- ==========================================
-local ContentContainer = Instance.new("Frame", Main)
-ContentContainer.Size = UDim2.new(1, 0, 1, -35)
-ContentContainer.Position = UDim2.new(0, 0, 0, 35)
-ContentContainer.BackgroundTransparency = 1
+-- Sidebar & Content
+local Side = Instance.new("Frame", Main)
+Side.Size = UDim2.new(0, 150, 1, -35); Side.Position = UDim2.new(0, 0, 0, 35); Side.BackgroundColor3 = Theme.SideBG; Side.BorderSizePixel = 0
 
-local Side = Instance.new("Frame", ContentContainer)
-Side.Size = UDim2.new(0.28, 0, 1, 0)
-Side.BackgroundColor3 = Theme.SideBG
-Side.BorderSizePixel = 0
-
-local SideLine = Instance.new("Frame", Side)
-SideLine.Size = UDim2.new(0, 1, 1, 0)
-SideLine.Position = UDim2.new(1, -1, 0, 0)
-SideLine.BackgroundColor3 = Theme.Line
-SideLine.BorderSizePixel = 0
-
--- UI SEARCH BAR (Modern & No Emoji)
 local SearchFrame = Instance.new("Frame", Side)
-SearchFrame.Size = UDim2.new(1, -16, 0, 30)
-SearchFrame.Position = UDim2.new(0, 8, 0, 10)
-SearchFrame.BackgroundColor3 = Theme.CardBG
-SearchFrame.BorderSizePixel = 0
+SearchFrame.Size = UDim2.new(1, -16, 0, 30); SearchFrame.Position = UDim2.new(0, 8, 0, 10); SearchFrame.BackgroundColor3 = Theme.CardBG
 Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 6)
-local SearchStroke = Instance.new("UIStroke", SearchFrame)
-SearchStroke.Color = Theme.Line
-
 local SearchBox = Instance.new("TextBox", SearchFrame)
-SearchBox.Size = UDim2.new(1, -16, 1, 0)
-SearchBox.Position = UDim2.new(0, 8, 0, 0)
-SearchBox.BackgroundTransparency = 1
-SearchBox.Text = ""
-SearchBox.PlaceholderText = "Search..."
-SearchBox.TextColor3 = Theme.Text
-SearchBox.PlaceholderColor3 = Theme.TextDim
-SearchBox.Font = Enum.Font.GothamMedium
-SearchBox.TextSize = 12
-SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+SearchBox.Size = UDim2.new(1, -10, 1, 0); SearchBox.Position = UDim2.new(0, 5, 0, 0); SearchBox.BackgroundTransparency = 1; SearchBox.PlaceholderText = "Search..."; SearchBox.Text = ""; SearchBox.TextColor3 = Theme.Text; SearchBox.TextSize = 12; SearchBox.Font = "Gotham"
 
--- Sidebar Scroll diturunin dikit buat ngasih ruang ke Search Bar
 local SideScroll = Instance.new("ScrollingFrame", Side)
-SideScroll.Size = UDim2.new(1, 0, 1, -50)
-SideScroll.Position = UDim2.new(0, 0, 0, 50)
-SideScroll.BackgroundTransparency = 1
-SideScroll.ScrollBarThickness = 0
-SideScroll.BorderSizePixel = 0
+SideScroll.Size = UDim2.new(1, 0, 1, -50); SideScroll.Position = UDim2.new(0, 0, 0, 50); SideScroll.BackgroundTransparency = 1; SideScroll.ScrollBarThickness = 0
+Instance.new("UIListLayout", SideScroll).Padding = UDim.new(0, 4)
+Instance.new("UIPadding", SideScroll).PaddingLeft = UDim.new(0, 8); Instance.new("UIPadding", SideScroll).PaddingRight = UDim.new(0, 8)
 
-local SideList = Instance.new("UIListLayout", SideScroll)
-SideList.Padding = UDim.new(0, 4)
-local SidePad = Instance.new("UIPadding", SideScroll)
-SidePad.PaddingTop = UDim.new(0, 0)
-SidePad.PaddingLeft = UDim.new(0, 8)
-SidePad.PaddingRight = UDim.new(0, 8)
-
-local ContentArea = Instance.new("Frame", ContentContainer)
-ContentArea.Size = UDim2.new(0.72, 0, 1, 0)
-ContentArea.Position = UDim2.new(0.28, 0, 0, 0)
-ContentArea.BackgroundTransparency = 1
+local ContentArea = Instance.new("Frame", Main)
+ContentArea.Size = UDim2.new(1, -150, 1, -35); ContentArea.Position = UDim2.new(0, 150, 0, 35); ContentArea.BackgroundTransparency = 1
 
 local Pages = {}
-local AllToggles = {} -- Buat nyimpan data fungsi Search
+local AllFitur = {}
 
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton", SideScroll)
-    Btn.Size = UDim2.new(1, 0, 0, 32)
-    Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff 
-    Btn.Text = "    " .. name
-    Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim
-    Btn.Font = Enum.Font.GothamMedium
-    Btn.TextSize = 12
-    Btn.BorderSizePixel = 0
-    Btn.TextXAlignment = Enum.TextXAlignment.Left
-    Btn.AutoButtonColor = false
+    Btn.Size = UDim2.new(1, 0, 0, 32); Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff; Btn.Text = "  " .. name; Btn.TextColor3 = Theme.Text; Btn.Font = "GothamMedium"; Btn.TextSize = 12; Btn.AutoButtonColor = false; Btn.TextXAlignment = "Left"
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
-    local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Color = Theme.Line
-    BtnStroke.Thickness = 1
-    BtnStroke.Transparency = isFirst and 0 or 0.5 
-    
-    local Indicator = Instance.new("Frame", Btn)
-    Indicator.Size = UDim2.new(0, 3, 0, 14)
-    Indicator.Position = UDim2.new(0, 4, 0.5, -7)
-    Indicator.BackgroundColor3 = Theme.Accent
-    Indicator.BorderSizePixel = 0
-    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
-    Indicator.Visible = isFirst
-    
-    Btn.MouseEnter:Connect(function()
-        if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play() end
-    end)
-    Btn.MouseLeave:Connect(function()
-        if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.TabOff}):Play() end
-    end)
-    
     local Page = Instance.new("ScrollingFrame", ContentArea)
-    Page.Size = UDim2.new(1, -16, 1, -16) 
-    Page.Position = UDim2.new(0, 8, 0, 8) 
-    Page.BackgroundColor3 = Theme.PageBG 
-    Page.BackgroundTransparency = 0 
-    Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Theme.TextDim 
-    Page.Visible = isFirst
-    Page.BorderSizePixel = 0
+    Page.Size = UDim2.new(1, -16, 1, -16); Page.Position = UDim2.new(0, 8, 0, 8); Page.BackgroundColor3 = Theme.PageBG; Page.Visible = isFirst; Page.ScrollBarThickness = 0; Page.BorderSizePixel = 0
     Instance.new("UICorner", Page).CornerRadius = UDim.new(0, 6)
-    
-    local PageStroke = Instance.new("UIStroke", Page)
-    PageStroke.Color = Theme.Line
-    PageStroke.Thickness = 1
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 6)
+    Instance.new("UIPadding", Page).PaddingTop = UDim.new(0, 10); Instance.new("UIPadding", Page).PaddingLeft = UDim.new(0, 10); Instance.new("UIPadding", Page).PaddingRight = UDim.new(0, 10)
 
-    local List = Instance.new("UIListLayout", Page)
-    List.Padding = UDim.new(0, 6) 
-    local Pad = Instance.new("UIPadding", Page)
-    Pad.PaddingTop = UDim.new(0, 10)
-    Pad.PaddingLeft = UDim.new(0, 10)
-    Pad.PaddingRight = UDim.new(0, 14) 
-    Pad.PaddingBottom = UDim.new(0, 10)
-    
-    Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator, Stroke = BtnStroke}
-    
+    Pages[name] = {Btn = Btn, Page = Page}
     Btn.MouseButton1Click:Connect(function()
-        for tName, data in pairs(Pages) do
-            local active = (tName == name)
-            data.Page.Visible = active
-            data.Ind.Visible = active
-            
-            TweenService:Create(data.Btn, TweenInfo.new(0.15), {
-                BackgroundColor3 = active and Theme.TabOn or Theme.TabOff,
-                TextColor3 = active and Theme.Text or Theme.TextDim
-            }):Play()
-            
-            TweenService:Create(data.Stroke, TweenInfo.new(0.15), {
-                Transparency = active and 0 or 0.5
-            }):Play()
-        end
+        for k, v in pairs(Pages) do v.Page.Visible = (k == name); v.Btn.BackgroundColor3 = (k == name) and Theme.TabOn or Theme.TabOff end
     end)
-    
     return Page
 end
 
-local function CreateSection(parent, text)
-    local F = Instance.new("Frame", parent)
-    F.Size = UDim2.new(1, 0, 0, 24) 
-    F.BackgroundTransparency = 1
-    
-    local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, 0, 1, 0)
-    L.Position = UDim2.new(0, 4, 0, 0)
-    L.Text = text
-    L.TextColor3 = Theme.TextDim
-    L.Font = Enum.Font.GothamBold
-    L.TextSize = 11 
-    L.TextXAlignment = Enum.TextXAlignment.Left
-    L.BackgroundTransparency = 1
-end
-
-local function CreateToggle(parent, text, stateRef, callback)
+local function CreateToggle(parent, tabName, text, callback)
     local F = Instance.new("TextButton", parent)
-    F.Size = UDim2.new(1, 0, 0, 36)
-    F.BackgroundColor3 = Theme.CardBG
-    F.BorderSizePixel = 0
-    F.Text = ""
-    F.AutoButtonColor = false
+    F.Size = UDim2.new(1, 0, 0, 36); F.BackgroundColor3 = Theme.CardBG; F.Text = ""; F.AutoButtonColor = false
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
-    
-    local Stroke = Instance.new("UIStroke", F)
-    Stroke.Color = Theme.Line
-    Stroke.Thickness = 1
-    
     local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -60, 1, 0)
-    L.Position = UDim2.new(0, 12, 0, 0)
-    L.Text = text
-    L.TextColor3 = Theme.Text
-    L.Font = Enum.Font.GothamMedium
-    L.TextSize = 12
-    L.TextXAlignment = Enum.TextXAlignment.Left
-    L.BackgroundTransparency = 1
-    
+    L.Size = UDim2.new(1, -50, 1, 0); L.Position = UDim2.new(0, 12, 0, 0); L.Text = text; l.TextColor3 = Theme.Text; L.Font = "Gotham"; L.TextSize = 12; L.BackgroundTransparency = 1; L.TextXAlignment = "Left"
     local Sw = Instance.new("Frame", F)
-    Sw.Size = UDim2.new(0, 36, 0, 18)
-    Sw.Position = UDim2.new(1, -48, 0.5, -9)
-    Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
-    Sw.BorderSizePixel = 0
-    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0) 
-    
+    Sw.Size = UDim2.new(0, 34, 0, 18); Sw.Position = UDim2.new(1, -44, 0.5, -9); Sw.BackgroundColor3 = Theme.ToggleOff
+    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
     local Dot = Instance.new("Frame", Sw)
-    Dot.Size = UDim2.new(0, 14, 0, 14)
-    Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Dot.BorderSizePixel = 0
-    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0) 
+    Dot.Size = UDim2.new(0, 14, 0, 14); Dot.Position = UDim2.new(0, 2, 0.5, -7); Dot.BackgroundColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
     
-    F.MouseEnter:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play() end)
-    F.MouseLeave:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardBG}):Play() end)
-    
+    local state = false
     F.MouseButton1Click:Connect(function()
-        stateRef = not stateRef
-        TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play()
-        TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
-        if callback then callback(stateRef) end
+        state = not state
+        TweenService:Create(Sw, TweenInfo.new(0.2), {BackgroundColor3 = state and Theme.Accent or Theme.ToggleOff}):Play()
+        TweenService:Create(Dot, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
+        callback(state)
     end)
-    
-    table.insert(AllToggles, {Btn = F, Label = L})
+    table.insert(AllFitur, {Obj = F, Name = text:lower(), Tab = tabName})
 end
 
--- ==========================================
--- LOGIC SEARCH BAR
--- ==========================================
+-- Global Search Logic
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local query = string.lower(SearchBox.Text)
-    for _, toggle in ipairs(AllToggles) do
-        local text = string.lower(toggle.Label.Text)
-        if query == "" or string.find(text, query) then
-            toggle.Btn.Visible = true
+    local s = SearchBox.Text:lower()
+    for _, v in pairs(AllFitur) do
+        if v.Name:find(s) then
+            v.Obj.Visible = true
+            -- Auto switch tab if searching specific
+            if s ~= "" and v.Name == s then
+                Pages[v.Tab].Btn.MouseButton1Click:Fire()
+            end
         else
-            toggle.Btn.Visible = false
+            v.Obj.Visible = false
         end
     end
 end)
 
--- ==========================================
--- BUILD TABS (ENGLISH UI)
--- ==========================================
-local StatusTab = CreateTab("Status", true) 
-local DevilFruitsTab = CreateTab("Devil Fruits", false) 
-local MiscTab = CreateTab("Misc", false) 
+-- Build
+local Status = CreateTab("Status", true)
+local Fruits = CreateTab("Devil Fruits", false)
+local Misc = CreateTab("Misc", false)
 
-CreateSection(StatusTab, "PLAYER STATUS")
-CreateToggle(StatusTab, "Show Player Stats", false, function(state)
-    -- Logic 
-end)
+CreateToggle(Status, "Status", "Show Player Stats", function() end)
+CreateToggle(Fruits, "Devil Fruits", "Fruit ESP (Text Only)", function() end)
+CreateToggle(Misc, "Misc", "Auto Rejoin", function() end)
 
-CreateSection(DevilFruitsTab, "DEVIL FRUITS")
-CreateToggle(DevilFruitsTab, "Fruit ESP (Text Only)", false, function(state)
-    -- Logic 
-end)
-CreateToggle(DevilFruitsTab, "Chest ESP", false, function(state)
-    -- Logic 
-end)
-
-CreateSection(MiscTab, "MISCELLANEOUS")
-CreateToggle(MiscTab, "Auto Rejoin", false, function(state)
-    -- Logic
-end)
-CreateToggle(MiscTab, "Anti AFK", false, function(state)
-    -- Logic
-end)
+-- Drag Main
+local dragM = false; local dragSM, startPM
+Top.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragM = true; dragSM = UserInput:GetMouseLocation(); startPM = Main.Position end end)
+UserInput.InputChanged:Connect(function(input) if dragM and input.UserInputType == Enum.UserInputType.MouseMovement then local d = UserInput:GetMouseLocation() - dragSM; Main.Position = UDim2.new(startPM.X.Scale, startPM.X.Offset + d.X, startPM.Y.Scale, startPM.Y.Offset + d.Y) end end)
+UserInput.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragM = false end end)
