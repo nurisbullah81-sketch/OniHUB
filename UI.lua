@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: UI Module (Auto-Save & Load Edition)
+-- CatHUB FREEMIUM: Master UI (Precision Update)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -28,46 +28,34 @@ local UI_Lib = {
     }
 }
 
--- === DATA PERSISTENCE ===
 function UI_Lib:SaveSettings()
-    if writefile then
-        writefile(ConfigFile, HttpService:JSONEncode(self.Settings))
-    end
+    if writefile then pcall(function() writefile(ConfigFile, HttpService:JSONEncode(self.Settings)) end) end
 end
 
 function UI_Lib:LoadSettings()
     if isfile and isfile(ConfigFile) then
-        local success, decoded = pcall(function()
-            return HttpService:JSONDecode(readfile(ConfigFile))
-        end)
-        if success then
-            for k, v in pairs(decoded) do
-                UI_Lib.Settings[k] = v
-            end
-        end
+        local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(ConfigFile)) end)
+        if success then for k, v in pairs(decoded) do UI_Lib.Settings[k] = v end end
     end
 end
 
 UI_Lib:LoadSettings()
 
--- === UI CONSTRUCTION ===
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CatHUB_Freemium"
 ScreenGui.Parent = CoreGui
 UI_Lib.MainGui = ScreenGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 480, 0, 340)
-MainFrame.Position = UDim2.new(0.5, -240, 0.5, -170)
+MainFrame.Size = UDim2.new(0, 450, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
 MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
-local Stroke = Instance.new("UIStroke", MainFrame)
-Stroke.Color = Color3.fromRGB(40, 40, 40)
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(40, 40, 40)
 
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 30)
