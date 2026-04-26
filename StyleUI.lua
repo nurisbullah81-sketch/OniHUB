@@ -1,4 +1,4 @@
--- CatHUB vFINAL: Rollback Stabil, Perfect Right Tab Contrast, Off-Screen Drag
+-- CatHUB v13 FINAL: Rollback Drag Stabil & Fix Tab Kiri 100%
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -13,45 +13,41 @@ Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- ==========================================
--- PALETTE KONTRAS TINGGI 
+-- THEME: FOKUS TAB KIRI BIAR BEDA SAMA BACKGROUND
 -- ==========================================
 local Theme = {
-    MainBG      = Color3.fromRGB(10, 10, 10),   -- BACKGROUND UTAMA: Sangat Hitam
-    SideBG      = Color3.fromRGB(15, 15, 16),   -- Sidebar Kiri
+    MainBG      = Color3.fromRGB(10, 10, 10),   
+    SideBG      = Color3.fromRGB(12, 12, 12),   -- Sidebar kiri (Hitam Pekat)
+    
+    TabOn       = Color3.fromRGB(38, 38, 42),   -- Tab Kiri Aktif (Terang)
+    TabOff      = Color3.fromRGB(22, 22, 24),   -- Tab Kiri Mati (Beda jelas sama SideBG, ga nyatu!)
+    
     TopBG       = Color3.fromRGB(10, 10, 10),
-    TabOn       = Color3.fromRGB(38, 38, 42),   -- Tab Kiri Aktif
-    TabOff      = Color3.fromRGB(15, 15, 16),   -- Tab Kiri Mati
-    
-    -- FIX UTAMA: KOTAK KANAN (Devil Fruits/Status) dibikin jauh lebih terang dari background!
-    PageBG      = Color3.fromRGB(28, 28, 32),   
-    
-    CardBG      = Color3.fromRGB(38, 38, 44),   -- Kotak Toggle
-    CardHov     = Color3.fromRGB(46, 46, 52),
-    Text        = Color3.fromRGB(250, 250, 250),
-    TextDim     = Color3.fromRGB(150, 150, 155),
-    
+    PageBG      = Color3.fromRGB(18, 18, 20),   -- Kotak Kanan
+    CardBG      = Color3.fromRGB(28, 28, 32),   
+    CardHov     = Color3.fromRGB(36, 36, 42),
+    Text        = Color3.fromRGB(245, 245, 245),
+    TextDim     = Color3.fromRGB(140, 140, 145),
     ToggleOn    = Color3.fromRGB(138, 43, 226), 
-    ToggleOff   = Color3.fromRGB(90, 90, 95),
-    
-    CatPurple   = Color3.fromRGB(160, 100, 255),-- Ungu CatHUB
-    Gold        = Color3.fromRGB(255, 200, 50), -- Emas Freemium
+    ToggleOff   = Color3.fromRGB(75, 75, 80),
+    CatPurple   = Color3.fromRGB(160, 100, 255),
+    Gold        = Color3.fromRGB(255, 200, 50), 
     Accent      = Color3.fromRGB(138, 43, 226), 
-    Line        = Color3.fromRGB(45, 45, 50)    -- Garis Batas
+    Line        = Color3.fromRGB(40, 40, 45)    
 }
 
 -- ==========================================
--- WIDGET "Cat" & DRAG TRANSPARAN (Bisa diumpetin ke luar layar)
+-- WIDGET "Cat" & DRAG TRANSPARAN (VERSI STABIL ANTI-MACET)
 -- ==========================================
 local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Size = UDim2.new(0, 70, 0, 40) -- 30px Grip Transparan + 40px Tombol "Cat"
+FloatCont.Size = UDim2.new(0, 65, 0, 40) 
 FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
 FloatCont.BackgroundTransparency = 1
 FloatCont.ZIndex = 99999 
 
--- Tombol Solid "Cat" (Di sebelah kanan)
 local FloatBtn = Instance.new("TextButton", FloatCont)
-FloatBtn.Size = UDim2.new(0, 40, 1, 0)
-FloatBtn.Position = UDim2.new(0, 30, 0, 0) -- Digeser 30px
+FloatBtn.Size = UDim2.new(0, 40, 0, 40) 
+FloatBtn.Position = UDim2.new(0, 25, 0, 0) 
 FloatBtn.BackgroundColor3 = Theme.CardBG
 FloatBtn.Text = "Cat"
 FloatBtn.TextColor3 = Theme.CatPurple 
@@ -63,14 +59,14 @@ Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
 local FloatStroke = Instance.new("UIStroke", FloatBtn)
 FloatStroke.Color = Theme.Line
 
--- Grip Transparan 100% (Di sebelah kiri tombol "Cat")
+-- Area Transparan 100% buat narik kotak Cat (Samping kiri)
 local FloatDrag = Instance.new("TextButton", FloatCont)
-FloatDrag.Size = UDim2.new(0, 30, 1, 0)
+FloatDrag.Size = UDim2.new(0, 25, 1, 0)
 FloatDrag.Position = UDim2.new(0, 0, 0, 0)
-FloatDrag.BackgroundTransparency = 1 -- GAK KELIHATAN SAMA SEKALI
+FloatDrag.BackgroundTransparency = 1 -- Gak kelihatan
 FloatDrag.Text = ""
 
--- Logic Drag Float (Versi Mulus, gak macet)
+-- LOGIC DRAG WIDGET (Rollback ke versi mulus)
 local draggingFloat, dragStartFloat, startPosFloat
 FloatDrag.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -85,7 +81,6 @@ end)
 UserInput.InputChanged:Connect(function(input)
     if draggingFloat and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStartFloat
-        -- Membiarkan nilai X & Y tembus luar layar biar bisa disembunyiin
         FloatCont.Position = UDim2.new(startPosFloat.X.Scale, startPosFloat.X.Offset + delta.X, startPosFloat.Y.Scale, startPosFloat.Y.Offset + delta.Y)
     end
 end)
@@ -122,7 +117,6 @@ TopFix.Position = UDim2.new(0, 0, 1, -10)
 TopFix.BackgroundColor3 = Theme.TopBG
 TopFix.BorderSizePixel = 0
 
--- TITLE CUSTOM: CatHUB (Ungu), Blox Fruits (Putih), Freemium (Emas)
 local TitleContainer = Instance.new("Frame", Top)
 TitleContainer.Size = UDim2.new(0, 350, 1, 0)
 TitleContainer.Position = UDim2.new(0, 15, 0, 0)
@@ -133,7 +127,7 @@ TitleList.FillDirection = Enum.FillDirection.Horizontal
 TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
 TitleList.Padding = UDim.new(0, 4) 
 
-local function CreateTitlePart(text, color, font)
+local function CreateTitlePart(text, color, font, order)
     local label = Instance.new("TextLabel", TitleContainer)
     label.Text = text
     label.TextColor3 = color
@@ -141,11 +135,12 @@ local function CreateTitlePart(text, color, font)
     label.TextSize = 13
     label.BackgroundTransparency = 1
     label.AutomaticSize = Enum.AutomaticSize.XY
+    label.LayoutOrder = order
 end
 
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
-CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium)
-CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium) 
+CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold, 1) 
+CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium, 2)
+CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium, 3) 
 
 local BtnX = Instance.new("TextButton", Top)
 BtnX.Size = UDim2.new(0, 35, 0, 35)
@@ -188,7 +183,7 @@ BtnM.MouseButton1Click:Connect(function()
     end
 end)
 
--- Logic Drag Main Frame (Mulus)
+-- LOGIC DRAG MAIN UI (Versi Stabil)
 local draggingMain, dragStartMain, startPosMain
 Top.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -206,7 +201,7 @@ UserInput.InputChanged:Connect(function(input)
 end)
 
 -- ==========================================
--- RESIZER (Stabil)
+-- RESIZER (Versi Stabil)
 -- ==========================================
 local Resizer = Instance.new("TextButton", Main)
 Resizer.Size = UDim2.new(0, 20, 0, 20)
@@ -241,7 +236,7 @@ UserInput.InputChanged:Connect(function(input)
 end)
 
 -- ==========================================
--- DYNAMIC SIDEBAR & KONTEN
+-- SIDEBAR & KONTEN KANAN
 -- ==========================================
 local ContentContainer = Instance.new("Frame", Main)
 ContentContainer.Size = UDim2.new(1, 0, 1, -35)
@@ -292,6 +287,11 @@ local function CreateTab(name, isFirst)
     Btn.AutoButtonColor = false
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
+    -- STROKE TAB KIRI: Biar kelihatan jelas ini tombol, bukan nyatu sama background
+    local TabStroke = Instance.new("UIStroke", Btn)
+    TabStroke.Color = Theme.Line
+    TabStroke.Thickness = 1
+    
     local Indicator = Instance.new("Frame", Btn)
     Indicator.Size = UDim2.new(0, 3, 0, 14)
     Indicator.Position = UDim2.new(0, 4, 0.5, -7)
@@ -307,7 +307,6 @@ local function CreateTab(name, isFirst)
         if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.TabOff}):Play() end
     end)
     
-    -- KOTAK KANAN: Kontras tinggi biar kelihatan misah
     local Page = Instance.new("ScrollingFrame", ContentArea)
     Page.Size = UDim2.new(1, -16, 1, -16) 
     Page.Position = UDim2.new(0, 8, 0, 8) 
@@ -366,7 +365,7 @@ end
 
 local function CreateToggle(parent, text, stateRef, callback)
     local F = Instance.new("TextButton", parent)
-    F.Size = UDim2.new(1, 0, 0, 38)
+    F.Size = UDim2.new(1, 0, 0, 36)
     F.BackgroundColor3 = Theme.CardBG
     F.BorderSizePixel = 0
     F.Text = ""
