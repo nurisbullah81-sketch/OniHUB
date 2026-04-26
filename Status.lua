@@ -5,6 +5,7 @@ local LocalPlayer = _G.Cat.Player
 local Labels = _G.Cat.Labels
 
 local function FormatNum(num)
+    if typeof(num) ~= "number" then num = 0 end
     num = math.floor(num)
     local formatted = tostring(num)
     while true do
@@ -17,18 +18,29 @@ end
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            local ls = LocalPlayer.leaderstats
+            local ls = LocalPlayer:FindFirstChild("leaderstats")
+            if not ls then return end -- Nunggu leaderstats muncul
             
-            local lvl = ls:FindFirstChild("Level") and ls.Level.Value or 0
-            local money = ls:FindFirstChild("$") and ls["$"].Value or 0
-            local frag = ls:FindFirstChild("Fragments") and ls.Fragments.Value or 0
-            local bounty = ls:FindFirstChild("Bounty") or ls:FindFirstChild("Honor")
-            local bountyVal = bounty and bounty.Value or 0
+            -- Cari Level (Blox Fruits namanya "Level")
+            local lvlVal = ls:FindFirstChild("Level")
+            local lvl = lvlVal and lvlVal.Value or 0
+            
+            -- Cari Uang (Bisa nama "$" atau "Belly")
+            local moneyVal = ls:FindFirstChild("$") or ls:FindFirstChild("Belly")
+            local money = moneyVal and moneyVal.Value or 0
+            
+            -- Cari Fragment (Bisa "Fragments" atau "Fragment")
+            local fragVal = ls:FindFirstChild("Fragments") or ls:FindFirstChild("Fragment")
+            local frag = fragVal and fragVal.Value or 0
+            
+            -- Cari Bounty/Honor
+            local bountyVal = ls:FindFirstChild("Bounty") or ls:FindFirstChild("Honor")
+            local bounty = bountyVal and bountyVal.Value or 0
             
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
             Labels.Money.Text = "Money: $" .. FormatNum(money)
             Labels.Fragments.Text = "Fragments: " .. FormatNum(frag)
-            Labels.Bounty.Text = (bounty and bounty.Name or "Bounty") .. ": " .. FormatNum(bountyVal)
+            Labels.Bounty.Text = (bountyVal and bountyVal.Name or "Bounty") .. ": " .. FormatNum(bounty)
             
             Labels.Players.Text = "Players: " .. #Players:GetPlayers()
             
