@@ -1,242 +1,278 @@
--- CatHUB v11.0: THE REAL REDZHUB CLONE (1:1 VISUAL)
--- Gue udah melototin gambar RedzHub, kali ini detailnya gue bikin dapet.
+-- CatHUB v12.0 | HTML to Luau Translation
+-- Focus: Ultra-Clean UI, Smooth Animations, & Multi-Tab System
 
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
 
-if CoreGui:FindFirstChild("CatUI") then CoreGui.CatUI:Destroy() end
+if CoreGui:FindFirstChild("CatHUB_v12") then CoreGui.CatHUB_v12:Destroy() end
 
 local Gui = Instance.new("ScreenGui", CoreGui)
-Gui.Name = "CatUI"
+Gui.Name = "CatHUB_v12"
 
--- Palette Warna 1:1 RedzHub
+-- ==========================================
+-- THEME & STYLE (Translasi dari CSS)
+-- ==========================================
 local Theme = {
-    Main = Color3.fromRGB(18, 18, 20),
-    Sidebar = Color3.fromRGB(22, 22, 25),
-    Accent = Color3.fromRGB(100, 115, 255), -- Purple-Blue khas Redz
-    Section = Color3.fromRGB(28, 28, 32),
-    Text = Color3.fromRGB(240, 240, 240),
-    TextDim = Color3.fromRGB(150, 150, 155),
-    Stroke = Color3.fromRGB(45, 45, 50)
+    Background = Color3.fromRGB(20, 23, 40),      -- #1a1d2e
+    Sidebar = Color3.fromRGB(15, 17, 34),         -- #0f1122
+    TopBar = Color3.fromRGB(15, 18, 33),          -- #0f1221
+    Accent = Color3.fromRGB(77, 120, 240),       -- #4d78f0 (Blue)
+    Red = Color3.fromRGB(232, 51, 58),            -- #e8333a
+    Stroke = Color3.fromRGB(45, 49, 88),          -- #2d3158
+    Text = Color3.fromRGB(192, 200, 232),         -- #c0c8e8
+    TextDim = Color3.fromRGB(90, 96, 128),        -- #5a6080
+    Row = Color3.fromRGB(26, 29, 48),             -- #1a1d30
 }
 
--- ==========================================
--- LOGO HIDE (KOTAK KECIL REDZ - FLOATING)
--- ==========================================
-local OpenBtn = Instance.new("ImageButton", Gui)
-OpenBtn.Size = UDim2.new(0, 50, 0, 50)
-OpenBtn.Position = UDim2.new(0, 20, 0, 20)
-OpenBtn.Visible = false
-OpenBtn.BackgroundColor3 = Theme.Main
-OpenBtn.Image = "rbxassetid://6023426915" -- Logo Redz Asli
-OpenBtn.ScaleType = Enum.ScaleType.Fit
-local OBC = Instance.new("UICorner", OpenBtn)
-OBC.CornerRadius = UDim.new(0, 12)
-local OBS = Instance.new("UIStroke", OpenBtn)
-OBS.Color = Theme.Accent
-OBS.Thickness = 1.5
+local function Round(obj, r)
+    local c = Instance.new("UICorner", obj)
+    c.CornerRadius = UDim.new(0, r)
+end
+
+local function AddStroke(obj, color, thickness)
+    local s = Instance.new("UIStroke", obj)
+    s.Color = color
+    s.Thickness = thickness or 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+end
 
 -- ==========================================
--- MAIN FRAME (DETAIL SHADOW & ROUNDING)
+-- MAIN FRAME
 -- ==========================================
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 580, 0, 380)
-Main.Position = UDim2.new(0.5, -290, 0.5, -190)
-Main.BackgroundColor3 = Theme.Main
+Main.Size = UDim2.new(0, 580, 0, 460) -- Sesuai Tinggi Layout HTML
+Main.Position = UDim2.new(0.5, -290, 0.5, -230)
+Main.BackgroundColor3 = Theme.Background
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+Round(Main, 12)
+AddStroke(Main, Theme.Stroke, 1)
 
-local MStroke = Instance.new("UIStroke", Main)
-MStroke.Color = Theme.Stroke
-MStroke.Thickness = 1
+-- Shadow Effect (Drop Shadow)
+local Shadow = Instance.new("ImageLabel", Main)
+Shadow.Name = "Shadow"
+Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+Shadow.Size = UDim2.new(1, 50, 1, 50)
+Shadow.BackgroundTransparency = 1
+Shadow.Image = "rbxassetid://6015667341"
+Shadow.ImageColor3 = Color3.new(0,0,0)
+Shadow.ImageTransparency = 0.5
+Shadow.ZIndex = 0
 
--- Top Bar
-local Top = Instance.new("Frame", Main)
-Top.Size = UDim2.new(1, 0, 0, 40)
-Top.BackgroundColor3 = Theme.Sidebar
-Top.BorderSizePixel = 0
+-- ==========================================
+-- TITLE BAR (RZ Logo + Title)
+-- ==========================================
+local TitleBar = Instance.new("Frame", Main)
+TitleBar.Size = UDim2.new(1, 0, 0, 44)
+TitleBar.BackgroundColor3 = Theme.TopBar
+AddStroke(TitleBar, Color3.fromRGB(37, 40, 69), 1)
 
-local Title = Instance.new("TextLabel", Top)
-Title.Size = UDim2.new(1, -120, 1, 0)
-Title.Position = UDim2.new(0, 45, 0, 0)
-Title.Text = "redz Hub [ BETA ACCESS ] : Blox Fruits"
+local IconBox = Instance.new("Frame", TitleBar)
+IconBox.Size = UDim2.new(0, 28, 0, 28)
+IconBox.Position = UDim2.new(0, 14, 0.5, -14)
+IconBox.BackgroundColor3 = Theme.Red
+Round(IconBox, 6)
+
+local IconText = Instance.new("TextLabel", IconBox)
+IconText.Size = UDim2.new(1, 0, 1, 0)
+IconText.Text = "RZ"
+IconText.TextColor3 = Color3.new(1,1,1)
+IconText.Font = Enum.Font.GothamBold
+IconText.TextSize = 10
+IconText.BackgroundTransparency = 1
+
+local Title = Instance.new("TextLabel", TitleBar)
+Title.Position = UDim2.new(0, 52, 0, 0)
+Title.Size = UDim2.new(0, 200, 1, 0)
+Title.Text = "redz Hub <font color='#5a6080'>[BETA]</font> : Blox Fruits"
+Title.RichText = true
 Title.TextColor3 = Theme.Text
 Title.Font = Enum.Font.GothamMedium
 Title.TextSize = 13
 Title.TextXAlignment = "Left"
 Title.BackgroundTransparency = 1
 
-local Icon = Instance.new("ImageLabel", Top)
-Icon.Size = UDim2.new(0, 22, 0, 22)
-Icon.Position = UDim2.new(0, 15, 0.5, -11)
-Icon.Image = "rbxassetid://6023426915"
-Icon.BackgroundTransparency = 1
+-- ==========================================
+-- SIDEBAR
+-- ==========================================
+local Sidebar = Instance.new("Frame", Main)
+Sidebar.Size = UDim2.new(0, 148, 1, -84) -- Potong Topbar & Bottombar
+Sidebar.Position = UDim2.new(0, 0, 0, 44)
+Sidebar.BackgroundColor3 = Theme.Sidebar
+AddStroke(Sidebar, Color3.fromRGB(37, 40, 69), 1)
 
--- Close & Min
-local function ControlBtn(txt, pos, color)
-    local b = Instance.new("TextButton", Top)
-    b.Size = UDim2.new(0, 35, 0, 35)
-    b.Position = pos
-    b.Text = txt
-    b.TextColor3 = color or Theme.Text
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 14
-    b.BackgroundTransparency = 1
-    return b
+local SideScroll = Instance.new("ScrollingFrame", Sidebar)
+SideScroll.Size = UDim2.new(1, 0, 1, 0)
+SideScroll.BackgroundTransparency = 1
+SideScroll.ScrollBarThickness = 0
+SideScroll.CanvasSize = UDim2.new(0,0,0,0)
+SideScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+local SideList = Instance.new("UIListLayout", SideScroll)
+SideList.Padding = UDim.new(0, 2)
+
+-- ==========================================
+-- BOTTOM BAR
+-- ==========================================
+local BottomBar = Instance.new("Frame", Main)
+BottomBar.Size = UDim2.new(1, 0, 0, 40)
+BottomBar.Position = UDim2.new(0, 0, 1, -40)
+BottomBar.BackgroundColor3 = Theme.Sidebar
+AddStroke(BottomBar, Color3.fromRGB(37, 40, 69), 1)
+
+local VerText = Instance.new("TextLabel", BottomBar)
+VerText.Size = UDim2.new(1, -15, 1, 0)
+VerText.Position = UDim2.new(0, 0, 0, 0)
+VerText.Text = "v2.4.1 — redz hub"
+VerText.TextColor3 = Color3.fromRGB(58, 64, 96)
+VerText.Font = Enum.Font.Gotham
+VerText.TextSize = 10
+VerText.TextXAlignment = "Right"
+VerText.BackgroundTransparency = 1
+
+-- ==========================================
+-- CONTENT AREA
+-- ==========================================
+local ContentHolder = Instance.new("Frame", Main)
+ContentHolder.Size = UDim2.new(1, -148, 1, -84)
+ContentHolder.Position = UDim2.new(0, 148, 0, 44)
+ContentHolder.BackgroundTransparency = 1
+
+local Tabs = {}
+local function CreateTab(name, icon)
+    local Page = Instance.new("ScrollingFrame", ContentHolder)
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible = false
+    Page.ScrollBarThickness = 2
+    Page.ScrollBarImageColor3 = Theme.Stroke
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
+    Instance.new("UIPadding", Page).PaddingTop = UDim.new(0, 10)
+    Instance.new("UIPadding", Page).PaddingLeft = UDim.new(0, 12)
+    Instance.new("UIPadding", Page).PaddingRight = UDim.new(0, 12)
+
+    local TabBtn = Instance.new("TextButton", SideScroll)
+    TabBtn.Size = UDim2.new(1, 0, 0, 38)
+    TabBtn.BackgroundColor3 = Theme.Sidebar
+    TabBtn.BorderSizePixel = 0
+    TabBtn.Text = "      " .. name
+    TabBtn.TextColor3 = Theme.TextDim
+    TabBtn.Font = Enum.Font.Gotham
+    TabBtn.TextSize = 12
+    TabBtn.TextXAlignment = "Left"
+    
+    local Indicator = Instance.new("Frame", TabBtn)
+    Indicator.Size = UDim2.new(0, 2, 1, 0)
+    Indicator.BackgroundColor3 = Theme.Accent
+    Indicator.Visible = false
+
+    TabBtn.MouseButton1Click:Connect(function()
+        for _, v in pairs(Tabs) do 
+            v.Page.Visible = false 
+            v.Btn.TextColor3 = Theme.TextDim
+            v.Ind.Visible = false
+        end
+        Page.Visible = true
+        TabBtn.TextColor3 = Theme.Text
+        Indicator.Visible = true
+    end)
+
+    Tabs[name] = {Page = Page, Btn = TabBtn, Ind = Indicator}
+    return Page
 end
 
-local Close = ControlBtn("✕", UDim2.new(1, -40, 0, 2), Color3.fromRGB(255, 100, 100))
-local Min = ControlBtn("—", UDim2.new(1, -75, 0, 2))
-
--- Sidebar
-local Sidebar = Instance.new("Frame", Main)
-Sidebar.Size = UDim2.new(0, 155, 1, -40)
-Sidebar.Position = UDim2.new(0, 0, 0, 40)
-Sidebar.BackgroundColor3 = Theme.Sidebar
-
--- Sidebar Item (HANYA 1 TAB: ESP)
-local Tab = Instance.new("TextButton", Sidebar)
-Tab.Size = UDim2.new(1, -20, 0, 38)
-Tab.Position = UDim2.new(0, 10, 0, 15)
-Tab.BackgroundColor3 = Theme.Accent
-Tab.Text = "      Visuals/ESP"
-Tab.TextColor3 = Theme.Text
-Tab.Font = Enum.Font.GothamMedium
-Tab.TextSize = 13
-Tab.TextXAlignment = "Left"
-Tab.AutoButtonColor = false
-Instance.new("UICorner", Tab).CornerRadius = UDim.new(0, 8)
-
-local TabIcon = Instance.new("ImageLabel", Tab)
-TabIcon.Size = UDim2.new(0, 18, 0, 18)
-TabIcon.Position = UDim2.new(0, 10, 0.5, -9)
-TabIcon.Image = "rbxassetid://6034287535"
-TabIcon.BackgroundTransparency = 1
-
--- Container
-local Container = Instance.new("ScrollingFrame", Main)
-Container.Size = UDim2.new(1, -175, 1, -60)
-Container.Position = UDim2.new(0, 165, 0, 50)
-Container.BackgroundTransparency = 1
-Container.ScrollBarThickness = 2
-Container.ScrollBarImageColor3 = Theme.Accent
-Container.AutomaticCanvasSize = Enum.AutomaticSize.Y
-local List = Instance.new("UIListLayout", Container)
-List.Padding = UDim.new(0, 10)
-
 -- ==========================================
--- COMPONENTS (THE REAL REDZ STYLE)
+-- COMPONENTS (Toggle, Section, etc)
 -- ==========================================
-local function Section(txt)
-    local f = Instance.new("Frame", Container)
-    f.Size = UDim2.new(1, -5, 0, 25)
-    f.BackgroundTransparency = 1
-    
-    local l = Instance.new("TextLabel", f)
-    l.Size = UDim2.new(1, 0, 1, 0)
-    l.Text = txt:upper()
-    l.TextColor3 = Theme.Accent
+local function AddSection(parent, text)
+    local l = Instance.new("TextLabel", parent)
+    l.Size = UDim2.new(1, 0, 0, 30)
+    l.Text = text:upper()
+    l.TextColor3 = Color3.fromRGB(136, 144, 184)
     l.Font = Enum.Font.GothamBold
     l.TextSize = 11
     l.TextXAlignment = "Left"
     l.BackgroundTransparency = 1
-    
-    local line = Instance.new("Frame", f)
-    line.Size = UDim2.new(1, -80, 0, 1)
-    line.Position = UDim2.new(0, 70, 0.5, 0)
-    line.BackgroundColor3 = Theme.Stroke
-    line.BorderSizePixel = 0
 end
 
-local function Toggle(txt, default)
-    local state = default or false
-    local f = Instance.new("TextButton", Container)
-    f.Size = UDim2.new(1, -10, 0, 45)
-    f.BackgroundColor3 = Theme.Section
-    f.Text = ""
-    f.AutoButtonColor = false
-    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
-    Instance.new("UIStroke", f).Color = Theme.Stroke
-    
-    local l = Instance.new("TextLabel", f)
-    l.Size = UDim2.new(1, -60, 1, 0)
-    l.Position = UDim2.new(0, 15, 0, 0)
-    l.Text = txt
-    l.TextColor3 = Theme.TextDim
-    l.Font = Enum.Font.Gotham
-    l.TextSize = 14
-    l.TextXAlignment = "Left"
-    l.BackgroundTransparency = 1
-    
-    local bg = Instance.new("Frame", f)
-    bg.Size = UDim2.new(0, 40, 0, 20)
-    bg.Position = UDim2.new(1, -55, 0.5, -10)
-    bg.BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(40, 40, 45)
-    Instance.new("UICorner", bg).CornerRadius = UDim.new(1, 0)
-    
-    local dot = Instance.new("Frame", bg)
-    dot.Size = UDim2.new(0, 14, 0, 14)
-    dot.Position = state and UDim2.new(1, -18, 0.5, -7) or UDim2.new(0, 4, 0.5, -7)
-    dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
-    
-    f.MouseButton1Click:Connect(function()
-        state = not state
-        TweenService:Create(bg, TweenInfo.new(0.25), {BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(40, 40, 45)}):Play()
-        TweenService:Create(dot, TweenInfo.new(0.25), {Position = state and UDim2.new(1, -18, 0.5, -7) or UDim2.new(0, 4, 0.5, -7)}):Play()
-        TweenService:Create(l, TweenInfo.new(0.25), {TextColor3 = state and Theme.Text or Theme.TextDim}):Play()
+local function AddToggle(parent, text, sub)
+    local Row = Instance.new("TextButton", parent)
+    Row.Size = UDim2.new(1, 0, 0, 45)
+    Row.BackgroundColor3 = Theme.Row
+    Row.Text = ""
+    Round(Row, 8)
+    AddStroke(Row, Color3.fromRGB(37, 40, 69), 1)
+
+    local Label = Instance.new("TextLabel", Row)
+    Label.Size = UDim2.new(1, -60, 0, 20)
+    Label.Position = UDim2.new(0, 12, 0, 5)
+    Label.Text = text
+    Label.TextColor3 = Theme.Text
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextSize = 13
+    Label.TextXAlignment = "Left"
+    Label.BackgroundTransparency = 1
+
+    if sub then
+        local Sub = Instance.new("TextLabel", Row)
+        Sub.Size = UDim2.new(1, -60, 0, 15)
+        Sub.Position = UDim2.new(0, 12, 0, 22)
+        Sub.Text = sub
+        Sub.TextColor3 = Theme.TextDim
+        Sub.Font = Enum.Font.Gotham
+        Sub.TextSize = 10.5
+        Sub.TextXAlignment = "Left"
+        Sub.BackgroundTransparency = 1
+    end
+
+    local TogBG = Instance.new("Frame", Row)
+    TogBG.Size = UDim2.new(0, 38, 0, 21)
+    TogBG.Position = UDim2.new(1, -50, 0.5, -10)
+    TogBG.BackgroundColor3 = Color3.fromRGB(37, 40, 69)
+    Round(TogBG, 11)
+
+    local Dot = Instance.new("Frame", TogBG)
+    Dot.Size = UDim2.new(0, 15, 0, 15)
+    Dot.Position = UDim2.new(0, 2, 0.5, -7)
+    Dot.BackgroundColor3 = Color3.new(1,1,1)
+    Round(Dot, 15)
+
+    local active = false
+    Row.MouseButton1Click:Connect(function()
+        active = not active
+        TweenService:Create(TogBG, TweenInfo.new(0.2), {BackgroundColor3 = active and Theme.Accent or Color3.fromRGB(37, 40, 69)}):Play()
+        TweenService:Create(Dot, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
     end)
 end
 
--- Build Content
-Section("Devil Fruits")
-Toggle("Enable Fruit ESP", true)
-Section("World")
-Toggle("Auto Chest Finder", false)
-Toggle("Player Names", false)
+-- ==========================================
+-- IMPLEMENTASI TAB & FITUR
+-- ==========================================
+local FarmPage = CreateTab("Farm", "⚔️")
+AddSection(FarmPage, "Events")
+AddToggle(FarmPage, "Auto Celestial Soldier")
+AddToggle(FarmPage, "Auto Rip Commander")
+AddSection(FarmPage, "Collect")
+AddToggle(FarmPage, "Auto Chest [Tween]", "Collect all nearby chests")
+
+local VisualPage = CreateTab("Visual", "🎨")
+AddSection(VisualPage, "ESP")
+AddToggle(VisualPage, "Player ESP", "Show players through walls")
+AddToggle(VisualPage, "Chest ESP")
+
+-- Aktifkan Tab Farm Pertama kali
+Tabs["Farm"].Btn.TextColor3 = Theme.Text
+Tabs["Farm"].Ind.Visible = true
+Tabs["Farm"].Page.Visible = true
 
 -- ==========================================
--- FIX LOGIC (RESIZE, HIDE, MINIMIZE)
+-- DRAGGING LOGIC
 -- ==========================================
-
--- 1. Resize Pojok Bawah (Corner Grabber)
-local ResizeGrab = Instance.new("Frame", Main)
-ResizeGrab.Size = UDim2.new(0, 20, 0, 20)
-ResizeGrab.Position = UDim2.new(1, -20, 1, -20)
-ResizeGrab.BackgroundTransparency = 1
-
-local isResizing = false
-ResizeGrab.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = true end end)
-UserInput.InputChanged:Connect(function(i)
-    if isResizing and i.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = i.Position - Vector3.new(Main.AbsolutePosition.X, Main.AbsolutePosition.Y, 0)
-        Main.Size = UDim2.new(0, math.clamp(delta.X, 400, 800), 0, math.clamp(delta.Y, 250, 600))
-    end
-end)
-UserInput.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end end)
-
--- 2. X = HIDE
-Close.MouseButton1Click:Connect(function()
-    Main.Visible = false
-    OpenBtn.Visible = true
-end)
-OpenBtn.MouseButton1Click:Connect(function()
-    Main.Visible = true
-    OpenBtn.Visible = false
-end)
-
--- 3. MINIMIZE
-local isMin = false
-Min.MouseButton1Click:Connect(function()
-    isMin = not isMin
-    TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = isMin and UDim2.new(0, Main.Size.X.Offset, 0, 40) or UDim2.new(0, Main.Size.X.Offset, 0, 380)}):Play()
-end)
-
--- 4. Dragging
 local drag, dStart, sPos
-Top.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true; dStart = i.Position; sPos = Main.Position end end)
+TitleBar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then drag = true; dStart = i.Position; sPos = Main.Position end end)
 UserInput.InputChanged:Connect(function(i)
     if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = i.Position - dStart
