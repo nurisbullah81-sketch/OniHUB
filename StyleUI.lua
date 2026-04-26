@@ -1,4 +1,4 @@
--- CatHUB v9.0: Pure Black RedzHub Style
+-- CatHUB v9.1: True RedzHub Mechanics
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,128 +12,197 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Pure Black Palette (NO PURPLE)
+-- Pure Dark Palette
 local C = {
-    Base = Color3.fromRGB(20, 20, 20),   -- Hitam pekat
-    Side = Color3.fromRGB(15, 15, 15),   -- Hitam lebih pekat
-    Card = Color3.fromRGB(30, 30, 30),   -- Abu item
-    CardHov = Color3.fromRGB(38, 38, 38),-- Hover sedikit terang
-    Top = Color3.fromRGB(25, 25, 25),    -- Topbar hitam
-    Text = Color3.fromRGB(200, 200, 200),-- Putih soft
-    TextSec = Color3.fromRGB(140, 140, 140), -- Abu teks
-    TextDim = Color3.fromRGB(80, 80, 80),-- Abu gelap
-    On = Color3.fromRGB(200, 200, 200),  -- Toggle ON (Putih)
-    Off = Color3.fromRGB(40, 40, 40)     -- Toggle OFF (Abu gelap)
+    Base = Color3.fromRGB(25, 25, 25),
+    Side = Color3.fromRGB(20, 20, 20),
+    Card = Color3.fromRGB(32, 32, 32),
+    CardHov = Color3.fromRGB(42, 42, 42),
+    Top = Color3.fromRGB(30, 30, 30),
+    Text = Color3.fromRGB(195, 195, 195),
+    TextSec = Color3.fromRGB(140, 140, 140),
+    TextDim = Color3.fromRGB(80, 80, 80),
+    On = Color3.fromRGB(180, 180, 180), -- Toggle ON abu terang
+    Off = Color3.fromRGB(45, 45, 45)    -- Toggle OFF abu gelap
 }
 
--- Main Frame (Compact & Clean 450x280)
+-- ==========================================
+-- TOMBOL REOPEN (MUNCUL PAS UI DI CLOSE)
+-- ==========================================
+local OpenBtn = Instance.new("TextButton", Gui)
+OpenBtn.Size = UDim2.new(0, 100, 0, 30)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, 0)
+OpenBtn.BackgroundColor3 = C.Card
+OpenBtn.TextColor3 = C.Text
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.TextSize = 12
+OpenBtn.Text = "Open CatHUB"
+OpenBtn.Visible = false
+OpenBtn.BorderSizePixel = 0
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(0, 6)
+
+-- ==========================================
+-- MAIN FRAME (BESAR & LAPANG)
+-- ==========================================
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 450, 0, 280)
-Main.Position = UDim2.new(0.5, -225, 0.5, -140)
+Main.Size = UDim2.new(0, 580, 0, 380)
+Main.Position = UDim2.new(0.5, -290, 0.5, -190)
 Main.BackgroundColor3 = C.Base
 Main.BorderSizePixel = 0
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 4) -- Sedikit rounded
+Main.Visible = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 
--- Topbar
+-- ==========================================
+-- TOPBAR (TOMBOL X DAN -)
+-- ==========================================
 local Top = Instance.new("Frame", Main)
-Top.Size = UDim2.new(1, 0, 0, 30)
+Top.Size = UDim2.new(1, 0, 0, 32)
 Top.BackgroundColor3 = C.Top
 Top.BorderSizePixel = 0
-Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 4)
+Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 6)
 
 local TopFix = Instance.new("Frame", Top)
-TopFix.Size = UDim2.new(1, 0, 0, 6)
-TopFix.Position = UDim2.new(0, 0, 1, -6)
+TopFix.Size = UDim2.new(1, 0, 0, 8)
+TopFix.Position = UDim2.new(0, 0, 1, -8)
 TopFix.BackgroundColor3 = C.Top
 TopFix.BorderSizePixel = 0
 
 local Ttl = Instance.new("TextLabel", Top)
-Ttl.Size = UDim2.new(1, -60, 1, 0)
-Ttl.Position = UDim2.new(0, 10, 0, 0)
+Ttl.Size = UDim2.new(1, -80, 1, 0)
+Ttl.Position = UDim2.new(0, 14, 0, 0)
 Ttl.Text = "CatHUB"
 Ttl.TextColor3 = C.Text
 Ttl.Font = Enum.Font.GothamBold
-Ttl.TextSize = 13
+Ttl.TextSize = 14
 Ttl.TextXAlignment = "Left"
 Ttl.BackgroundTransparency = 1
 
 local BtnX = Instance.new("TextButton", Top)
-BtnX.Size = UDim2.new(0, 30, 0, 30)
-BtnX.Position = UDim2.new(1, -30, 0, 0)
+BtnX.Size = UDim2.new(0, 32, 0, 32)
+BtnX.Position = UDim2.new(1, -32, 0, 0)
 BtnX.Text = "×"
 BtnX.TextColor3 = C.TextDim
 BtnX.BackgroundTransparency = 1
 BtnX.Font = Enum.Font.GothamBold
-BtnX.TextSize = 16
+BtnX.TextSize = 18
 
 local BtnM = Instance.new("TextButton", Top)
-BtnM.Size = UDim2.new(0, 30, 0, 30)
-BtnM.Position = UDim2.new(1, -60, 0, 0)
+BtnM.Size = UDim2.new(0, 32, 0, 32)
+BtnM.Position = UDim2.new(1, -64, 0, 0)
 BtnM.Text = "—"
 BtnM.TextColor3 = C.TextDim
 BtnM.BackgroundTransparency = 1
 BtnM.Font = Enum.Font.GothamBold
-BtnM.TextSize = 14
+BtnM.TextSize = 16
 
+-- Hover Effects
 BtnX.MouseEnter:Connect(function() TweenService:Create(BtnX, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(255, 80, 80)}):Play() end)
 BtnX.MouseLeave:Connect(function() TweenService:Create(BtnX, TweenInfo.new(0.1), {TextColor3 = C.TextDim}):Play() end)
-BtnX.MouseButton1Click:Connect(function() Gui:Destroy() end)
+BtnM.MouseEnter:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.1), {TextColor3 = C.Text}):Play() end)
+BtnM.MouseLeave:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.1), {TextColor3 = C.TextDim}):Play() end)
 
+-- LOGIC CLOSE (X) -> Munculin Tombol Open
+BtnX.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    OpenBtn.Visible = true
+end)
+
+OpenBtn.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    OpenBtn.Visible = false
+end)
+
+-- Hotkey RightCtrl buka/tutup
+UserInput.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        Main.Visible = not Main.Visible
+        OpenBtn.Visible = not Main.Visible
+    end
+end)
+
+-- LOGIC MINIMIZE (-) -> Nggulung ke atas
 local isMin = false
 BtnM.MouseButton1Click:Connect(function()
     isMin = not isMin
-    Main:FindFirstChild("Side").Visible = not isMin
-    Main:FindFirstChild("Content").Visible = not isMin
-    TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-        Size = isMin and UDim2.new(0, 450, 0, 30) or UDim2.new(0, 450, 0, 280)
-    }):Play()
+    local SideF = Main:FindFirstChild("Side")
+    local ContF = Main:FindFirstChild("Content")
+    
+    if isMin then
+        if SideF then SideF.Visible = false end
+        if ContF then ContF.Visible = false end
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+            Size = UDim2.new(0, 580, 0, 32)
+        }):Play()
+    else
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
+            Size = UDim2.new(0, 580, 0, 380)
+        }):Play()
+        -- Delay biar keliatan animasinya baru muncul isinya
+        task.wait(0.15)
+        if SideF then SideF.Visible = true end
+        if ContF then ContF.Visible = true end
+    end
 end)
 
--- Sidebar (Slim & Flat)
+-- ==========================================
+-- SIDEBAR
+-- ==========================================
 local Side = Instance.new("Frame", Main)
 Side.Name = "Side"
-Side.Size = UDim2.new(0, 90, 1, -30)
-Side.Position = UDim2.new(0, 0, 0, 30)
+Side.Size = UDim2.new(0, 110, 1, -32)
+Side.Position = UDim2.new(0, 0, 0, 32)
 Side.BackgroundColor3 = C.Side
 Side.BorderSizePixel = 0
 
 local SideList = Instance.new("UIListLayout", Side)
-SideList.Padding = UDim.new(0, 2)
+SideList.Padding = UDim.new(0, 4)
+local SidePad = Instance.new("UIPadding", Side)
+SidePad.PaddingTop = UDim.new(0, 6)
 
 local Pages = {}
 
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton", Side)
-    Btn.Size = UDim2.new(1, 0, 0, 28)
+    Btn.Size = UDim2.new(1, -10, 0, 32)
+    Btn.Position = UDim2.new(0, 5, 0, 0)
     Btn.BackgroundColor3 = isFirst and C.Base or C.Side
     Btn.Text = "  " .. name
     Btn.TextColor3 = isFirst and C.Text or C.TextDim
-    Btn.Font = Enum.Font.Gotham
-    Btn.TextSize = 12
+    Btn.Font = Enum.Font.GothamMedium
+    Btn.TextSize = 13
     Btn.BorderSizePixel = 0
     Btn.TextXAlignment = "Left"
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 5)
     
     Btn.MouseEnter:Connect(function()
         if Pages[name].Visible then return end
-        TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = C.Card, TextColor3 = C.TextSec}):Play()
+        TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = C.CardHov, TextColor3 = C.TextSec}):Play()
     end)
     Btn.MouseLeave:Connect(function()
         if Pages[name].Visible then return end
-        TweenService:Create(Btn, TweenInfo.new(0.1), {BackgroundColor3 = C.Side, TextColor3 = C.TextDim}):Play()
+        TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = C.Side, TextColor3 = C.TextDim}):Play()
     end)
     
     local Page = Instance.new("ScrollingFrame", Main)
-    Page.Name = name
-    Page.Size = UDim2.new(1, -105, 1, -40)
-    Page.Position = UDim2.new(0, 95, 0, 35)
+    Page.Name = name .. "Page"
+    Page.Size = UDim2.new(1, -130, 1, -44)
+    Page.Position = UDim2.new(0, 120, 0, 38)
     Page.BackgroundTransparency = 1
-    Page.ScrollBarThickness = 2
+    Page.ScrollBarThickness = 3
     Page.ScrollBarImageColor3 = C.TextDim
     Page.Visible = isFirst
     Page.BorderSizePixel = 0
+    Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
     
     local List = Instance.new("UIListLayout", Page)
-    List.Padding = UDim.new(0, 6)
+    List.Padding = UDim.new(0, 8)
+    
+    local Pad = Instance.new("UIPadding", Page)
+    Pad.PaddingLeft = UDim.new(0, 4)
+    Pad.PaddingRight = UDim.new(0, 4)
+    Pad.PaddingTop = UDim.new(0, 2)
+    Pad.PaddingBottom = UDim.new(0, 4)
     
     Pages[name] = Page
     
@@ -142,9 +211,9 @@ local function CreateTab(name, isFirst)
         for _, btn in pairs(Side:GetChildren()) do
             if btn:IsA("TextButton") then
                 if btn.Text:find(name) then
-                    TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = C.Base, TextColor3 = C.Text}):Play()
+                    TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = C.Base, TextColor3 = C.Text}):Play()
                 else
-                    TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = C.Side, TextColor3 = C.TextDim}):Play()
+                    TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = C.Side, TextColor3 = C.TextDim}):Play()
                 end
             end
         end
@@ -154,37 +223,38 @@ end
 
 local EspPage = CreateTab("ESP", true)
 
--- Toggle Function (Small & Monochrome)
+-- ==========================================
+-- TOGGLE FUNCTION (Smooth & Modern)
+-- ==========================================
 local function CreateToggle(parent, key, text)
     local F = Instance.new("TextButton", parent)
-    F.Size = UDim2.new(1, -10, 0, 32)
-    F.Position = UDim2.new(0, 5, 0, 0)
+    F.Size = UDim2.new(1, 0, 0, 38)
     F.BackgroundColor3 = C.Card
     F.BorderSizePixel = 0
-    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 4)
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 5)
     F.Text = ""
     
     local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -55, 1, 0)
-    L.Position = UDim2.new(0, 12, 0, 0)
+    L.Size = UDim2.new(1, -60, 1, 0)
+    L.Position = UDim2.new(0, 14, 0, 0)
     L.Text = text
     L.TextColor3 = C.Text
     L.Font = Enum.Font.Gotham
-    L.TextSize = 12
+    L.TextSize = 13
     L.TextXAlignment = "Left"
     L.BackgroundTransparency = 1
     
     local Sw = Instance.new("Frame", F)
-    Sw.Size = UDim2.new(0, 34, 0, 16)
-    Sw.Position = UDim2.new(1, -44, 0.5, -8)
+    Sw.Size = UDim2.new(0, 40, 0, 20)
+    Sw.Position = UDim2.new(1, -52, 0.5, -10)
     Sw.BackgroundColor3 = S[key] and C.On or C.Off
     Sw.BorderSizePixel = 0
     Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
     
     local Dot = Instance.new("Frame", Sw)
-    Dot.Size = UDim2.new(0, 12, 0, 12)
-    Dot.Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-    Dot.BackgroundColor3 = S[key] and C.Side or C.TextDim
+    Dot.Size = UDim2.new(0, 16, 0, 16)
+    Dot.Position = S[key] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Dot.BorderSizePixel = 0
     Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
     
@@ -193,11 +263,8 @@ local function CreateToggle(parent, key, text)
     
     F.MouseButton1Click:Connect(function()
         S[key] = not S[key]
-        TweenService:Create(Dot, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
-            Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-        }):Play()
-        TweenService:Create(Dot, TweenInfo.new(0.15), {
-            BackgroundColor3 = S[key] and C.Side or C.TextDim
+        TweenService:Create(Dot, TweenInfo.new(0.2, Enum.EasingStyle.Back), {
+            Position = S[key] and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
         }):Play()
         TweenService:Create(Sw, TweenInfo.new(0.15), {
             BackgroundColor3 = S[key] and C.On or C.Off
@@ -207,7 +274,9 @@ end
 
 CreateToggle(EspPage, "FruitESP", "Fruit ESP")
 
--- Drag Logic
+-- ==========================================
+-- DRAG LOGIC
+-- ==========================================
 local dragging, dragInput, dragStart, startPos
 Top.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
