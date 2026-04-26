@@ -9,7 +9,11 @@ end
 
 _G.Cat = {
     Player = game:GetService("Players").LocalPlayer,
-    Settings = { FruitESP = false },
+    Settings = { 
+        FruitESP = false, 
+        TweenFruit = false, -- TAMBAHAN BARU
+        AntiAFK = true      -- TAMBAHAN BARU
+    },
     Labels = {}
 }
 
@@ -515,15 +519,17 @@ _G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycl
 _G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Required for V3/V4 race")
 _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
+-- TAB DEVIL FRUITS
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", false, function(state)
     _G.Cat.Settings.FruitESP = state
 end)
-
-CreateSection(MiscTab, "MISCELLANEOUS")
-CreateToggle(MiscTab, "Auto Rejoin", "Reconnects if you idle for 20 mins", false, function(state)
-    -- Logic
+CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", false, function(state)
+    _G.Cat.Settings.TweenFruit = state
 end)
-CreateToggle(MiscTab, "Anti AFK", "Prevents virtual input idle kick", false, function(state)
-    -- Logic
+
+-- TAB MISC
+CreateSection(MiscTab, "MISCELLANEOUS")
+CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", true, function(state)
+    _G.Cat.Settings.AntiAFK = state
 end)
