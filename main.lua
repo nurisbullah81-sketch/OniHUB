@@ -1,4 +1,4 @@
--- CatHUB Core: Smooth Engine Update
+-- CatHUB FREEMIUM Logic Core
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -41,22 +41,15 @@ local function CreateESP(object)
     end
 end
 
--- Smooth Tween Logic
 local function TweenTo(target)
     if not UI_Module.Settings.Tween_Enabled or not target then return end
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
-        -- Mencegah Tween ke buah yang sedang dipegang
         if target:IsDescendantOf(char) then return end
-        
         local dist = GetDistance(target)
         if dist < 5 then return end
-        
         local targetCF = target:IsA("Model") and target:GetModelCFrame() or (target:IsA("Tool") and target.Handle.CFrame or target.CFrame)
-        local speed = UI_Module.Settings.Tween_Speed
-        
-        -- Easing Sine agar pergerakan lebih "Smooth"
-        local tweenInfo = TweenInfo.new(dist/speed, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        local tweenInfo = TweenInfo.new(dist/UI_Module.Settings.Tween_Speed, Enum.EasingStyle.Sine)
         local tween = TweenService:Create(char.HumanoidRootPart, tweenInfo, {CFrame = targetCF})
         
         task.spawn(function()
@@ -81,5 +74,3 @@ task.spawn(function()
         end
     end
 end)
-
-print("CatHUB: Smooth Logic Activated.")
