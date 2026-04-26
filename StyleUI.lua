@@ -7,14 +7,10 @@ if CoreGui:FindFirstChild("CatUI") then
     CoreGui.CatUI:Destroy() 
 end
 
--- GLOBAL SETTINGS UNTUK LOGIC
 _G.Cat = {
     Player = game:GetService("Players").LocalPlayer,
-    Settings = {
-        FruitESP = false
-    },
-    Tabs = {},   -- TAMBAHAN BUAT JEMBATAN TAB
-    Funcs = {}   -- TAMBAHAN BUAT JEMBATAN FUNGSI
+    Settings = { FruitESP = false },
+    Labels = {} -- Jembatan khusus buat update teks
 }
 
 local Gui = Instance.new("ScreenGui", CoreGui)
@@ -22,23 +18,17 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- ==========================================
--- PALETTE: WARNA SEMPURNA (Gelap Modern)
--- ==========================================
 local Theme = {
     MainBG      = Color3.fromRGB(10, 10, 10),   
     SideBG      = Color3.fromRGB(14, 14, 16),   
     TopBG       = Color3.fromRGB(10, 10, 10),
     TabOn       = Color3.fromRGB(38, 38, 42),   
-    TabOff      = Color3.fromRGB(25, 25, 30), -- FIX: DIBIKIN LEBIH TERANG DARI SIDEBAR
-    
+    TabOff      = Color3.fromRGB(25, 25, 30), 
     PageBG      = Color3.fromRGB(17, 18, 22),   
-    
     CardBG      = Color3.fromRGB(28, 28, 32),   
     CardHov     = Color3.fromRGB(36, 36, 42),
     Text        = Color3.fromRGB(250, 250, 250),
     TextDim     = Color3.fromRGB(140, 140, 145),
-    
     ToggleOn    = Color3.fromRGB(138, 43, 226), 
     ToggleOff   = Color3.fromRGB(75, 75, 80),
     CatPurple   = Color3.fromRGB(160, 100, 255),
@@ -47,9 +37,6 @@ local Theme = {
     Line        = Color3.fromRGB(40, 40, 45)    
 }
 
--- ==========================================
--- WIDGET "Cat" & DRAG TRANSPARAN
--- ==========================================
 local FloatCont = Instance.new("Frame", Gui)
 FloatCont.Size = UDim2.new(0, 70, 0, 40) 
 FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
@@ -94,9 +81,6 @@ UserInput.InputChanged:Connect(function(input)
     end
 end)
 
--- ==========================================
--- MAIN FRAME
--- ==========================================
 local Main = Instance.new("Frame", Gui)
 Main.Size = UDim2.new(0, 550, 0, 340)
 Main.Position = UDim2.new(0.5, -275, 0.5, -170)
@@ -113,7 +97,6 @@ FloatBtn.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
 end)
 
--- Topbar
 local Top = Instance.new("Frame", Main)
 Top.Size = UDim2.new(1, 0, 0, 35)
 Top.BackgroundColor3 = Theme.TopBG
@@ -207,9 +190,6 @@ UserInput.InputChanged:Connect(function(input)
     end
 end)
 
--- ==========================================
--- RESIZER (FIXED 100%)
--- ==========================================
 local Resizer = Instance.new("TextButton", Main)
 Resizer.Size = UDim2.new(0, 20, 0, 20)
 Resizer.Position = UDim2.new(1, -20, 1, -20)
@@ -248,9 +228,6 @@ UserInput.InputChanged:Connect(function(input)
     end
 end)
 
--- ==========================================
--- DYNAMIC SIDEBAR, SEARCH & KONTEN
--- ==========================================
 local ContentContainer = Instance.new("Frame", Main)
 ContentContainer.Size = UDim2.new(1, 0, 1, -35)
 ContentContainer.Position = UDim2.new(0, 0, 0, 35)
@@ -267,7 +244,6 @@ SideLine.Position = UDim2.new(1, -1, 0, 0)
 SideLine.BackgroundColor3 = Theme.Line
 SideLine.BorderSizePixel = 0
 
--- UI SEARCH BAR (Modern & No Emoji)
 local SearchFrame = Instance.new("Frame", Side)
 SearchFrame.Size = UDim2.new(1, -16, 0, 30)
 SearchFrame.Position = UDim2.new(0, 8, 0, 10)
@@ -289,7 +265,6 @@ SearchBox.Font = Enum.Font.GothamMedium
 SearchBox.TextSize = 12
 SearchBox.TextXAlignment = Enum.TextXAlignment.Left
 
--- Sidebar Scroll diturunin dikit buat ngasih ruang ke Search Bar
 local SideScroll = Instance.new("ScrollingFrame", Side)
 SideScroll.Size = UDim2.new(1, 0, 1, -50)
 SideScroll.Position = UDim2.new(0, 0, 0, 50)
@@ -310,7 +285,7 @@ ContentArea.Position = UDim2.new(0.28, 0, 0, 0)
 ContentArea.BackgroundTransparency = 1
 
 local Pages = {}
-local AllToggles = {} -- Buat nyimpan data fungsi Search
+local AllToggles = {}
 
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton", SideScroll)
@@ -325,7 +300,6 @@ local function CreateTab(name, isFirst)
     Btn.AutoButtonColor = false
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
-    -- FIX: STROKE PUTIH/ABU BUAT PEMBATAS
     local BtnStroke = Instance.new("UIStroke", Btn)
     BtnStroke.Color = Color3.fromRGB(65, 65, 70) 
     BtnStroke.Thickness = 1
@@ -370,7 +344,6 @@ local function CreateTab(name, isFirst)
     Pad.PaddingBottom = UDim.new(0, 10)
     
     Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator, Stroke = BtnStroke}
-    _G.Cat.Tabs[name] = Page -- TAMBAHAN: Simpan tab ke global biar bisa diisi dari file lain
     
     Btn.MouseButton1Click:Connect(function()
         for tName, data in pairs(Pages) do
@@ -392,9 +365,73 @@ local function CreateTab(name, isFirst)
     return Page
 end
 
--- ==========================================
--- FUNGSI LABEL UNTUK STATUS (TAMBAHAN)
--- ==========================================
+local function CreateSection(parent, text)
+    local F = Instance.new("Frame", parent)
+    F.Size = UDim2.new(1, 0, 0, 24) 
+    F.BackgroundTransparency = 1
+    
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, 0, 1, 0)
+    L.Position = UDim2.new(0, 4, 0, 0)
+    L.Text = text
+    L.TextColor3 = Theme.TextDim
+    L.Font = Enum.Font.GothamBold
+    L.TextSize = 11 
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
+end
+
+local function CreateToggle(parent, text, stateRef, callback)
+    local F = Instance.new("TextButton", parent)
+    F.Size = UDim2.new(1, 0, 0, 36)
+    F.BackgroundColor3 = Theme.CardBG
+    F.BorderSizePixel = 0
+    F.Text = ""
+    F.AutoButtonColor = false
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
+    
+    local Stroke = Instance.new("UIStroke", F)
+    Stroke.Color = Theme.Line
+    Stroke.Thickness = 1
+    
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, -60, 1, 0)
+    L.Position = UDim2.new(0, 12, 0, 0)
+    L.Text = text
+    L.TextColor3 = Theme.Text
+    L.Font = Enum.Font.GothamMedium
+    L.TextSize = 12
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
+    
+    local Sw = Instance.new("Frame", F)
+    Sw.Size = UDim2.new(0, 36, 0, 18)
+    Sw.Position = UDim2.new(1, -48, 0.5, -9)
+    Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
+    Sw.BorderSizePixel = 0
+    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0) 
+    
+    local Dot = Instance.new("Frame", Sw)
+    Dot.Size = UDim2.new(0, 14, 0, 14)
+    Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Dot.BorderSizePixel = 0
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0) 
+    
+    F.MouseEnter:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play() end)
+    F.MouseLeave:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardBG}):Play() end)
+    
+    F.MouseButton1Click:Connect(function()
+        stateRef = not stateRef
+        TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play()
+        TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
+        if callback then callback(stateRef) end
+    end)
+    
+    table.insert(AllToggles, {Btn = F, Label = L})
+end
+
+-- FUNGSI LABEL BARU UNTUK STATUS
 local function CreateLabel(parent, text)
     local F = Instance.new("Frame", parent)
     F.Size = UDim2.new(1, 0, 0, 30)
@@ -414,21 +451,10 @@ local function CreateLabel(parent, text)
     L.TextSize = 12
     L.TextXAlignment = Enum.TextXAlignment.Left
     L.BackgroundTransparency = 1
-    L.Name = "StateText"
     
     return L
 end
 
--- JEMBATAN FUNGSI GLOBAL
-_G.Cat.Funcs = {
-    Section = CreateSection,
-    Toggle = CreateToggle,
-    Label = CreateLabel
-}
-
--- ==========================================
--- LOGIC SEARCH BAR
--- ==========================================
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     local query = string.lower(SearchBox.Text)
     for _, toggle in ipairs(AllToggles) do
@@ -442,22 +468,32 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- ==========================================
--- BUILD TABS (ENGLISH UI) - KOSONG, DIISI DARI FILE LUA
+-- BUILD TABS & ISI KONTEN
 -- ==========================================
-CreateTab("Status", true) 
-CreateTab("Devil Fruits", false) 
-CreateTab("Misc", false) 
+local StatusTab = CreateTab("Status", true) 
+local DevilFruitsTab = CreateTab("Devil Fruits", false) 
+local MiscTab = CreateTab("Misc", false) 
 
+-- TAB STATUS (UI DIBUAT DISINI, LOGIC DI STATUS.LUA)
 CreateSection(StatusTab, "PLAYER STATUS")
-CreateToggle(StatusTab, "Show Player Stats", false, function(state)
-    -- Logic 
-end)
+_G.Cat.Labels.Level = CreateLabel(StatusTab, "Level: ...")
+_G.Cat.Labels.Money = CreateLabel(StatusTab, "Money: ...")
+_G.Cat.Labels.Fragments = CreateLabel(StatusTab, "Fragments: ...")
+_G.Cat.Labels.Bounty = CreateLabel(StatusTab, "Bounty/Honor: ...")
 
+CreateSection(StatusTab, "SERVER STATUS")
+_G.Cat.Labels.Players = CreateLabel(StatusTab, "Players: ...")
+_G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...")
+_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...")
+_G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0")
+
+-- TAB DEVIL FRUITS
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
 CreateToggle(DevilFruitsTab, "Fruit ESP", false, function(state)
-    _G.Cat.Settings.FruitESP = state -- KONEKSI KE ESP.LUA
+    _G.Cat.Settings.FruitESP = state
 end)
 
+-- TAB MISC
 CreateSection(MiscTab, "MISCELLANEOUS")
 CreateToggle(MiscTab, "Auto Rejoin", false, function(state)
     -- Logic
