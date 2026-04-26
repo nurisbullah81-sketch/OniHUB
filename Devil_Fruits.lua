@@ -154,7 +154,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 773-PROOF NATIVE SERVER HOPPER
+-- UI SERVER HOPPER (REDZHUB STYLE)
 -- ==========================================
 local isHopping = false
 
@@ -163,14 +163,96 @@ function _G.Cat.HopServer()
     isHopping = true
     
     pcall(function()
-        -- RAHASIA FIX 773: 
-        -- Jangan pakai API/JobId karena campur Sea 1/2/3 -> Error 773
-        -- Pakai Native Teleport ke PlaceId saat ini.
-        -- Ini dijamin 100% tetap di Sea yang sama, dan tidak error restricted!
-        TeleportService:Teleport(game.PlaceId, Me)
+        local pGui = Me.PlayerGui
+        if not pGui then return end
+        
+        local function getDescendants(parent)
+            local list = {}
+            for _, child in pairs(parent:GetChildren()) do
+                table.insert(list, child)
+                for _, desc in pairs(getDescendants(child)) do table.insert(list, desc) end
+            end
+            return list
+        end
+
+        -- 1. Cari tombol Server Browser (Biasanya ada tulisan "Server" atau di namanya "Server")
+        local browserBtn = nil
+        for _, obj in pairs(getDescendants(pGui)) do
+            if (obj:IsA("TextButton") or obj:IsA("ImageButton")) then
+                local text = obj.Text or ""
+                local name = obj.Name or ""
+                if string.find(string.lower(text), "server") or string.find(string.lower(name), "server") then
+                    browserBtn = obj
+                    break
+                end
+            end
+        end
+
+        if not browserBtn then
+            warn("[CatHUB] Tombol Server Browser tidak ditemukan!")
+            isHopping = false
+            return
+        end
+
+        -- Klik tombol buka UI Server
+        firesignal(browserBtn.MouseButton1Click)
+        task.wait(1.5)
+
+        -- 2. Cari server yang cocok (Tidak penuh, >2 pemain biar bukan bot)
+        local joined = false
+        for attempt = 1, 15 do -- Coba scroll 15 kali
+            for _, obj in pairs(getDescendants(pGui)) do
+                if obj:IsA("TextButton") and obj.Visible then
+                    local text = obj.Text or ""
+                    if string.find(string.lower(text), "join") then
+                        -- Cek jumlah pemain di sibling label (Biasanya format "X/Y")
+                        local parent = obj.Parent
+                        if parent then
+                            for _, sibling in pairs(parent:GetDescendants()) do
+                                if sibling:IsA("TextLabel") and sibling.Text then
+                                    local current, max = string.match(sibling.Text, "(%d+)/(%d+)")
+                                    if current and max then
+                                        current = tonumber(current)
+                                        max = tonumber(max)
+                                        -- Filter: Harus ada orang (>2), dan belum penuh
+                                        if current and max and current > 2 and current < max then
+                                            firesignal(obj.MouseButton1Click)
+                                            joined = true
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                if joined then break end
+            end
+            
+            if joined then break end
+            
+            -- Scroll ke bawah kalau ga nemu
+            for _, obj in pairs(getDescendants(pGui)) do
+                if obj:IsA("ScrollingFrame") and obj.Visible then
+                    obj.CanvasPosition = Vector2.new(0, obj.CanvasPosition.Y + 300)
+                    break
+                end
+            end
+            task.wait(0.5)
+        end
+
+        -- 3. Tutup UI Server kalau udah selesai/ketemu
+        if not joined then
+            for _, obj in pairs(getDescendants(pGui)) do
+                if obj:IsA("TextButton") and (string.find(string.lower(obj.Text), "close") or string.find(string.lower(obj.Text), "x")) then
+                    firesignal(obj.MouseButton1Click)
+                    break
+                end
+            end
+        end
     end)
     
-    task.wait(15) -- Cooldown biar ga nge-spam
+    task.wait(10) -- Cooldown abis klik join biar ga spam
     isHopping = false
 end
 
@@ -184,7 +266,7 @@ task.spawn(function()
                     if f and f.Parent and f.Parent == Workspace then 
                         fruitCount = fruitCount + 1 
                     else
-                        Rem(f) -- Hapus data buah palsu
+                        Rem(f)
                     end
                 end
                 
