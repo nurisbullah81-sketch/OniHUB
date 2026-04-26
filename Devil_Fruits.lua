@@ -1,6 +1,8 @@
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Me = _G.Cat.Player
+local Settings = _G.Cat.Settings
 
 local Data = {}
 local Mem = {}
@@ -34,23 +36,97 @@ local function Add(f)
     end)
 end
 
-local function Rem(f) if Data[f] then pcall(function() if Data[f].bb and Data[f].bb.Parent then Data[f].bb:Destroy() end end) Data[f] = nil; Mem[f] = nil end end
+local function Rem(f) 
+    if Data[f] then 
+        pcall(function() if Data[f].bb and Data[f].bb.Parent then Data[f].bb:Destroy() end end) 
+        Data[f] = nil; Mem[f] = nil 
+    end 
+end
 
 for _, o in pairs(Workspace:GetChildren()) do if IsF(o) then Add(o) end end
 Workspace.ChildAdded:Connect(function(o) task.wait(0.5) if IsF(o) then Add(o) end end)
 Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 
+-- LOGIC ESP
 RunService.RenderStepped:Connect(function()
     FC = FC + 1; if FC % SKIP ~= 0 then return end
     pcall(function()
-        if not _G.Cat.Settings.FruitESP then for _, d in pairs(Data) do if d and d.bb then d.bb.Enabled = false end end return end
-        local c = Me.Character; if not c then return end; local r = c:FindFirstChild("HumanoidRootPart"); if not r then return end; local mp = r.Position
-        for f, d in pairs(Data) do
-            if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end
-            local p = Pos(f); if not p then d.bb.Enabled = false continue end
-            local dx, dy, dz = p.X - mp.X, p.Y - mp.Y, p.Z - mp.Z; local m = math.floor(math.sqrt(dx*dx + dy*dy + dz*dz))
-            if math.abs(m - (Mem[f] or -1)) > 5 then Mem[f] = m; d.txt.Text = f.Name .. " [" .. m .. "m]" end
-            d.bb.Enabled = true
+        if not Settings.FruitESP then 
+            for _, d in pairs(Data) do if d and d.bb then d.bb.Enabled = false end end 
+        else
+            local c = Me.Character; if not c then return end; local r = c:FindFirstChild("HumanoidRootPart"); if not r then return end; local mp = r.Position
+            for f, d in pairs(Data) do
+                if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end
+                local p = Pos(f); if not p then d.bb.Enabled = false continue end
+                local dx, dy, dz = p.X - mp.X, p.Y - mp.Y, p.Z - mp.Z; local m = math.floor(math.sqrt(dx*dx + dy*dy + dz*dz))
+                if math.abs(m - (Mem[f] or -1)) > 5 then Mem[f] = m; d.txt.Text = f.Name .. " [" .. m .. "m]" end
+                d.bb.Enabled = true
+            end
         end
     end)
+end)
+
+-- LOGIC TWEEN SMOOTH & ANTI-GLITCH
+local fruitTween = nil
+
+local function GetNearestFruit()
+    local closest, minDist = nil, math.huge
+    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    for f, _ in pairs(Data) do
+        if f and f.Parent then
+            local p = Pos(f)
+            if p then
+                local dist = (p - hrp.Position).Magnitude
+                if dist < minDist then
+                    closest = f
+                    minDist = dist
+                end
+            end
+        end
+    end
+    return closest
+end
+
+task.spawn(function()
+    while task.wait(0.5) do -- Cek tiap 0.5 detik, ga tiap frame biar ga makan RAM
+        pcall(function()
+            if Settings.TweenFruit then
+                local nearest = GetNearestFruit()
+                local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
+                
+                if nearest and hrp then
+                    local pos = Pos(nearest)
+                    if pos then
+                        local dist = (pos - hrp.Position).Magnitude
+                        
+                        -- Jangan tween kalau udah di atas buah (jarak < 15 stud)
+                        if dist > 15 then
+                            -- Cancel tween lama kalau ada, biar ga ngos2an (glitch)
+                            if fruitTween then 
+                                fruitTween:Cancel() 
+                            end
+                            
+                            -- Kecepatan aman 200 studs/sec, ga bakal kena anti-cheat
+                            local speed = 200 
+                            local timeToTween = dist / speed
+                            
+                            -- Offset Y +15 biar karakter "terbang" halus di atas buah tanpa nyangkut pohon
+                            local targetCFrame = CFrame.new(pos + Vector3.new(0, 15, 0))
+                            
+                            fruitTween = TweenService:Create(hrp, TweenInfo.new(timeToTween, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+                            fruitTween:Play()
+                        end
+                    end
+                else
+                    -- Kalau ga ada buah, stop tween
+                    if fruitTween then fruitTween:Cancel(); fruitTween = nil end
+                end
+            else
+                -- Kalau fitur dimatiin, langsung putus tween
+                if fruitTween then fruitTween:Cancel(); fruitTween = nil end
+            end
+        end)
+    end
 end)
