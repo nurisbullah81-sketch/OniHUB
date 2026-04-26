@@ -1,4 +1,4 @@
--- CatHUB v8.3: Premium Minimal UI
+-- CatHUB v8.4: True Modern UI
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,120 +12,172 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Palette
+-- Soft palette
 local P = {
-    Base = Color3.fromRGB(12, 12, 16),
-    Surface = Color3.fromRGB(18, 18, 24),
-    Top = Color3.fromRGB(20, 15, 32),
-    Card = Color3.fromRGB(22, 22, 30),
-    Accent = Color3.fromRGB(140, 100, 220),
-    Text = Color3.fromRGB(220, 220, 230),
-    Sub = Color3.fromRGB(100, 100, 115),
-    Off = Color3.fromRGB(35, 35, 45),
-    Border = Color3.fromRGB(40, 30, 65)
+    Base = Color3.fromRGB(14, 14, 18),
+    Surface = Color3.fromRGB(17, 17, 22),
+    Elevate = Color3.fromRGB(22, 22, 28),
+    Accent = Color3.fromRGB(130, 95, 210),
+    AccentDim = Color3.fromRGB(90, 65, 150),
+    Text = Color3.fromRGB(230, 230, 240),
+    Sub = Color3.fromRGB(110, 110, 125),
+    Muted = Color3.fromRGB(55, 55, 68),
+    Off = Color3.fromRGB(38, 38, 48),
+    Glow = Color3.fromRGB(100, 70, 180)
 }
 
+-- Shadow maker
+local function Shadow(parent, blur, offset, color, trans)
+    local s = Instance.new("ImageLabel", parent)
+    s.Name = "Shadow"
+    s.Size = UDim2.new(1, offset, 1, offset)
+    s.Position = UDim2.new(0, -offset/2, 0, -offset/2)
+    s.BackgroundTransparency = 1
+    s.Image = "rbxassetid://6015897843"
+    s.ImageColor3 = color or Color3.new(0, 0, 0)
+    s.ImageTransparency = trans or 0.4
+    s.ScaleType = Enum.ScaleType.Slice
+    s.SliceCenter = Rect.new(49, 49, 450, 450)
+    s.ZIndex = -1
+    return s
+end
+
+-- Main container
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 360, 0, 240)
-Main.Position = UDim2.new(0.5, -180, 0.5, -120)
+Main.Size = UDim2.new(0, 340, 0, 260)
+Main.Position = UDim2.new(0.5, -170, 0.5, -130)
 Main.BackgroundColor3 = P.Base
 Main.BorderSizePixel = 0
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
-Instance.new("UIStroke", Main).Color = P.Border
-Instance.new("UIStroke", Main).Thickness = 0.5
+Shadow(Main, 20, 12, Color3.new(0, 0, 0), 0.5)
 
--- Top
+local Border = Instance.new("UIStroke", Main)
+Border.Color = P.AccentDim
+Border.Transparency = 0.75
+Border.Thickness = 0.8
+
+-- Topbar
 local Top = Instance.new("Frame", Main)
-Top.Size = UDim2.new(1, 0, 0, 30)
-Top.BackgroundColor3 = P.Top
+Top.Size = UDim2.new(1, 0, 0, 34)
+Top.BackgroundColor3 = Color3.fromRGB(18, 15, 28)
 Top.BorderSizePixel = 0
-Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 14)
 
-local G = Instance.new("UIGradient", Top)
-G.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 18, 55)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 28, 80))
+local TGrad = Instance.new("UIGradient", Top)
+TGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 18, 50)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(38, 22, 65)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 18, 50))
 })
+TGrad.Rotation = 90
 
 local Ttl = Instance.new("TextLabel", Top)
-Ttl.Size = UDim2.new(1, -50, 1, 0)
-Ttl.Position = UDim2.new(0, 12, 0, 0)
+Ttl.Size = UDim2.new(1, -60, 1, 0)
+Ttl.Position = UDim2.new(0, 14, 0, 0)
 Ttl.Text = "CATHUB"
-Ttl.TextColor3 = Color3.fromRGB(255, 255, 255)
+Ttl.TextColor3 = Color3.new(1, 1, 1)
 Ttl.Font = Enum.Font.GothamBold
-Ttl.TextSize = 12
+Ttl.TextSize = 13
 Ttl.TextXAlignment = "Left"
 Ttl.BackgroundTransparency = 1
 
-local X = Instance.new("TextButton", Top)
-X.Size = UDim2.new(0, 30, 0, 30)
-X.Position = UDim2.new(1, -30, 0, 0)
-X.Text = "×"
-X.TextColor3 = Color3.fromRGB(160, 80, 80)
-X.BackgroundTransparency = 1
-X.Font = Enum.Font.Gotham
-X.TextSize = 14
-X.MouseButton1Click:Connect(function() Gui:Destroy() end)
+-- Buttons
+local BtnClose = Instance.new("TextButton", Top)
+BtnClose.Size = UDim2.new(0, 28, 0, 28)
+BtnClose.Position = UDim2.new(1, -30, 0, 3)
+BtnClose.Text = "✕"
+BtnClose.TextColor3 = Color3.fromRGB(180, 100, 100)
+BtnClose.BackgroundTransparency = 1
+BtnClose.Font = Enum.Font.Gotham
+BtnClose.TextSize = 12
+BtnClose.MouseButton1Click:Connect(function()
+    TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 340, 0, 0),
+        BackgroundTransparency = 1
+    }):Play()
+    task.wait(0.2)
+    Gui:Destroy()
+end)
 
-local Mn = Instance.new("TextButton", Top)
-Mn.Size = UDim2.new(0, 30, 0, 30)
-Mn.Position = UDim2.new(1, -60, 0, 0)
-Mn.Text = "—"
-Mn.TextColor3 = P.Sub
-Mn.BackgroundTransparency = 1
-Mn.Font = Enum.Font.Gotham
-Mn.TextSize = 12
+local BtnMin = Instance.new("TextButton", Top)
+BtnMin.Size = UDim2.new(0, 28, 0, 28)
+BtnMin.Position = UDim2.new(1, -58, 0, 3)
+BtnMin.Text = "—"
+BtnMin.TextColor3 = P.Sub
+BtnMin.BackgroundTransparency = 1
+BtnMin.Font = Enum.Font.Gotham
+BtnMin.TextSize = 11
 
+-- Content
 local Content = Instance.new("Frame", Main)
-Content.Size = UDim2.new(1, -108, 1, -38)
-Content.Position = UDim2.new(0, 103, 0, 33)
+Content.Size = UDim2.new(1, -102, 1, -42)
+Content.Position = UDim2.new(0, 97, 0, 37)
 Content.BackgroundTransparency = 1
 Content.ClipsDescendants = true
 
 local isMin = false
-Mn.MouseButton1Click:Connect(function()
+BtnMin.MouseButton1Click:Connect(function()
     isMin = not isMin
     Content.Visible = not isMin
     Main:FindFirstChild("Side").Visible = not isMin
-    Main:TweenSize(isMin and UDim2.new(0, 360, 0, 30) or UDim2.new(0, 360, 0, 240), "Out", "Quad", 0.15, true)
+    TweenService:Create(Main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = isMin and UDim2.new(0, 340, 0, 34) or UDim2.new(0, 340, 0, 260)
+    }):Play()
 end)
 
 -- Sidebar
 local Side = Instance.new("Frame", Main)
 Side.Name = "Side"
-Side.Size = UDim2.new(0, 95, 1, -38)
-Side.Position = UDim2.new(0, 4, 0, 33)
+Side.Size = UDim2.new(0, 88, 1, -42)
+Side.Position = UDim2.new(0, 5, 0, 37)
 Side.BackgroundColor3 = P.Surface
 Side.BorderSizePixel = 0
-Instance.new("UICorner", Side).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", Side).CornerRadius = UDim.new(0, 10)
 
-local Tabs = Instance.new("Frame", Side)
-Tabs.Size = UDim2.new(1, -6, 0, 160)
-Tabs.Position = UDim2.new(0, 3, 0, 5)
-Tabs.BackgroundTransparency = 1
-local TL = Instance.new("UIListLayout", Tabs)
-TL.Padding = UDim.new(0, 2)
+local TabBox = Instance.new("Frame", Side)
+TabBox.Size = UDim2.new(1, -8, 0, 165)
+TabBox.Position = UDim2.new(0, 4, 0, 6)
+TabBox.BackgroundTransparency = 1
+local TabLay = Instance.new("UIListLayout", TabBox)
+TabLay.Padding = UDim.new(0, 3)
 
+-- Tab creation
 local function Tab(name, active)
-    local B = Instance.new("TextButton", Tabs)
-    B.Size = UDim2.new(1, 0, 0, 28)
-    B.BackgroundColor3 = active and Color3.fromRGB(28, 20, 45) or Color3.fromRGB(0, 0, 0)
+    local B = Instance.new("TextButton", TabBox)
+    B.Size = UDim2.new(1, 0, 0, 29)
+    B.BackgroundColor3 = active and P.Elevate or Color3.new(1, 1, 1)
     B.BackgroundTransparency = active and 0 or 1
     B.Text = name
-    B.TextColor3 = active and P.Accent or P.Sub
-    B.Font = Enum.Font.GothamBold
-    B.TextSize = 9
+    B.TextColor3 = active and P.Accent or P.Muted
+    B.Font = Enum.Font.GothamMedium
+    B.TextSize = 10
     B.BorderSizePixel = 0
-    Instance.new("UICorner", B).CornerRadius = UDim.new(0, 5)
+    Instance.new("UICorner", B).CornerRadius = UDim.new(0, 8)
     
     if active then
-        local I = Instance.new("Frame", B)
-        I.Size = UDim2.new(0, 2, 0.5, 0)
-        I.Position = UDim2.new(0, 0, 0.25, 0)
-        I.BackgroundColor3 = P.Accent
-        I.BorderSizePixel = 0
-        Instance.new("UICorner", I).CornerRadius = UDim.new(0, 1)
+        local Glow = Instance.new("Frame", B)
+        Glow.Size = UDim2.new(0, 3, 0.45, 0)
+        Glow.Position = UDim2.new(0, 0, 0.275, 0)
+        Glow.BackgroundColor3 = P.Accent
+        Glow.BorderSizePixel = 0
+        Instance.new("UICorner", Glow).CornerRadius = UDim.new(0, 2)
+    end
+    
+    -- Hover effect for inactive
+    if not active then
+        B.MouseEnter:Connect(function()
+            TweenService:Create(B, TweenInfo.new(0.15), {
+                BackgroundTransparency = 0.85,
+                TextColor3 = P.Sub
+            }):Play()
+        end)
+        B.MouseLeave:Connect(function()
+            TweenService:Create(B, TweenInfo.new(0.15), {
+                BackgroundTransparency = 1,
+                TextColor3 = P.Muted
+            }):Play()
+        end)
     end
 end
 
@@ -133,31 +185,33 @@ Tab("ESP", true)
 Tab("Combat", false)
 Tab("Farm", false)
 Tab("Teleport", false)
+Tab("Misc", false)
 
--- Content
+-- Scroll
 local Scroll = Instance.new("ScrollingFrame", Content)
 Scroll.Size = UDim2.new(1, -8, 1, -8)
 Scroll.Position = UDim2.new(0, 4, 0, 4)
 Scroll.BackgroundTransparency = 1
-Scroll.ScrollBarThickness = 1
-Scroll.ScrollBarImageColor3 = P.Border
+Scroll.ScrollBarThickness = 0
 Scroll.BorderSizePixel = 0
 Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-Instance.new("UIListLayout", Scroll).Padding = UDim.new(0, 3)
+local Slay = Instance.new("UIListLayout", Scroll)
+Slay.Padding = UDim.new(0, 4)
 
 -- Section
 local function Sec(t)
     local F = Instance.new("Frame", Scroll)
-    F.Size = UDim2.new(1, 0, 0, 22)
-    F.BackgroundColor3 = P.Top
+    F.Size = UDim2.new(1, 0, 0, 24)
+    F.BackgroundColor3 = P.Elevate
     F.BorderSizePixel = 0
-    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 4)
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 7)
+    
     local L = Instance.new("TextLabel", F)
     L.Size = UDim2.new(1, 0, 1, 0)
-    L.Position = UDim2.new(0, 8, 0, 0)
+    L.Position = UDim2.new(0, 10, 0, 0)
     L.Text = t
     L.TextColor3 = P.Accent
-    L.Font = Enum.Font.GothamBold
+    L.Font = Enum.Font.GothamMedium
     L.TextSize = 9
     L.TextXAlignment = "Left"
     L.BackgroundTransparency = 1
@@ -166,14 +220,14 @@ end
 -- Toggle
 local function Tgl(key, title)
     local F = Instance.new("Frame", Scroll)
-    F.Size = UDim2.new(1, 0, 0, 28)
-    F.BackgroundColor3 = P.Card
+    F.Size = UDim2.new(1, 0, 0, 30)
+    F.BackgroundColor3 = P.Elevate
     F.BorderSizePixel = 0
-    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 5)
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 8)
     
     local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -46, 1, 0)
-    L.Position = UDim2.new(0, 10, 0, 0)
+    L.Size = UDim2.new(1, -48, 1, 0)
+    L.Position = UDim2.new(0, 12, 0, 0)
     L.Text = title
     L.TextColor3 = P.Text
     L.Font = Enum.Font.Gotham
@@ -181,74 +235,76 @@ local function Tgl(key, title)
     L.TextXAlignment = "Left"
     L.BackgroundTransparency = 1
     
+    -- Modern pill toggle
     local Sw = Instance.new("TextButton", F)
-    Sw.Size = UDim2.new(0, 34, 0, 16)
-    Sw.Position = UDim2.new(1, -40, 0.5, -8)
+    Sw.Size = UDim2.new(0, 36, 0, 18)
+    Sw.Position = UDim2.new(1, -42, 0.5, -9)
     Sw.BackgroundColor3 = S[key] and P.Accent or P.Off
     Sw.Text = ""
     Sw.BorderSizePixel = 0
     Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
     
-    local D = Instance.new("Frame", Sw)
-    D.Size = UDim2.new(0, 12, 0, 12)
-    D.Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-    D.BackgroundColor3 = Color3.new(1, 1, 1)
-    D.BorderSizePixel = 0
-    Instance.new("UICorner", D).CornerRadius = UDim.new(1, 0)
+    local Dot = Instance.new("Frame", Sw)
+    Dot.Size = UDim2.new(0, 14, 0, 14)
+    Dot.Position = S[key] and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+    Dot.BackgroundColor3 = Color3.new(1, 1, 1)
+    Dot.BorderSizePixel = 0
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
     
     Sw.MouseButton1Click:Connect(function()
         S[key] = not S[key]
-        TweenService:Create(D, TweenInfo.new(0.12, Enum.EasingStyle.Back), {
-            Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
+        TweenService:Create(Dot, TweenInfo.new(0.18, Enum.EasingStyle.Back), {
+            Position = S[key] and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
         }):Play()
-        TweenService:Create(Sw, TweenInfo.new(0.1), {
+        TweenService:Create(Sw, TweenInfo.new(0.15), {
             BackgroundColor3 = S[key] and P.Accent or P.Off
         }):Play()
     end)
 end
 
--- Soon
+-- Coming soon
 local function Soon(t)
     local F = Instance.new("Frame", Scroll)
-    F.Size = UDim2.new(1, 0, 0, 28)
-    F.BackgroundColor3 = P.Card
+    F.Size = UDim2.new(1, 0, 0, 30)
+    F.BackgroundColor3 = P.Elevate
     F.BorderSizePixel = 0
-    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 5)
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 8)
     
     local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -70, 1, 0)
-    L.Position = UDim2.new(0, 10, 0, 0)
+    L.Size = UDim2.new(1, -75, 1, 0)
+    L.Position = UDim2.new(0, 12, 0, 0)
     L.Text = t
-    L.TextColor3 = Color3.fromRGB(50, 50, 60)
+    L.TextColor3 = P.Muted
     L.Font = Enum.Font.Gotham
     L.TextSize = 10
     L.TextXAlignment = "Left"
     L.BackgroundTransparency = 1
     
-    local T = Instance.new("TextLabel", F)
-    T.Size = UDim2.new(0, 40, 1, 0)
-    T.Position = UDim2.new(1, -48, 0, 0)
-    T.Text = "SOON"
-    T.TextColor3 = Color3.fromRGB(50, 40, 70)
-    T.Font = Enum.Font.GothamBold
-    T.TextSize = 7
-    T.BackgroundTransparency = 1
+    local Tag = Instance.new("TextLabel", F)
+    Tag.Size = UDim2.new(0, 42, 0, 16)
+    Tag.Position = UDim2.new(1, -50, 0.5, -8)
+    Tag.Text = "SOON"
+    Tag.TextColor3 = P.AccentDim
+    Tag.Font = Enum.Font.GothamBold
+    Tag.TextSize = 7
+    Tag.BackgroundTransparency = 1
     
     local Sw = Instance.new("Frame", F)
-    Sw.Size = UDim2.new(0, 34, 0, 16)
-    Sw.Position = UDim2.new(1, -40, 0.5, -8)
-    Sw.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+    Sw.Size = UDim2.new(0, 36, 0, 18)
+    Sw.Position = UDim2.new(1, -42, 0.5, -9)
+    Sw.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
     Sw.BorderSizePixel = 0
     Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
     
     local D = Instance.new("Frame", Sw)
-    D.Size = UDim2.new(0, 12, 0, 12)
-    D.Position = UDim2.new(0, 2, 0.5, -6)
-    D.BackgroundColor3 = Color3.fromRGB(55, 55, 65)
+    D.Size = UDim2.new(0, 14, 0, 14)
+    D.Position = UDim2.new(0, 2, 0.5, -7)
+    D.BackgroundColor3 = P.Muted
     D.BorderSizePixel = 0
     Instance.new("UICorner", D).CornerRadius = UDim.new(1, 0)
 end
 
+-- Build
 Sec("DEVIL FRUITS")
 Tgl("FruitESP", "Fruit ESP")
 
