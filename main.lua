@@ -1,25 +1,17 @@
--- CatHUB v8.0: Main Loader
--- Hanya ini dan ESP.lua yang aktif
-
+-- CatHUB v8.1: Loader
 local function Load(file)
     local url = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/" .. file .. "?v=" .. math.random()
-    local ok, result = pcall(function()
-        return loadstring(game:HttpGet(url))()
-    end)
-    if not ok then
-        warn("[CatHUB] Gagal load: " .. file)
-        return nil
-    end
-    return result
+    local ok, res = pcall(function() return loadstring(game:HttpGet(url))() end)
+    if not ok then warn("[CatHUB] Gagal: " .. file) end
+    return res
 end
 
--- Cache sederhana (bisa dipakai semua module nanti)
 _G.CatHub = {
     Player = game:GetService("Players").LocalPlayer,
-    Settings = {}
+    Settings = { FruitESP = false }
 }
 
--- Load ESP saja dulu
+Load("StyleUI.lua")
 Load("ESP.lua")
 
-print("[CatHUB] v8.0 Ready - ESP Only")
+print("[CatHUB] v8.1 Loaded")
