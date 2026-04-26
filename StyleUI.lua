@@ -7,6 +7,14 @@ if CoreGui:FindFirstChild("CatUI") then
     CoreGui.CatUI:Destroy() 
 end
 
+-- GLOBAL SETTINGS UNTUK LOGIC
+_G.Cat = {
+    Player = game:GetService("Players").LocalPlayer,
+    Settings = {
+        FruitESP = false
+    }
+}
+
 local Gui = Instance.new("ScreenGui", CoreGui)
 Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
@@ -20,9 +28,8 @@ local Theme = {
     SideBG      = Color3.fromRGB(14, 14, 16),   
     TopBG       = Color3.fromRGB(10, 10, 10),
     TabOn       = Color3.fromRGB(38, 38, 42),   
-    TabOff      = Color3.fromRGB(14, 14, 16),   
+    TabOff      = Color3.fromRGB(25, 25, 30), -- FIX: DIBIKIN LEBIH TERANG DARI SIDEBAR
     
-    -- FIX KOTAK DALAM: Hitam keabu-abuan modern yang lu suka
     PageBG      = Color3.fromRGB(17, 18, 22),   
     
     CardBG      = Color3.fromRGB(28, 28, 32),   
@@ -316,10 +323,11 @@ local function CreateTab(name, isFirst)
     Btn.AutoButtonColor = false
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
+    -- FIX: STROKE PUTIH/ABU BUAT PEMBATAS
     local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Color = Theme.Line
+    BtnStroke.Color = Color3.fromRGB(65, 65, 70) 
     BtnStroke.Thickness = 1
-    BtnStroke.Transparency = isFirst and 0 or 0.5 
+    BtnStroke.Transparency = isFirst and 0 or 0.3 
     
     local Indicator = Instance.new("Frame", Btn)
     Indicator.Size = UDim2.new(0, 3, 0, 14)
@@ -373,7 +381,7 @@ local function CreateTab(name, isFirst)
             }):Play()
             
             TweenService:Create(data.Stroke, TweenInfo.new(0.15), {
-                Transparency = active and 0 or 0.5
+                Transparency = active and 0 or 0.3
             }):Play()
         end
     end)
@@ -475,11 +483,8 @@ CreateToggle(StatusTab, "Show Player Stats", false, function(state)
 end)
 
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
-CreateToggle(DevilFruitsTab, "Fruit ESP (Text Only)", false, function(state)
-    -- Logic 
-end)
-CreateToggle(DevilFruitsTab, "Chest ESP", false, function(state)
-    -- Logic 
+CreateToggle(DevilFruitsTab, "Fruit ESP", false, function(state)
+    _G.Cat.Settings.FruitESP = state -- KONEKSI KE ESP.LUA
 end)
 
 CreateSection(MiscTab, "MISCELLANEOUS")
