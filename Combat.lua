@@ -1,123 +1,137 @@
--- CatHUB FREEMIUM: Combat Module (v6.1)
+-- CatHUB v7.0: Combat (Fixed Attack + Anti-Detect)
 local UI = _G.CatHUB_UI
+local Cache = _G.CatCache
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
 
-local CombatTab = UI:CreateTab("Combat")
+local Tab = UI:CreateTab("⚔️ Combat")
 
--- Switches
-UI:CreateSwitch(CombatTab, "LockAim_Enabled", "Lock Aim (Nearest Enemy)")
-UI:CreateSwitch(CombatTab, "AntiStun_Enabled", "Anti Stun")
-UI:CreateSwitch(CombatTab, "WalkWater_Enabled", "Walk on Water")
-UI:CreateSwitch(CombatTab, "FastRun_Enabled", "Fast Run")
-UI:CreateSlider(CombatTab, "Run_Speed", "Run Speed", 16, 100, function(val)
-    if UI.Settings.FastRun_Enabled and LocalPlayer.Character then
-        LocalPlayer.Character.Humanoid.WalkSpeed = val
-    end
-end)
-UI:CreateSwitch(CombatTab, "HighJump_Enabled", "High Jump")
-UI:CreateSlider(CombatTab, "Jump_Power", "Jump Power", 50, 200, function(val)
-    if UI.Settings.HighJump_Enabled and LocalPlayer.Character then
-        LocalPlayer.Character.Humanoid.JumpPower = val
-    end
-end)
+UI:CreateSection(Tab, "ATTACK")
+UI:CreateSwitch(Tab, "AutoAttack", "Auto Attack")
 
--- Lock Aim System
-RunService.RenderStepped:Connect(function()
-    if UI.Settings.LockAim_Enabled and LocalPlayer.Character then
-        pcall(function()
-            local closest, dist = nil, math.huge
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    if p.Character.Humanoid.Health > 0 then
-                        local d = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                        if d < dist then
-                            closest, dist = p, d
-                        end
-                    end
-                end
-            end
-            if closest and closest.Character.HumanoidRootPart then
-                Workspace.CurrentCamera.CFrame = CFrame.new(
-                    Workspace.CurrentCamera.CFrame.Position,
-                    closest.Character.HumanoidRootPart.Position
-                )
-            end
-        end)
-    end
-end)
+UI:CreateSection(Tab, "DEFENSE")
+UI:CreateSwitch(Tab, "AntiStun", "Anti Stun")
+UI:CreateSwitch(Tab, "NoClip", "No Clip")
 
--- Anti Stun
+UI:CreateSection(Tab, "MOVEMENT")
+UI:CreateSwitch(Tab, "FastRun", "Fast Run")
+UI:CreateSlider(Tab, "RunSpeed", "Run Speed", 16, 100, nil)
+UI:CreateSwitch(Tab, "HighJump", "High Jump")
+UI:CreateSlider(Tab, "JumpPower", "Jump Power", 50, 200, nil)
+
+UI:CreateSection(Tab, "AIMBOT")
+UI:CreateSwitch(Tab, "Aimbot", "Lock Aim to Nearest")
+
+-- Auto Attack: uses Heartbeat but with frame limiter
+local lastAttackTick = 0
+local attackInterval = 0.08 -- ~12 attacks/sec (safe, not insane)
+
 RunService.Heartbeat:Connect(function()
-    if UI.Settings.AntiStun_Enabled and LocalPlayer.Character then
-        pcall(function()
-            local hum = LocalPlayer.Character.Humanoid
-            if hum:GetState() == Enum.HumanoidStateType.PlatformStanding then
-                hum:ChangeState(Enum.HumanoidStateType.Running)
+    if not UI.Settings.AutoAttack then return end
+    if not Cache.IsValid then return end
+    
+    -- Frame limiter (don't attack EVERY frame)
+    if tick() - lastAttackTick < attackInterval then return end
+    
+    -- Check if near enemy
+    local nearEnemy = false
+    pcall(function()
+        for _, v in pairs(Workspace.Enemies:GetChildren()) do
+            if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
+                if v.Humanoid.Health > 0 then
+                    local d = (v.HumanoidRootPart.Position - Cache.Position).Magnitude
+                    if d < 30 then -- Only attack if CLOSE (not teleporting)
+                        nearEnemy = true
+                        break
+                    end
+                end
             end
+        end
+    end)
+    
+    -- Also check if near bounty target
+    if not nearEnemy and Cache.TargetLocked and Cache.TargetPlayer then
+        pcall(function()
+            local target = Cache.TargetPlayer
+            if target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                local d = (target.Character.HumanoidRootPart.Position - Cache.Position).Magnitude
+                if d < 30 then nearEnemy = true end
+            end
+        end)
+    end
+    
+    if nearEnemy then
+        lastAttackTick = tick()
+        pcall(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton1(Vector2.new(851, 158), Workspace.CurrentCamera.CFrame)
         end)
     end
 end)
 
--- Walk on Water
-task.spawn(function()
-    while task.wait(0.1) do
-        if UI.Settings.WalkWater_Enabled and LocalPlayer.Character then
-            pcall(function()
-                local root = LocalPlayer.Character.HumanoidRootPart
-                local pos = root.Position
-                -- Check if in water region
-                for _, v in pairs(Workspace:GetChildren()) do
-                    if v:IsA("Terrain") then
-                        local cell = v:ReadVoxel(pos)
-                        if cell.Material == Enum.Material.Water then
-                            root.Velocity = Vector3.new(root.Velocity.X, 25, root.Velocity.Z)
-                        end
-                    end
-                end
-            end)
+-- Anti Stun (lightweight)
+RunService.Heartbeat:Connect(function()
+    if not UI.Settings.AntiStun then return end
+    if not Cache.IsValid then return end
+    pcall(function()
+        local state = Cache.Humanoid:GetState()
+        if state == Enum.HumanoidStateType.PlatformStanding or state == Enum.HumanoidStateType.FallingDown then
+            Cache.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
         end
-    end
+    end)
 end)
 
--- Fast Run
+-- No Clip
+RunService.Stepped:Connect(function()
+    if not UI.Settings.NoClip then return end
+    if not Cache.IsValid then return end
+    pcall(function()
+        if Cache.Humanoid:GetState() ~= Enum.HumanoidStateType.StrafingNoPhysics then
+            Cache.Humanoid:ChangeState(Enum.HumanoidStateType.StrafingNoPhysics)
+        end
+    end)
+end)
+
+-- Fast Run / Jump (slow interval, not every frame)
 task.spawn(function()
     while task.wait(0.5) do
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            local hum = LocalPlayer.Character.Humanoid
-            if UI.Settings.FastRun_Enabled then
-                hum.WalkSpeed = UI.Settings.Run_Speed
-            else
-                hum.WalkSpeed = 16
+        if not Cache.IsValid then continue end
+        pcall(function()
+            Cache.Humanoid.WalkSpeed = UI.Settings.FastRun and UI.Settings.RunSpeed or 16
+            if UI.Settings.HighJump then
+                Cache.Humanoid.UseJumpPower = true
+                Cache.Humanoid.JumpPower = UI.Settings.JumpPower
             end
-            
-            if UI.Settings.HighJump_Enabled then
-                hum.JumpPower = UI.Settings.Jump_Power
-                hum.UseJumpPower = true
-            else
-                hum.JumpPower = 50
-            end
-        end
+        end)
     end
 end)
 
--- Get Nearest Player Function (For Bounty)
-function _G.CatHUB_GetNearestPlayer()
+-- Aimbot (RenderStepped because camera)
+RunService.RenderStepped:Connect(function()
+    if not UI.Settings.Aimbot then return end
+    if not Cache.IsValid then return end
+    
     local closest, dist = nil, math.huge
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            if p.Character.Humanoid.Health > 0 then
-                local d = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                if d < dist then
-                    closest, dist = p, d
+    pcall(function()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= Cache.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                if p.Character.Humanoid.Health > 0 then
+                    local d = (p.Character.HumanoidRootPart.Position - Cache.Position).Magnitude
+                    if d < dist and d < 500 then
+                        closest, dist = p, d
+                    end
                 end
             end
         end
-    end
-    return closest
-end
+        if closest then
+            Workspace.CurrentCamera.CFrame = CFrame.new(
+                Workspace.CurrentCamera.CFrame.Position,
+                closest.Character.HumanoidRootPart.Position
+            )
+        end
+    end)
+end)
 
-print("[CatHUB]: Combat Module Loaded.")
+print("[CatHUB] Combat loaded")
