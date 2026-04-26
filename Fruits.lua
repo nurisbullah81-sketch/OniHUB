@@ -1,12 +1,12 @@
--- CatHUB SUPREMACY: Fruits Module v12.0
-local UI = _G.UI_Lib
+-- CatHUB SUPREMACY: Fruits Module v13.0
+local UI = _G.UI
 local LP = game:GetService("Players").LocalPlayer
 local TS = game:GetService("TweenService")
 
 local Tab = UI:NewTab("Fruits")
-UI:NewSwitch(Tab, "ESP_Fruits", "Fruit ESP (Bold)")
+UI:NewSwitch(Tab, "ESP_Fruits", "Enable Fruit ESP")
 UI:NewSwitch(Tab, "AutoTweenFruit", "Linear Tween to Fruits")
-UI:NewSwitch(Tab, "AutoStore", "Auto Store to Inventory")
+UI:NewSwitch(Tab, "AutoStore", "Auto Store to Treasure")
 
 local function ApplyFruitESP(v)
     if v:FindFirstChild("Cat_ESP") then return end
@@ -33,7 +33,7 @@ task.spawn(function()
                     if UI.Settings.AutoTweenFruit and not _G.TPing then
                         _G.TPing = true
                         local dist = (v:GetModelCFrame().Position - LP.Character.PrimaryPart.Position).Magnitude
-                        local t = TS:Create(LP.Character.PrimaryPart, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = v:GetModelCFrame()})
+                        local t = TS:Create(LP.Character.PrimaryPart, TweenInfo.new(dist/UI.Settings.TweenSpeed, Enum.EasingStyle.Linear), {CFrame = v:GetModelCFrame()})
                         t:Play(); t.Completed:Wait(); _G.TPing = false
                     end
                 end
