@@ -1,15 +1,15 @@
--- CatHUB FREEMIUM Master UI
+-- CatHUB FREEMIUM Master UI (Gamepass Style)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 
-if CoreGui:FindFirstChild("CatHUB_Premium") then CoreGui.CatHUB_Premium:Destroy() end
+if CoreGui:FindFirstChild("CatHUB_Freemium") then CoreGui.CatHUB_Freemium:Destroy() end
 
 local UI_Lib = {
     CurrentTab = nil,
     Visible = true,
-    AccentColor = Color3.fromRGB(160, 32, 240), -- Default Purple
+    AccentColor = Color3.fromRGB(160, 32, 240),
     Settings = {
         ESP_Enabled = false,
         Tween_Enabled = false,
@@ -18,77 +18,63 @@ local UI_Lib = {
 }
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CatHUB_Premium"
+ScreenGui.Name = "CatHUB_Freemium"
 ScreenGui.Parent = CoreGui
 UI_Lib.MainGui = ScreenGui
 
--- Main Frame
+-- Frame Utama
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 580, 0, 380)
-MainFrame.Position = UDim2.new(0.5, -290, 0.5, -190)
+MainFrame.Size = UDim2.new(0, 600, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
-
--- Border Aksen (Dynamic Color)
-local Border = Instance.new("Frame")
-Border.Size = UDim2.new(1, 2, 1, 2)
-Border.Position = UDim2.new(0, -1, 0, -1)
-Border.BackgroundColor3 = UI_Lib.AccentColor
-Border.ZIndex = 0
-Border.Parent = MainFrame
-Instance.new("UICorner", Border).CornerRadius = UDim.new(0, 11)
-
--- Top Bar
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
-Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 10)
+-- Top Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 50)
+Header.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Header.Parent = MainFrame
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -20, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Position = UDim2.new(0, 20, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "CATHUB FREEMIUM"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 18
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
+Title.Parent = Header
 
 -- Sidebar
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 160, 1, -60)
-Sidebar.Position = UDim2.new(0, 10, 0, 55)
-Sidebar.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+Sidebar.Size = UDim2.new(0, 170, 1, -70)
+Sidebar.Position = UDim2.new(0, 10, 0, 60)
+Sidebar.BackgroundColor3 = Color3.fromRGB(13, 13, 13)
 Sidebar.Parent = MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
 
-local TabHolder = Instance.new("ScrollingFrame")
-TabHolder.Size = UDim2.new(1, -10, 1, -10)
-TabHolder.Position = UDim2.new(0, 5, 0, 5)
-TabHolder.BackgroundTransparency = 1
-TabHolder.ScrollBarThickness = 0
-TabHolder.Parent = Sidebar
-Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 5)
+local TabList = Instance.new("ScrollingFrame")
+TabList.Size = UDim2.new(1, -10, 1, -10)
+TabList.Position = UDim2.new(0, 5, 0, 5)
+TabList.BackgroundTransparency = 1
+TabList.ScrollBarThickness = 0
+TabList.Parent = Sidebar
+Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 5)
 
 -- Content Area
 local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -190, 1, -60)
-ContentArea.Position = UDim2.new(0, 180, 0, 55)
+ContentArea.Size = UDim2.new(1, -200, 1, -70)
+ContentArea.Position = UDim2.new(0, 190, 0, 60)
 ContentArea.BackgroundTransparency = 1
 ContentArea.Parent = MainFrame
 
--- Tab System Logic
+-- Tab Engine
 function UI_Lib:CreateTab(name)
     local Container = Instance.new("ScrollingFrame")
     Container.Size = UDim2.new(1, 0, 1, 0)
@@ -98,114 +84,167 @@ function UI_Lib:CreateTab(name)
     Container.Parent = ContentArea
     Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
-    local TabBtn = Instance.new("TextButton")
-    TabBtn.Size = UDim2.new(1, 0, 0, 35)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    TabBtn.Text = name:upper()
-    TabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    TabBtn.Font = Enum.Font.Gotham
-    TabBtn.TextSize = 12
-    TabBtn.Parent = TabHolder
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 5)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 40)
+    Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Btn.Text = name:upper()
+    Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    Btn.Font = Enum.Font.Gotham
+    Btn.TextSize = 12
+    Btn.Parent = TabList
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
 
-    TabBtn.MouseButton1Click:Connect(function()
+    Btn.MouseButton1Click:Connect(function()
         if self.CurrentTab then self.CurrentTab.Visible = false end
         Container.Visible = true
         self.CurrentTab = Container
-        for _, v in pairs(TabHolder:GetChildren()) do
-            if v:IsA("TextButton") then 
-                TweenService:Create(v, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(150, 150, 150), BackgroundColor3 = Color3.fromRGB(20, 20, 20)}):Play()
-            end
+        for _, v in pairs(TabList:GetChildren()) do
+            if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(150, 150, 150) v.BackgroundColor3 = Color3.fromRGB(20, 20, 20) end
         end
-        TweenService:Create(TabBtn, TweenInfo.new(0.3), {TextColor3 = Color3.fromRGB(255, 255, 255), BackgroundColor3 = UI_Lib.AccentColor}):Play()
+        Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     end)
     return Container
 end
 
--- Component: Modern Toggle
-function UI_Lib:CreateToggle(parent, name, callback)
-    local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, -5, 0, 45)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-    ToggleFrame.Parent = parent
-    Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
+-- Gamepass Style Card Component
+function UI_Lib:CreateCard(parent, title, desc, callback_toggle)
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, -10, 0, 80)
+    Card.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    Card.Parent = parent
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
 
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, -60, 1, 0)
-    Label.Position = UDim2.new(0, 15, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = name
-    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
-    Label.Font = Enum.Font.Gotham
-    Label.TextSize = 13
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = ToggleFrame
+    local TName = Instance.new("TextLabel")
+    TName.Size = UDim2.new(1, -80, 0, 30)
+    TName.Position = UDim2.new(0, 15, 0, 10)
+    TName.BackgroundTransparency = 1
+    TName.Text = title
+    TName.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TName.Font = Enum.Font.GothamBold
+    TName.TextSize = 14
+    TName.TextXAlignment = Enum.TextXAlignment.Left
+    TName.Parent = Card
 
-    local Bg = Instance.new("TextButton")
-    Bg.Size = UDim2.new(0, 45, 0, 22)
-    Bg.Position = UDim2.new(1, -55, 0.5, -11)
-    Bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Bg.Text = ""
-    Bg.Parent = ToggleFrame
-    Instance.new("UICorner", Bg).CornerRadius = UDim.new(1, 0)
+    local TDesc = Instance.new("TextLabel")
+    TDesc.Size = UDim2.new(1, -80, 0, 30)
+    TDesc.Position = UDim2.new(0, 15, 0, 35)
+    TDesc.BackgroundTransparency = 1
+    TDesc.Text = desc
+    TDesc.TextColor3 = Color3.fromRGB(150, 150, 150)
+    TDesc.Font = Enum.Font.Gotham
+    TDesc.TextSize = 12
+    TDesc.TextXAlignment = Enum.TextXAlignment.Left
+    TDesc.Parent = Card
 
-    local Circle = Instance.new("Frame")
-    Circle.Size = UDim2.new(0, 16, 0, 16)
-    Circle.Position = UDim2.new(0, 4, 0.5, -8)
-    Circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Circle.Parent = Bg
-    Instance.new("UICorner", Circle).CornerRadius = UDim.new(1, 0)
+    local Toggle = Instance.new("TextButton")
+    Toggle.Size = UDim2.new(0, 50, 0, 25)
+    Toggle.Position = UDim2.new(1, -65, 0.5, -12)
+    Toggle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Toggle.Text = "OFF"
+    Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Toggle.Font = Enum.Font.GothamBold
+    Toggle.TextSize = 10
+    Toggle.Parent = Card
+    Instance.new("UICorner", Toggle).CornerRadius = UDim.new(0, 4)
 
     local enabled = false
-    Bg.MouseButton1Click:Connect(function()
+    Toggle.MouseButton1Click:Connect(function()
         enabled = not enabled
-        TweenService:Create(Bg, TweenInfo.new(0.2), {BackgroundColor3 = enabled and UI_Lib.AccentColor or Color3.fromRGB(40, 40, 40)}):Play()
-        TweenService:Create(Circle, TweenInfo.new(0.2), {Position = enabled and UDim2.new(1, -20, 0.5, -8) or UDim2.new(0, 4, 0.5, -8)}):Play()
-        callback(enabled)
+        Toggle.Text = enabled and "ON" or "OFF"
+        Toggle.BackgroundColor3 = enabled and Color3.fromRGB(0, 180, 100) or Color3.fromRGB(40, 40, 40)
+        callback_toggle(enabled)
     end)
 end
 
--- Create Tabs
-local MainTab = UI_Lib:CreateTab("Main")
-local VisualTab = UI_Lib:CreateTab("Visuals")
+-- Slider Component (For Setting Tab)
+function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, -10, 0, 90)
+    Card.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+    Card.Parent = parent
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
+
+    local T = Instance.new("TextLabel")
+    T.Size = UDim2.new(1, -20, 0, 30)
+    T.Position = UDim2.new(0, 15, 0, 10)
+    T.BackgroundTransparency = 1
+    T.Text = title .. ": " .. default
+    T.TextColor3 = Color3.fromRGB(255, 255, 255)
+    T.Font = Enum.Font.GothamBold
+    T.TextSize = 14
+    T.TextXAlignment = Enum.TextXAlignment.Left
+    T.Parent = Card
+
+    local Bar = Instance.new("Frame")
+    Bar.Size = UDim2.new(1, -30, 0, 6)
+    Bar.Position = UDim2.new(0, 15, 0, 55)
+    Bar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    Bar.Parent = Card
+    Instance.new("UICorner", Bar)
+
+    local Fill = Instance.new("Frame")
+    Fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+    Fill.BackgroundColor3 = Color3.fromRGB(160, 32, 240)
+    Fill.Parent = Bar
+    Instance.new("UICorner", Fill)
+
+    local dragging = false
+    local function move()
+        local m = UserInputService:GetMouseLocation().X
+        local rel = m - Bar.AbsolutePosition.X
+        local perc = math.clamp(rel/Bar.AbsoluteSize.X, 0, 1)
+        local val = math.floor(min + (max-min)*perc)
+        Fill.Size = UDim2.new(perc, 0, 1, 0)
+        T.Text = title .. ": " .. val
+        callback(val)
+    end
+    Bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true move() end end)
+    UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+    UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then move() end end)
+end
+
+-- === TAB INITIALIZATION ===
+local FruitFinderTab = UI_Lib:CreateTab("Fruits Finder")
+local SettingTab = UI_Lib:CreateTab("Setting")
 local StatusTab = UI_Lib:CreateTab("Status")
-local ThemeTab = UI_Lib:CreateTab("Themes")
+local FarmTab = UI_Lib:CreateTab("Main Farm")
 
--- Themes Tab Logic
-local function CreateThemeBtn(name, color)
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, -5, 0, 35)
-    Btn.BackgroundColor3 = color
-    Btn.Text = name:upper()
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.Font = Enum.Font.GothamBold
-    Btn.Parent = ThemeTab
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+-- Fruits Finder Cards
+UI_Lib:CreateCard(FruitFinderTab, "Fruit ESP", "Show location of dropped and system fruits", function(v) UI_Lib.Settings.ESP_Enabled = v end)
+UI_Lib:CreateCard(FruitFinderTab, "Auto Tween", "Fly towards the nearest fruit automatically", function(v) UI_Lib.Settings.Tween_Enabled = v end)
 
-    Btn.MouseButton1Click:Connect(function()
-        UI_Lib.AccentColor = color
-        Border.BackgroundColor3 = color
-        -- Refresh active tab color
-        for _, v in pairs(TabHolder:GetChildren()) do
-            if v:IsA("TextButton") and v.TextColor3 == Color3.fromRGB(255, 255, 255) then
-                v.BackgroundColor3 = color
-            end
-        end
-    end)
-end
+-- Setting Tab (Gamepass Style)
+UI_Lib:CreateSlider(SettingTab, "Tween Speed", 100, 500, 300, function(v) UI_Lib.Settings.Tween_Speed = v end)
 
-CreateThemeBtn("Royal Purple", Color3.fromRGB(160, 32, 240))
-CreateThemeBtn("Crimson Red", Color3.fromRGB(220, 20, 60))
-CreateThemeBtn("Pure White", Color3.fromRGB(255, 255, 255))
-CreateThemeBtn("Midnight Black", Color3.fromRGB(30, 30, 30))
+-- Status Tab Logic
+local Lvl = Instance.new("TextLabel", StatusTab)
+Lvl.Size = UDim2.new(1, -10, 0, 30)
+Lvl.BackgroundTransparency = 1
+Lvl.TextColor3 = Color3.fromRGB(200, 200, 200)
+Lvl.Font = Enum.Font.Gotham
+Lvl.TextSize = 14
+Lvl.TextXAlignment = Enum.TextXAlignment.Left
 
--- Main Content
-UI_Lib:CreateToggle(MainTab, "Auto Tween Fruit", function(val) UI_Lib.Settings.Tween_Enabled = val end)
-UI_Lib:CreateToggle(VisualTab, "Fruit ESP (White)", function(val) UI_Lib.Settings.ESP_Enabled = val end)
+task.spawn(function()
+    while task.wait(1) do
+        local d = Players.LocalPlayer:FindFirstChild("Data")
+        if d then Lvl.Text = "  Level: " .. d.Level.Value .. " | Beli: " .. d.Beli.Value end
+    end
+end)
+
+-- Main Farm Tab
+local CS = Instance.new("TextLabel", FarmTab)
+CS.Size = UDim2.new(1, 0, 1, 0)
+CS.BackgroundTransparency = 1
+CS.Text = "COMING SOON"
+CS.TextColor3 = Color3.fromRGB(60, 60, 60)
+CS.Font = Enum.Font.GothamBold
+CS.TextSize = 25
 
 -- Initial State
-MainTab.Visible = true
-UI_Lib.CurrentTab = MainTab
+FruitFinderTab.Visible = true
+UI_Lib.CurrentTab = FruitFinderTab
 
 -- Keybind [Ctrl + G]
 UserInputService.InputBegan:Connect(function(input, gpe)
