@@ -1,56 +1,42 @@
--- CatHUB FREEMIUM: Combat Module (v7.0)
-local UI = _G.CatHUB_UI
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
+-- CatHUB SUPREMACY: Combat Module v8.0
+local UI = _G.UI
+local LP = game:GetService("Players").LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = LP:GetMouse()
 
-local LockedTarget = nil
+local Tab = UI:NewTab("PVP Elite")
+UI:NewSwitch(Tab, "LockAim", "Smart Sticky Aim")
+UI:NewSwitch(Tab, "AntiStun", "Force Anti-Stun Override")
+UI:NewSwitch(Tab, "WalkWater", "Walk On Water")
+UI:NewSlider(Tab, "RunSpeed", "Run Speed", 16, 1000)
+UI:NewSlider(Tab, "JumpPower", "Jump Power", 50, 500)
 
-local function IsValidTarget(p)
-    if not p or p == LocalPlayer or not p.Character or p.Character.Humanoid.Health <= 0 then return false end
-    if p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines" then return false end
-    if LocalPlayer:IsFriendsWith(p.UserId) then return false end
-    return true
-end
-
-local function GetTarget()
-    local t, d = nil, 180
-    for _, p in pairs(Players:GetPlayers()) do
-        if IsValidTarget(p) and p.Character:FindFirstChild("HumanoidRootPart") then
-            local pos, vis = Camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
-            if vis then
-                local mD = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
-                if mD < d then t, d = p, mD end
+game:GetService("RunService").RenderStepped:Connect(function()
+    if UI.Settings.LockAim then
+        local t, sd = nil, 200
+        for _,p in pairs(game:GetService("Players"):GetPlayers()) do
+            if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                if not (LP.Team == p.Team and tostring(LP.Team) == "Marines") then
+                    local pos, vis = Camera:WorldToViewportPoint(p.Character.PrimaryPart.Position)
+                    if vis then
+                        local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                        if d < sd then t, sd = p, d end
+                    end
+                end
             end
         end
+        if t then Camera.CFrame = CFrame.new(Camera.CFrame.Position, t.Character.PrimaryPart.Position) end
     end
-    return t
-end
 
-RunService.RenderStepped:Connect(function()
-    if UI.Settings.LockAim_Enabled then
-        if not LockedTarget or not IsValidTarget(LockedTarget) then LockedTarget = GetTarget() end
-        if LockedTarget then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, LockedTarget.Character.HumanoidRootPart.Position)
+    local h = LP.Character and LP.Character:FindFirstChild("Humanoid")
+    if h then
+        h.WalkSpeed = UI.Settings.RunSpeed
+        h.JumpPower = UI.Settings.JumpPower
+        h.UseJumpPower = true
+        if UI.Settings.AntiStun then
+            h.PlatformStand = false
+            h.Sit = false
+            if h:GetState() == Enum.HumanoidStateType.Physics then h:ChangeState("GettingUp") end
         end
-    else LockedTarget = nil end
-    
-    -- Mobility Overrides
-    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-    if hum then
-        if UI.Settings.FastRun_Enabled then hum.WalkSpeed = UI.Settings.Run_Speed end
-        if UI.Settings.HighJump_Enabled then hum.JumpPower = UI.Settings.Jump_Power hum.UseJumpPower = true end
     end
-end)
-
-task.spawn(function()
-    local pvp = UI:CreateTab("PVP Elite")
-    UI:CreateSwitch(pvp, "LockAim_Enabled", "Smart Aim Lock")
-    UI:CreateSwitch(pvp, "FastRun_Enabled", "Enable Speed Hack")
-    UI:CreateSlider(pvp, "Run_Speed", "Speed Value", 16, 1000)
-    UI:CreateSwitch(pvp, "HighJump_Enabled", "Enable High Jump")
-    UI:CreateSlider(pvp, "Jump_Power", "Jump Value", 50, 500)
 end)
