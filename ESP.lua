@@ -1,4 +1,4 @@
--- CatHUB v9.2: Fruit ESP (Clear Text)
+-- CatHUB v9.3: Fruit ESP (NO BACKGROUND, TextStroke Only)
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local S = _G.Cat.Settings
@@ -38,26 +38,22 @@ local function Add(f)
     pcall(function()
         local bb = Instance.new("BillboardGui", f)
         bb.Name = "CatESP"
-        bb.Size = UDim2.new(0, 130, 0, 30)
+        bb.Size = UDim2.new(0, 150, 0, 20) -- Flat tanpa kotak
         bb.AlwaysOnTop = true
         bb.StudsOffset = Vector3.new(0, 3, 0)
         bb.Enabled = false
         
-        local bg = Instance.new("Frame", bb)
-        bg.Size = UDim2.new(1, 0, 1, 0)
-        bg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-        bg.BackgroundTransparency = 0.1
-        bg.BorderSizePixel = 0
-        Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 4)
-        
-        local txt = Instance.new("TextLabel", bg)
-        txt.Size = UDim2.new(1, -8, 1, 0)
-        txt.Position = UDim2.new(0, 4, 0, 0)
+        -- TEKS LANGSUNG, TANPA FRAME
+        local txt = Instance.new("TextLabel", bb)
+        txt.Size = UDim2.new(1, 0, 1, 0)
         txt.BackgroundTransparency = 1
         txt.Text = f.Name .. " []"
         txt.TextColor3 = Color3.fromRGB(255, 255, 255)
+        -- TextStroke biar keliatan tanpa background
+        txt.TextStrokeTransparency = 0
+        txt.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         txt.Font = Enum.Font.GothamBold
-        txt.TextSize = 11
+        txt.TextSize = 13
         txt.TextXAlignment = "Left"
         
         Data[f] = { bb = bb, txt = txt }
