@@ -7,6 +7,14 @@ if CoreGui:FindFirstChild("CatUI") then
     CoreGui.CatUI:Destroy() 
 end
 
+-- INI SATU-SATUNYA TAMBAHAN DARI GUE: Global Settings buat Logic
+_G.Cat = {
+    Player = game:GetService("Players").LocalPlayer,
+    Settings = {
+        FruitESP = false
+    }
+}
+
 local Gui = Instance.new("ScreenGui", CoreGui)
 Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
@@ -22,7 +30,6 @@ local Theme = {
     TabOn       = Color3.fromRGB(38, 38, 42),   
     TabOff      = Color3.fromRGB(14, 14, 16),   
     
-    -- FIX KOTAK DALAM: Hitam keabu-abuan modern yang lu suka
     PageBG      = Color3.fromRGB(17, 18, 22),   
     
     CardBG      = Color3.fromRGB(28, 28, 32),   
@@ -475,11 +482,11 @@ CreateToggle(StatusTab, "Show Player Stats", false, function(state)
 end)
 
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
-CreateToggle(DevilFruitsTab, "Fruit ESP (Text Only)", false, function(state)
-    -- Logic 
-end)
-CreateToggle(DevilFruitsTab, "Chest ESP", false, function(state)
-    -- Logic 
+
+-- GUE HAPUS CHEST ESP DI SINI SESUAI PERMINTAAN LU
+-- GUE GANTI stateRef JADI _G.Cat.Settings BIAR KONEK KE ESP.LUA
+CreateToggle(DevilFruitsTab, "Fruit ESP", false, function(state)
+    _G.Cat.Settings.FruitESP = state
 end)
 
 CreateSection(MiscTab, "MISCELLANEOUS")
