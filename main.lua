@@ -6,4 +6,5 @@ local function Load(file)
 end
 
 Load("StyleUI.lua")
-Load("ESP.lua")
+Load("Status.lua")        -- Load Status Dulu
+Load("Devil_Fruits.lua")  -- Load Devil Fruits
