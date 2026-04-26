@@ -60,9 +60,8 @@ task.spawn(function()
                 MoonLabel.Text = "Moon: -"
             else
                 TimeLabel.Text = "Time: " .. timeStr .. " (Night)"
-                -- Deteksi Full Moon (Blox Fruits biasanya ganti Lighting)
                 local isFull = Lighting.Ambient.r > 0.3 or Lighting.OutdoorAmbient.r > 0.3
-                MoonLabel.Text = isFull and "Moon: Full Moon" or "Moon: Normal"
+                MoonLabel.Text = isFull and "Moon: Full Moon 🌕" or "Moon: Normal 🌑"
             end
             
             -- Hitung Buah Spawn
