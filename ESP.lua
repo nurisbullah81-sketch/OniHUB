@@ -1,131 +1,117 @@
--- CatHUB FREEMIUM: ESP Module (v6.2 - Player Only)
+-- CatHUB v7.0: ESP (Lightweight)
 local UI = _G.CatHUB_UI
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
+local Cache = _G.CatCache
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
+local Players = game:GetService("Players")
 
-local ESPTab = UI:CreateTab("ESP")
+local Tab = UI:CreateTab("👥 ESP")
+UI:CreateSwitch(Tab, "PlayerESP", "Player ESP")
 
-UI:CreateLabel(ESPTab, "━━ PLAYER ESP ━━")
-UI:CreateSwitch(ESPTab, "PlayerESP_Enabled", "Enable Player ESP")
+local espData = {}
 
-local PlayerEspData = {}
-
-local function CreatePlayerESP(player)
-    if PlayerEspData[player] then return end
+local function AddESP(player)
+    if espData[player] then return end
     if not player.Character then return end
-    
     local char = player.Character
     local data = {}
-    
-    -- Highlight
-    local highlight = Instance.new("Highlight", char)
-    highlight.Name = "CatPlayerESP"
-    highlight.FillTransparency = 0.7
-    highlight.OutlineTransparency = 0.5
-    highlight.Enabled = false
-    data.Highlight = highlight
-    
-    -- Billboard
-    local billboard = Instance.new("BillboardGui", char)
-    billboard.Name = "CatPlayerBillboard"
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.AlwaysOnTop = true
-    billboard.StudsOffset = Vector3.new(0, 4, 0)
-    billboard.Enabled = false
-    
-    local nameLabel = Instance.new("TextLabel", billboard)
-    nameLabel.Size = UDim2.new(1, 0, 0, 20)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = player.Name
-    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameLabel.TextStrokeTransparency = 0
-    nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    nameLabel.Font = Enum.Font.SourceSansBold
-    nameLabel.TextSize = 14
-    data.NameLabel = nameLabel
-    
-    local infoLabel = Instance.new("TextLabel", billboard)
-    infoLabel.Size = UDim2.new(1, 0, 0, 16)
-    infoLabel.Position = UDim2.new(0, 0, 0, 20)
-    infoLabel.BackgroundTransparency = 1
-    infoLabel.Text = ""
-    infoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    infoLabel.TextStrokeTransparency = 0.3
-    infoLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    infoLabel.Font = Enum.Font.SourceSans
-    infoLabel.TextSize = 11
-    data.InfoLabel = infoLabel
-    
-    data.Billboard = billboard
-    PlayerEspData[player] = data
+
+    local hl = Instance.new("Highlight", char)
+    hl.Name = "CatPlrESP"
+    hl.FillTransparency = 0.75
+    hl.OutlineTransparency = 0.5
+    hl.Enabled = false
+    data.Highlight = hl
+
+    local bb = Instance.new("BillboardGui", char)
+    bb.Name = "CatPlrBB"
+    bb.Size = UDim2.new(0, 180, 0, 45)
+    bb.AlwaysOnTop = true
+    bb.StudsOffset = Vector3.new(0, 4, 0)
+    bb.Enabled = false
+
+    local nameL = Instance.new("TextLabel", bb)
+    nameL.Size = UDim2.new(1, 0, 0, 20)
+    nameL.BackgroundTransparency = 1
+    nameL.Text = player.DisplayName
+    nameL.TextColor3 = Color3.new(1, 1, 1)
+    nameL.TextStrokeTransparency = 0
+    nameL.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nameL.Font = Enum.Font.GothamBold
+    nameL.TextSize = 13
+
+    local infoL = Instance.new("TextLabel", bb)
+    infoL.Size = UDim2.new(1, 0, 0, 16)
+    infoL.Position = UDim2.new(0, 0, 0, 22)
+    infoL.BackgroundTransparency = 1
+    infoL.Text = ""
+    infoL.TextColor3 = Color3.fromRGB(200, 200, 200)
+    infoL.TextStrokeTransparency = 0.4
+    infoL.TextStrokeColor3 = Color3.new(0, 0, 0)
+    infoL.Font = Enum.Font.Gotham
+    infoL.TextSize = 10
+
+    data.Billboard = bb
+    data.NameLabel = nameL
+    data.InfoLabel = infoL
+    espData[player] = data
 end
 
--- Character Added
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function()
         task.wait(1)
-        CreatePlayerESP(player)
+        AddESP(p)
     end)
 end)
 
--- Initial Setup
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        if player.Character then
-            CreatePlayerESP(player)
-        end
-        player.CharacterAdded:Connect(function()
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= Cache.LocalPlayer then
+        if p.Character then AddESP(p) end
+        p.CharacterAdded:Connect(function()
             task.wait(1)
-            CreatePlayerESP(player)
+            AddESP(p)
         end)
     end
 end
 
--- Update Loop
-RunService.RenderStepped:Connect(function()
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    
-    for player, data in pairs(PlayerEspData) do
-        local shouldShow = UI.Settings.PlayerESP_Enabled
-        local isValid = player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid")
-        
-        if not isValid then
-            pcall(function()
-                if data.Highlight then data.Highlight:Destroy() end
-                if data.Billboard then data.Billboard:Destroy() end
-            end)
-            PlayerEspData[player] = nil
-            continue
-        end
-        
-        data.Highlight.Enabled = shouldShow
-        data.Billboard.Enabled = shouldShow
-        
-        if shouldShow and hrp then
-            pcall(function()
-                local char = player.Character
-                local dist = math.floor((char.HumanoidRootPart.Position - hrp.Position).Magnitude)
-                local hp = math.floor(char.Humanoid.Health)
-                local maxHp = math.floor(char.Humanoid.MaxHealth)
-                
-                -- Team color
-                local isEnemy = true
+-- Update every 0.3s (not every frame!)
+task.spawn(function()
+    while task.wait(0.3) do
+        local show = UI.Settings.PlayerESP
+        for player, data in pairs(espData) do
+            local valid = player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid")
+            if not valid or not player.Character:IsDescendantOf(game:GetService("Workspace")) then
                 pcall(function()
-                    if player.Team and LocalPlayer.Team then
-                        isEnemy = player.Team ~= LocalPlayer.Team
-                    end
+                    data.Highlight:Destroy()
+                    data.Billboard:Destroy()
                 end)
-                
-                local color = isEnemy and Color3.fromRGB(255, 60, 60) or Color3.fromRGB(60, 150, 255)
-                data.Highlight.OutlineColor = color
-                data.NameLabel.TextColor3 = color
-                data.NameLabel.Text = player.DisplayName
-                data.InfoLabel.Text = string.format("[%dm] HP: %d/%d", dist, hp, maxHp)
-            end)
+                espData[player] = nil
+                continue
+            end
+
+            data.Highlight.Enabled = show
+            data.Billboard.Enabled = show
+
+            if show and Cache.IsValid then
+                pcall(function()
+                    local char = player.Character
+                    local dist = math.floor((char.HumanoidRootPart.Position - Cache.Position).Magnitude)
+                    local hp = math.floor(char.Humanoid.Health)
+                    local maxHp = math.floor(char.Humanoid.MaxHealth)
+                    
+                    local isEnemy = true
+                    if player.Team and Cache.LocalPlayer.Team then
+                        isEnemy = player.Team ~= Cache.LocalPlayer.Team
+                    end
+                    
+                    local color = isEnemy and Color3.fromRGB(255, 70, 70) or Color3.fromRGB(70, 150, 255)
+                    data.Highlight.OutlineColor = color
+                    data.NameLabel.TextColor3 = color
+                    data.NameLabel.Text = player.DisplayName
+                    data.InfoLabel.Text = "[" .. dist .. "m] " .. hp .. "/" .. maxHp
+                end)
+            end
         end
     end
 end)
 
-print("[CatHUB]: ESP Module Loaded.")
+print("[CatHUB] ESP loaded")
