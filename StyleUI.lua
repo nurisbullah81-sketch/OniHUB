@@ -1,4 +1,4 @@
--- CatHUB v10.1: Perfect Contrast, Direct Open, & Draggable Float Grip
+-- CatHUB v10.2: Permanent Float Grip & High Contrast Page Bounds
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,36 +12,36 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Palette Update: Kontras Ekstrem Biar Ga Nyatu
+-- Palette Update: Bikin kontras area konten beda jauh biar ga nyaru
 local Theme = {
-    MainBG      = Color3.fromRGB(8, 8, 8),      -- SUPER GELAP (Latar Utama)
+    MainBG      = Color3.fromRGB(10, 10, 10),   -- Sangat Hitam (Background utama)
     SideBG      = Color3.fromRGB(15, 15, 15),   -- Sidebar
-    TopBG       = Color3.fromRGB(8, 8, 8),
-    PageBG      = Color3.fromRGB(24, 24, 26),   -- TERANG (Biar kotak konten Devil Fruits misah jelas)
-    CardBG      = Color3.fromRGB(32, 32, 35),   -- Background Toggle
-    CardHov     = Color3.fromRGB(40, 40, 45),
+    TopBG       = Color3.fromRGB(10, 10, 10),
+    PageBG      = Color3.fromRGB(28, 28, 32),   -- JAUH LEBIH TERANG (Background tab Status & Devil Fruits)
+    CardBG      = Color3.fromRGB(38, 38, 42),   -- Background Toggle (Lebih terang dari PageBG)
+    CardHov     = Color3.fromRGB(48, 48, 55),
     Text        = Color3.fromRGB(255, 255, 255),
-    TextDim     = Color3.fromRGB(150, 150, 150),
-    ToggleOn    = Color3.fromRGB(138, 43, 226), -- Ungu RedzHub
+    TextDim     = Color3.fromRGB(160, 160, 160),
+    ToggleOn    = Color3.fromRGB(138, 43, 226), -- Ungu
     ToggleOff   = Color3.fromRGB(100, 100, 110),
     Accent      = Color3.fromRGB(138, 43, 226), 
-    Line        = Color3.fromRGB(45, 45, 50)    
+    Line        = Color3.fromRGB(55, 55, 60)    -- Garis lebih terang buat pembatas tegas
 }
 
 -- ==========================================
--- FLOATING WIDGET DENGAN GRIP TRANSPARAN
+-- FLOATING WIDGET (100% PERMANEN)
 -- ==========================================
 local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Size = UDim2.new(0, 65, 0, 45) -- Lebar ekstra untuk grip
+FloatCont.Size = UDim2.new(0, 65, 0, 45)
 FloatCont.Position = UDim2.new(0, 10, 0.5, -22)
 FloatCont.BackgroundTransparency = 1
-FloatCont.Visible = false -- Disembunyikan saat awal
+FloatCont.Visible = true -- FIX: Selalu muncul
 FloatCont.ZIndex = 99999
 
--- Tombol "C" Utama
+-- Tombol "C"
 local FloatBtn = Instance.new("TextButton", FloatCont)
 FloatBtn.Size = UDim2.new(0, 45, 1, 0)
-FloatBtn.Position = UDim2.new(0, 20, 0, 0) -- Geser ngasih ruang buat Grip
+FloatBtn.Position = UDim2.new(0, 20, 0, 0) 
 FloatBtn.BackgroundColor3 = Theme.CardBG
 FloatBtn.Text = "C"
 FloatBtn.TextColor3 = Theme.Accent
@@ -52,13 +52,13 @@ FloatBtn.AutoButtonColor = false
 Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", FloatBtn).Color = Theme.Line
 
--- Grip Transparan (Di sebelah kiri kotak C)
+-- Grip Transparan untuk geser kotak C
 local FloatDrag = Instance.new("TextButton", FloatCont)
 FloatDrag.Size = UDim2.new(0, 15, 1, 0)
 FloatDrag.Position = UDim2.new(0, 0, 0, 0)
 FloatDrag.BackgroundColor3 = Theme.Line
-FloatDrag.BackgroundTransparency = 0.8 -- Transparan tapi masih ada hint
-FloatDrag.Text = "⋮" -- Ikon grip
+FloatDrag.BackgroundTransparency = 0.7 
+FloatDrag.Text = "⋮"
 FloatDrag.TextColor3 = Theme.TextDim
 FloatDrag.Font = Enum.Font.GothamBold
 FloatDrag.TextSize = 14
@@ -93,15 +93,15 @@ Main.Position = UDim2.new(0.5, -275, 0.5, -170)
 Main.BackgroundColor3 = Theme.MainBG
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true 
-Main.Visible = true -- FIX: LANGSUNG MUNCUL PAS EXECUTE
+Main.Visible = true -- FIX: Langsung kebuka pas execute
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 local MainStroke = Instance.new("UIStroke", Main)
 MainStroke.Color = Theme.Line
 MainStroke.Thickness = 1
 
+-- FIX: Tombol C cuma buka/tutup Main, ga ngilangin kotak C-nya
 FloatBtn.MouseButton1Click:Connect(function()
-    Main.Visible = true
-    FloatCont.Visible = false
+    Main.Visible = not Main.Visible
 end)
 
 -- Topbar
@@ -150,9 +150,9 @@ BtnX.MouseLeave:Connect(function() TweenService:Create(BtnX, TweenInfo.new(0.15)
 BtnM.MouseEnter:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.Text}):Play() end)
 BtnM.MouseLeave:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play() end)
 
+-- FIX: Tombol X cuma nyembunyiin Main, kotak C ga berubah karena permanen
 BtnX.MouseButton1Click:Connect(function()
     Main.Visible = false
-    FloatCont.Visible = true
 end)
 
 local isMin = false
@@ -259,7 +259,7 @@ local Pages = {}
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton", SideScroll)
     Btn.Size = UDim2.new(1, 0, 0, 32)
-    Btn.BackgroundColor3 = isFirst and Theme.CardBG or Theme.SideBG
+    Btn.BackgroundColor3 = isFirst and Theme.CardHov or Theme.SideBG
     Btn.Text = "    " .. name
     Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim
     Btn.Font = Enum.Font.GothamMedium
@@ -283,11 +283,11 @@ local function CreateTab(name, isFirst)
         if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.SideBG, TextColor3 = Theme.TextDim}):Play() end
     end)
     
-    -- PAGE BACKGROUND YANG KONTRAS
+    -- FIX: PAGE BACKGROUND LEBIH KONTRAS DAN JELAS
     local Page = Instance.new("ScrollingFrame", ContentArea)
     Page.Size = UDim2.new(1, -16, 1, -16) 
     Page.Position = UDim2.new(0, 8, 0, 8) 
-    Page.BackgroundColor3 = Theme.PageBG -- Warna terang biar misah
+    Page.BackgroundColor3 = Theme.PageBG 
     Page.BackgroundTransparency = 0 
     Page.ScrollBarThickness = 2
     Page.ScrollBarImageColor3 = Theme.TextDim 
@@ -315,7 +315,7 @@ local function CreateTab(name, isFirst)
             data.Page.Visible = active
             data.Ind.Visible = active
             TweenService:Create(data.Btn, TweenInfo.new(0.15), {
-                BackgroundColor3 = active and Theme.CardBG or Theme.SideBG,
+                BackgroundColor3 = active and Theme.CardHov or Theme.SideBG,
                 TextColor3 = active and Theme.Text or Theme.TextDim
             }):Play()
         end
