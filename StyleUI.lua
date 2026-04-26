@@ -10,7 +10,7 @@ end
 _G.Cat = {
     Player = game:GetService("Players").LocalPlayer,
     Settings = { FruitESP = false },
-    Labels = {} -- Jembatan khusus buat update teks
+    Labels = {}
 }
 
 local Gui = Instance.new("ScreenGui", CoreGui)
@@ -381,9 +381,12 @@ local function CreateSection(parent, text)
     L.BackgroundTransparency = 1
 end
 
-local function CreateToggle(parent, text, stateRef, callback)
+-- FUNGSI TOGGLE DENGAN DESKRIPSI
+local function CreateToggle(parent, text, description, stateRef, callback)
+    local frameHeight = description and 52 or 36 -- Lebih tinggi kalo ada deskripsi
+    
     local F = Instance.new("TextButton", parent)
-    F.Size = UDim2.new(1, 0, 0, 36)
+    F.Size = UDim2.new(1, 0, 0, frameHeight)
     F.BackgroundColor3 = Theme.CardBG
     F.BorderSizePixel = 0
     F.Text = ""
@@ -395,14 +398,26 @@ local function CreateToggle(parent, text, stateRef, callback)
     Stroke.Thickness = 1
     
     local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -60, 1, 0)
-    L.Position = UDim2.new(0, 12, 0, 0)
+    L.Size = UDim2.new(1, -60, 0, 20)
+    L.Position = UDim2.new(0, 12, 0, description and 6 or 8)
     L.Text = text
     L.TextColor3 = Theme.Text
     L.Font = Enum.Font.GothamMedium
     L.TextSize = 12
     L.TextXAlignment = Enum.TextXAlignment.Left
     L.BackgroundTransparency = 1
+    
+    if description then
+        local D = Instance.new("TextLabel", F)
+        D.Size = UDim2.new(1, -60, 0, 14)
+        D.Position = UDim2.new(0, 12, 0, 26)
+        D.Text = description
+        D.TextColor3 = Theme.TextDim
+        D.Font = Enum.Font.Gotham
+        D.TextSize = 10
+        D.TextXAlignment = Enum.TextXAlignment.Left
+        D.BackgroundTransparency = 1
+    end
     
     local Sw = Instance.new("Frame", F)
     Sw.Size = UDim2.new(0, 36, 0, 18)
@@ -431,10 +446,12 @@ local function CreateToggle(parent, text, stateRef, callback)
     table.insert(AllToggles, {Btn = F, Label = L})
 end
 
--- FUNGSI LABEL BARU UNTUK STATUS
-local function CreateLabel(parent, text)
+-- FUNGSI LABEL DENGAN DESKRIPSI
+local function CreateLabel(parent, text, description)
+    local frameHeight = description and 45 or 30
+    
     local F = Instance.new("Frame", parent)
-    F.Size = UDim2.new(1, 0, 0, 30)
+    F.Size = UDim2.new(1, 0, 0, frameHeight)
     F.BackgroundColor3 = Theme.CardBG
     F.BorderSizePixel = 0
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
@@ -443,14 +460,26 @@ local function CreateLabel(parent, text)
     Stroke.Thickness = 1
     
     local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -20, 1, 0)
-    L.Position = UDim2.new(0, 12, 0, 0)
+    L.Size = UDim2.new(1, -20, 0, 20)
+    L.Position = UDim2.new(0, 12, 0, description and 4 or 5)
     L.Text = text
     L.TextColor3 = Theme.Text
     L.Font = Enum.Font.GothamMedium
     L.TextSize = 12
     L.TextXAlignment = Enum.TextXAlignment.Left
     L.BackgroundTransparency = 1
+    
+    if description then
+        local D = Instance.new("TextLabel", F)
+        D.Size = UDim2.new(1, -20, 0, 14)
+        D.Position = UDim2.new(0, 12, 0, 22)
+        D.Text = description
+        D.TextColor3 = Theme.TextDim
+        D.Font = Enum.Font.Gotham
+        D.TextSize = 10
+        D.TextXAlignment = Enum.TextXAlignment.Left
+        D.BackgroundTransparency = 1
+    end
     
     return L
 end
@@ -474,30 +503,27 @@ local StatusTab = CreateTab("Status", true)
 local DevilFruitsTab = CreateTab("Devil Fruits", false) 
 local MiscTab = CreateTab("Misc", false) 
 
--- TAB STATUS (UI DIBUAT DISINI, LOGIC DI STATUS.LUA)
 CreateSection(StatusTab, "PLAYER STATUS")
-_G.Cat.Labels.Level = CreateLabel(StatusTab, "Level: ...")
-_G.Cat.Labels.Money = CreateLabel(StatusTab, "Money: ...")
-_G.Cat.Labels.Fragments = CreateLabel(StatusTab, "Fragments: ...")
-_G.Cat.Labels.Bounty = CreateLabel(StatusTab, "Bounty/Honor: ...")
+_G.Cat.Labels.Level = CreateLabel(StatusTab, "Level: ...", "Current level progress")
+_G.Cat.Labels.Money = CreateLabel(StatusTab, "Money: ...", "In-game currency balance")
+_G.Cat.Labels.Fragments = CreateLabel(StatusTab, "Fragments: ...", "Used for awakening")
+_G.Cat.Labels.Bounty = CreateLabel(StatusTab, "Bounty/Honor: ...", "PvP score tracking")
 
 CreateSection(StatusTab, "SERVER STATUS")
-_G.Cat.Labels.Players = CreateLabel(StatusTab, "Players: ...")
-_G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...")
-_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...")
-_G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0")
+_G.Cat.Labels.Players = CreateLabel(StatusTab, "Players: ...", "Currently in this server")
+_G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycle")
+_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Required for V3/V4 race")
+_G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
--- TAB DEVIL FRUITS
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
-CreateToggle(DevilFruitsTab, "Fruit ESP", false, function(state)
+CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", false, function(state)
     _G.Cat.Settings.FruitESP = state
 end)
 
--- TAB MISC
 CreateSection(MiscTab, "MISCELLANEOUS")
-CreateToggle(MiscTab, "Auto Rejoin", false, function(state)
+CreateToggle(MiscTab, "Auto Rejoin", "Reconnects if you idle for 20 mins", false, function(state)
     -- Logic
 end)
-CreateToggle(MiscTab, "Anti AFK", false, function(state)
+CreateToggle(MiscTab, "Anti AFK", "Prevents virtual input idle kick", false, function(state)
     -- Logic
 end)
