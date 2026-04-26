@@ -1,114 +1,195 @@
 -- StyleUI.lua
 local StyleUI = {}
+local TweenService = game:GetService("TweenService")
 
--- Tema Utama (Mengikuti referensi Redz Hub)
+-- Palette Warna Redz Hub (Clean Dark Mode)
 StyleUI.Theme = {
-    -- Backgrounds
-    MainBG = Color3.fromRGB(15, 15, 18),       -- Latar belakang utama (paling gelap)
-    SidebarBG = Color3.fromRGB(22, 22, 26),    -- Latar belakang navigasi samping
-    TopbarBG = Color3.fromRGB(22, 22, 26),     -- Latar belakang bagian atas
-    
-    -- Element Backgrounds
-    ElementBG = Color3.fromRGB(32, 32, 38),    -- Background untuk Toggle/Button
-    ElementHover = Color3.fromRGB(42, 42, 48), -- Background saat kursor di atas elemen
-    ElementActive = Color3.fromRGB(45, 45, 55),-- Background saat tab menu ditekan
-    
-    -- Accents (Warna nyala Redz Hub)
-    Accent = Color3.fromRGB(100, 100, 220),    -- Ungu/Biru (Indigo) untuk toggle ON
-    ToggleOff = Color3.fromRGB(50, 50, 58),    -- Abu-abu untuk toggle OFF
-    
-    -- Texts
-    TextPrimary = Color3.fromRGB(235, 235, 240),   -- Teks utama yang sedang menyala/dipilih
-    TextSecondary = Color3.fromRGB(150, 150, 160), -- Teks pasif atau judul kategori
-    TextDark = Color3.fromRGB(90, 90, 100),        -- Teks placeholder atau ikon pasif
-    
-    -- Geometri
-    CornerRadius = UDim.new(0, 6),             -- Radius standar untuk kotak
-    PillRadius = UDim.new(1, 0),               -- Radius bulat penuh untuk toggle
-    
-    -- Tipografi
-    FontNormal = Enum.Font.Gotham,
-    FontBold = Enum.Font.GothamBold,
-    TextSizeLarge = 14,
-    TextSizeNormal = 13,
-    TextSizeSmall = 12
+    MainBG      = Color3.fromRGB(15, 15, 17),   -- Background utama (sangat gelap)
+    SidebarBG   = Color3.fromRGB(20, 20, 23),   -- Background sidebar
+    ElementBG   = Color3.fromRGB(28, 28, 32),   -- Background tombol/toggle mati
+    ElementHov  = Color3.fromRGB(35, 35, 40),   -- Background saat di-hover
+    Accent      = Color3.fromRGB(115, 95, 235), -- Warna nyala (Purple/Blue modern)
+    Text        = Color3.fromRGB(240, 240, 245),-- Teks utama
+    TextDim     = Color3.fromRGB(140, 140, 150),-- Teks sekunder/mati
+    Border      = Color3.fromRGB(35, 35, 42)    -- Garis batas halus
 }
 
--- Fungsi untuk Menerapkan Gaya pada Main Frame
-function StyleUI.ApplyMainFrameStyle(frame)
+StyleUI.Font = {
+    Regular = Enum.Font.Gotham,
+    Bold    = Enum.Font.GothamBold
+}
+
+-- Fungsi internal untuk bikin corner mulus
+local function ApplyCorner(instance, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius)
+    corner.Parent = instance
+end
+
+-- 1. Bikin Frame Utama
+function StyleUI.CreateMainFrame(parent, size, position)
+    local frame = Instance.new("Frame")
+    frame.Size = size
+    frame.Position = position
     frame.BackgroundColor3 = StyleUI.Theme.MainBG
     frame.BorderSizePixel = 0
+    frame.ClipsDescendants = true
+    frame.Parent = parent
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = StyleUI.Theme.CornerRadius
-    corner.Parent = frame
+    ApplyCorner(frame, 8)
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = StyleUI.Theme.Border
+    stroke.Thickness = 1
+    stroke.Parent = frame
+
+    return frame
 end
 
--- Fungsi untuk Menerapkan Gaya pada Sidebar/Topbar Frame
-function StyleUI.ApplyBarFrameStyle(frame)
-    frame.BackgroundColor3 = StyleUI.Theme.SidebarBG
-    frame.BorderSizePixel = 0
+-- 2. Bikin Sidebar
+function StyleUI.CreateSidebar(parent, width)
+    local sidebar = Instance.new("Frame")
+    sidebar.Size = UDim2.new(0, width, 1, 0)
+    sidebar.BackgroundColor3 = StyleUI.Theme.SidebarBG
+    sidebar.BorderSizePixel = 0
+    sidebar.Parent = parent
+    
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = StyleUI.Theme.Border
+    stroke.Thickness = 1
+    stroke.Parent = sidebar
+
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.Padding = UDim.new(0, 5)
+    listLayout.Parent = sidebar
+
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 10)
+    padding.PaddingLeft = UDim.new(0, 10)
+    padding.PaddingRight = UDim.new(0, 10)
+    padding.Parent = sidebar
+
+    return sidebar
 end
 
--- Fungsi untuk Menerapkan Gaya pada Section Label (Teks Kategori)
-function StyleUI.ApplySectionLabelStyle(label)
+-- 3. Bikin Tab Button di Sidebar
+function StyleUI.CreateTabButton(parent, text)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = StyleUI.Theme.SidebarBG
+    btn.Text = "  " .. text
+    btn.TextColor3 = StyleUI.Theme.TextDim
+    btn.Font = StyleUI.Font.Regular
+    btn.TextSize = 14
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.Parent = parent
+
+    ApplyCorner(btn, 6)
+
+    -- Animasi Visual Murni
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = StyleUI.Theme.ElementHov,
+            TextColor3 = StyleUI.Theme.Text
+        }):Play()
+    end)
+
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = StyleUI.Theme.SidebarBG,
+            TextColor3 = StyleUI.Theme.TextDim
+        }):Play()
+    end)
+
+    return btn
+end
+
+-- 4. Bikin Section Header (Teks kategori dalam tab)
+function StyleUI.CreateSectionHeader(parent, text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 0, 25)
     label.BackgroundTransparency = 1
-    label.TextColor3 = StyleUI.Theme.TextSecondary
-    label.Font = StyleUI.Theme.FontBold
-    label.TextSize = StyleUI.Theme.TextSizeSmall
+    label.Text = text
+    label.TextColor3 = StyleUI.Theme.Text
+    label.Font = StyleUI.Font.Bold
+    label.TextSize = 14
     label.TextXAlignment = Enum.TextXAlignment.Left
-end
-
--- Fungsi untuk Menerapkan Gaya pada Tab Button (Di Sidebar)
-function StyleUI.ApplyTabButtonStyle(button, isActive)
-    button.BackgroundColor3 = isActive and StyleUI.Theme.ElementActive or StyleUI.Theme.SidebarBG
-    button.TextColor3 = isActive and StyleUI.Theme.TextPrimary or StyleUI.Theme.TextSecondary
-    button.Font = StyleUI.Theme.FontNormal
-    button.TextSize = StyleUI.Theme.TextSizeNormal
-    button.BorderSizePixel = 0
+    label.Parent = parent
     
-    local corner = button:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-    corner.CornerRadius = StyleUI.Theme.CornerRadius
-    corner.Parent = button
+    return label
 end
 
--- Fungsi untuk Menerapkan Gaya pada Base Toggle (Container Toggle)
-function StyleUI.ApplyToggleContainerStyle(button)
-    button.BackgroundColor3 = StyleUI.Theme.ElementBG
-    button.BorderSizePixel = 0
-    
-    local corner = button:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-    corner.CornerRadius = StyleUI.Theme.CornerRadius
-    corner.Parent = button
-end
+-- 5. Bikin Toggle (Gaya Redz Hub Modern)
+function StyleUI.CreateToggle(parent, text, defaultState, callback)
+    local state = defaultState or false
 
--- Fungsi untuk Menerapkan Gaya pada Teks dalam Toggle
-function StyleUI.ApplyToggleTextStyle(label)
+    local container = Instance.new("TextButton")
+    container.Size = UDim2.new(1, 0, 0, 38)
+    container.BackgroundColor3 = StyleUI.Theme.ElementBG
+    container.Text = ""
+    container.AutoButtonColor = false
+    container.BorderSizePixel = 0
+    container.Parent = parent
+
+    ApplyCorner(container, 6)
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -60, 1, 0)
+    label.Position = UDim2.new(0, 15, 0, 0)
     label.BackgroundTransparency = 1
-    label.TextColor3 = StyleUI.Theme.TextPrimary
-    label.Font = StyleUI.Theme.FontNormal
-    label.TextSize = StyleUI.Theme.TextSizeNormal
+    label.Text = text
+    label.TextColor3 = StyleUI.Theme.Text
+    label.Font = StyleUI.Font.Regular
+    label.TextSize = 14
     label.TextXAlignment = Enum.TextXAlignment.Left
-end
+    label.Parent = container
 
--- Fungsi untuk Menerapkan Gaya pada Switch (Indikator Pil)
-function StyleUI.ApplySwitchIndicatorStyle(switchFrame, isStateOn)
-    switchFrame.BackgroundColor3 = isStateOn and StyleUI.Theme.Accent or StyleUI.Theme.ToggleOff
-    switchFrame.BorderSizePixel = 0
-    
-    local corner = switchFrame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-    corner.CornerRadius = StyleUI.Theme.PillRadius
-    corner.Parent = switchFrame
-end
+    local switchBG = Instance.new("Frame")
+    switchBG.Size = UDim2.new(0, 40, 0, 20)
+    switchBG.Position = UDim2.new(1, -50, 0.5, -10)
+    switchBG.BackgroundColor3 = state and StyleUI.Theme.Accent or StyleUI.Theme.Border
+    switchBG.BorderSizePixel = 0
+    switchBG.Parent = container
 
--- Fungsi untuk Menerapkan Gaya pada Dot (Titik di dalam Switch)
-function StyleUI.ApplySwitchDotStyle(dotFrame)
-    dotFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    dotFrame.BorderSizePixel = 0
-    
-    local corner = dotFrame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-    corner.CornerRadius = StyleUI.Theme.PillRadius
-    corner.Parent = dotFrame
+    ApplyCorner(switchBG, 10) -- Pil penuh
+
+    local indicator = Instance.new("Frame")
+    indicator.Size = UDim2.new(0, 16, 0, 16)
+    indicator.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    indicator.BorderSizePixel = 0
+    indicator.Parent = switchBG
+
+    ApplyCorner(indicator, 8)
+
+    -- Animasi Visual Hover & Click
+    container.MouseEnter:Connect(function()
+        TweenService:Create(container, TweenInfo.new(0.2), {BackgroundColor3 = StyleUI.Theme.ElementHov}):Play()
+    end)
+    container.MouseLeave:Connect(function()
+        TweenService:Create(container, TweenInfo.new(0.2), {BackgroundColor3 = StyleUI.Theme.ElementBG}):Play()
+    end)
+
+    container.MouseButton1Click:Connect(function()
+        state = not state
+        -- Animasi UI
+        TweenService:Create(switchBG, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = state and StyleUI.Theme.Accent or StyleUI.Theme.Border
+        }):Play()
+        TweenService:Create(indicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+        }):Play()
+        
+        -- Panggil fungsi dari main.lua jika ada
+        if callback then
+            callback(state)
+        end
+    end)
+
+    return container
 end
 
 return StyleUI
