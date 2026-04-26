@@ -1,4 +1,4 @@
--- CatHUB v9.5: RedzHub Real Remake (1:1 Style)
+-- CatHUB v9.6: Final RedzHub Layout Remake
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -9,173 +9,187 @@ local S = _G.Cat.Settings
 
 local Gui = Instance.new("ScreenGui", CoreGui)
 Gui.Name = "CatUI"
-Gui.ResetOnSpawn = false
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Color Palette RedzHub
 local C = {
-    Base = Color3.fromRGB(20, 20, 22),
-    Top = Color3.fromRGB(25, 25, 28),
-    Accent = Color3.fromRGB(88, 101, 242), -- Blue Purple
+    Base = Color3.fromRGB(15, 15, 17),
+    Side = Color3.fromRGB(22, 22, 26),
+    Top = Color3.fromRGB(22, 22, 26),
+    Card = Color3.fromRGB(30, 30, 35),
+    Accent = Color3.fromRGB(88, 101, 242),
     Text = Color3.fromRGB(240, 240, 245),
-    TextDim = Color3.fromRGB(150, 150, 160),
-    Stroke = Color3.fromRGB(50, 50, 55)
+    TextDim = Color3.fromRGB(160, 160, 170),
+    Stroke = Color3.fromRGB(45, 45, 50)
 }
 
 -- ==========================================
 -- MAIN FRAME
 -- ==========================================
 local Main = Instance.new("Frame", Gui)
-Main.Size = UDim2.new(0, 500, 0, 320)
-Main.Position = UDim2.new(0.5, -250, 0.5, -160)
+Main.Size = UDim2.new(0, 580, 0, 360)
+Main.Position = UDim2.new(0.5, -290, 0.5, -180)
 Main.BackgroundColor3 = C.Base
-Main.BackgroundTransparency = 0.1
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true
 
-local MainCorner = Instance.new("UICorner", Main)
-MainCorner.CornerRadius = UDim.new(0, 12)
+local function Round(obj, r)
+    local c = Instance.new("UICorner", obj)
+    c.CornerRadius = UDim.new(0, r)
+end
 
-local MainStroke = Instance.new("UIStroke", Main)
-MainStroke.Color = C.Stroke
-MainStroke.Thickness = 1.2
-MainStroke.Transparency = 0.5
+local function AddStroke(obj, color)
+    local s = Instance.new("UIStroke", obj)
+    s.Color = color
+    s.Thickness = 1
+    s.Transparency = 0.6
+end
 
--- Top Bar (Dragging Area)
+Round(Main, 10)
+AddStroke(Main, C.Stroke)
+
+-- Top Bar
 local Top = Instance.new("Frame", Main)
 Top.Size = UDim2.new(1, 0, 0, 35)
 Top.BackgroundColor3 = C.Top
 Top.BorderSizePixel = 0
 
-local TopCorner = Instance.new("UICorner", Top)
-TopCorner.CornerRadius = UDim.new(0, 12)
-
 local Title = Instance.new("TextLabel", Top)
 Title.Size = UDim2.new(1, -80, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Text = "redz Hub : Visuals [ CatHub ]"
+Title.Text = "redz Hub [ BETA ACCESS ] : Blox Fruits"
 Title.TextColor3 = C.Text
-Title.Font = Enum.Font.GothamMedium
-Title.TextSize = 13
+Title.Font = Enum.Font.Gotham
+Title.TextSize = 12
 Title.TextXAlignment = "Left"
 Title.BackgroundTransparency = 1
 
--- Control Buttons (X & -)
-local function CreateCtrl(txt, pos, color)
-    local b = Instance.new("TextButton", Top)
-    b.Size = UDim2.new(0, 30, 0, 35)
-    b.Position = pos
-    b.Text = txt
-    b.TextColor3 = C.TextDim
-    b.Font = Enum.Font.GothamBold
-    b.TextSize = 14
-    b.BackgroundTransparency = 1
-    return b
+local Close = Instance.new("TextButton", Top)
+Close.Size = UDim2.new(0, 35, 1, 0)
+Close.Position = UDim2.new(1, -35, 0, 0)
+Close.Text = "✕"
+Close.TextColor3 = C.TextDim
+Close.Font = Enum.Font.GothamBold
+Close.BackgroundTransparency = 1
+
+-- Sidebar (Tab Area)
+local Sidebar = Instance.new("Frame", Main)
+Sidebar.Size = UDim2.new(0, 150, 1, -35)
+Sidebar.Position = UDim2.new(0, 0, 0, 35)
+Sidebar.BackgroundColor3 = C.Side
+Sidebar.BorderSizePixel = 0
+
+local SideList = Instance.new("UIListLayout", Sidebar)
+SideList.Padding = UDim.new(0, 5)
+Instance.new("UIPadding", Sidebar).PaddingTop = UDim.new(0, 10)
+
+-- Content Area
+local Container = Instance.new("ScrollingFrame", Main)
+Container.Size = UDim2.new(1, -170, 1, -45)
+Container.Position = UDim2.new(0, 160, 0, 40)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.ScrollBarThickness = 2
+Container.ScrollBarImageColor3 = C.Accent
+Container.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
+
+-- ==========================================
+-- TAB BUTTON (BIAR MIRIP REDZ)
+-- ==========================================
+local function AddTab(name, iconId)
+    local b = Instance.new("TextButton", Sidebar)
+    b.Size = UDim2.new(1, -20, 0, 35)
+    b.Position = UDim2.new(0, 10, 0, 0)
+    b.BackgroundColor3 = C.Card
+    b.Text = "  " .. name
+    b.TextColor3 = C.Text
+    b.Font = Enum.Font.GothamMedium
+    b.TextSize = 13
+    b.TextXAlignment = "Left"
+    Round(b, 6)
+    
+    -- Icon Placeholder
+    local img = Instance.new("ImageLabel", b)
+    img.Size = UDim2.new(0, 16, 0, 16)
+    img.Position = UDim2.new(0, 8, 0.5, -8)
+    img.Image = iconId or "rbxassetid://6031225818"
+    img.BackgroundTransparency = 1
+    b.Text = "      " .. name
 end
 
-local Close = CreateCtrl("✕", UDim2.new(1, -35, 0, 0))
-local Min = CreateCtrl("—", UDim2.new(1, -65, 0, 0))
-
--- Container Content
-local Content = Instance.new("ScrollingFrame", Main)
-Content.Size = UDim2.new(1, -20, 1, -45)
-Content.Position = UDim2.new(0, 10, 0, 40)
-Content.BackgroundTransparency = 1
-Content.BorderSizePixel = 0
-Content.ScrollBarThickness = 2
-Content.ScrollBarImageColor3 = C.Accent
-Content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-local List = Instance.new("UIListLayout", Content)
-List.Padding = UDim.new(0, 8)
-
 -- ==========================================
--- RESIZE HANDLE (Pojok Kanan Bawah)
+-- TOGGLE & SECTION (STYLE REDZ)
 -- ==========================================
-local Resizer = Instance.new("TextButton", Main)
-Resizer.Size = UDim2.new(0, 15, 0, 15)
-Resizer.Position = UDim2.new(1, -15, 1, -15)
-Resizer.BackgroundTransparency = 1
-Resizer.Text = "◢"
-Resizer.TextColor3 = C.TextDim
-Resizer.TextSize = 12
-
-local isResizing = false
-Resizer.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = true end
-end)
-UserInput.InputChanged:Connect(function(input)
-    if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local mousePos = UserInput:GetMouseLocation() - Vector2.new(0, 36)
-        local newSize = UDim2.new(0, math.clamp(mousePos.X - Main.AbsolutePosition.X, 300, 800), 0, math.clamp(mousePos.Y - Main.AbsolutePosition.Y, 150, 600))
-        Main.Size = newSize
-    end
-end)
-UserInput.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end
-end)
-
--- ==========================================
--- COMPONENTS
--- ==========================================
-local function Section(text)
-    local L = Instance.new("TextLabel", Content)
-    L.Size = UDim2.new(1, 0, 0, 30)
-    L.Text = text
-    L.TextColor3 = C.Text
-    L.Font = Enum.Font.GothamBold
-    L.TextSize = 16
-    L.TextXAlignment = "Left"
-    L.BackgroundTransparency = 1
+local function Section(txt)
+    local l = Instance.new("TextLabel", Container)
+    l.Size = UDim2.new(1, 0, 0, 20)
+    l.Text = txt
+    l.TextColor3 = C.Text
+    l.Font = Enum.Font.GothamBold
+    l.TextSize = 15
+    l.TextXAlignment = "Left"
+    l.BackgroundTransparency = 1
 end
 
-local function Toggle(key, text)
-    local F = Instance.new("TextButton", Content)
-    F.Size = UDim2.new(1, 0, 0, 40)
-    F.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-    F.AutoButtonColor = false
-    F.Text = ""
-    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 8)
+local function Toggle(key, txt)
+    local f = Instance.new("TextButton", Container)
+    f.Size = UDim2.new(1, 0, 0, 40)
+    f.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    f.Text = ""
+    Round(f, 6)
+    AddStroke(f, C.Stroke)
     
-    local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -60, 1, 0)
-    L.Position = UDim2.new(0, 12, 0, 0)
-    L.Text = text
-    L.TextColor3 = C.TextDim
-    L.Font = Enum.Font.Gotham
-    L.TextSize = 14
-    L.TextXAlignment = "Left"
-    L.BackgroundTransparency = 1
+    local l = Instance.new("TextLabel", f)
+    l.Size = UDim2.new(1, -60, 1, 0)
+    l.Position = UDim2.new(0, 12, 0, 0)
+    l.Text = txt
+    l.TextColor3 = C.TextDim
+    l.Font = Enum.Font.Gotham
+    l.TextSize = 13
+    l.TextXAlignment = "Left"
+    l.BackgroundTransparency = 1
     
-    local Sw = Instance.new("Frame", F)
-    Sw.Size = UDim2.new(0, 34, 0, 18)
-    Sw.Position = UDim2.new(1, -44, 0.5, -9)
-    Sw.BackgroundColor3 = S[key] and C.Accent or Color3.fromRGB(60, 60, 65)
-    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
+    local sw = Instance.new("Frame", f)
+    sw.Size = UDim2.new(0, 32, 0, 16)
+    sw.Position = UDim2.new(1, -42, 0.5, -8)
+    sw.BackgroundColor3 = S[key] and C.Accent or Color3.fromRGB(50, 50, 55)
+    Round(sw, 10)
     
-    local Dot = Instance.new("Frame", Sw)
-    Dot.Size = UDim2.new(0, 12, 0, 12)
-    Dot.Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
-    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
+    local d = Instance.new("Frame", sw)
+    d.Size = UDim2.new(0, 12, 0, 12)
+    d.Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)
+    d.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Round(d, 10)
     
-    F.MouseButton1Click:Connect(function()
+    f.MouseButton1Click:Connect(function()
         S[key] = not S[key]
-        TweenService:Create(Sw, TweenInfo.new(0.2), {BackgroundColor3 = S[key] and C.Accent or Color3.fromRGB(60, 60, 65)}):Play()
-        TweenService:Create(Dot, TweenInfo.new(0.2), {Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
+        TweenService:Create(sw, TweenInfo.new(0.2), {BackgroundColor3 = S[key] and C.Accent or Color3.fromRGB(50, 50, 55)}):Play()
+        TweenService:Create(d, TweenInfo.new(0.2), {Position = S[key] and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
     end)
 end
 
 -- ==========================================
--- LOGIC & CONTENT
+-- BUILD UI
 -- ==========================================
+AddTab("Visual", "rbxassetid://6034287525")
+AddTab("Farming", "rbxassetid://6031265917") -- Contoh aja, biar sidebarnya nggak kosong kayak foto Redz
+
 Section("ESP")
 Toggle("PlayerESP", "Enable Player ESP")
 Toggle("FruitESP", "Enable Fruit ESP")
 Section("World")
-Toggle("ChestESP", "Chest Finder")
+Toggle("ChestESP", "Auto Chest [ Tween ]")
 
--- Dragging
-local dragStart, startPos, dragging
+-- Resize Handle (Kanan Bawah)
+local Resizer = Instance.new("TextButton", Main)
+Resizer.Size = UDim2.new(0, 20, 0, 20)
+Resizer.Position = UDim2.new(1, -20, 1, -20)
+Resizer.Text = "⌟"
+Resizer.TextColor3 = C.TextDim
+Resizer.BackgroundTransparency = 1
+
+local dragging, dragInput, dragStart, startPos
 Top.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true; dragStart = input.Position; startPos = Main.Position
@@ -189,13 +203,4 @@ UserInput.InputChanged:Connect(function(input)
 end)
 Top.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
--- Close & Minimize
 Close.MouseButton1Click:Connect(function() Gui:Destroy() end)
-
-local isMin = false
-local oldSizeY = Main.Size.Y.Offset
-Min.MouseButton1Click:Connect(function()
-    isMin = not isMin
-    local targetY = isMin and 35 or 320
-    TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, Main.Size.X.Offset, 0, targetY)}):Play()
-end)
