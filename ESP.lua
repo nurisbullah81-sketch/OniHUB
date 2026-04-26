@@ -1,68 +1,48 @@
--- CatHUB FREEMIUM: ESP Module (v7.0 Fix)
-local UI = _G.CatHUB_UI
+-- CatHUB SUPREMACY: ESP Module v8.0
+local UI = _G.UI
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local LocalPlayer = Players.LocalPlayer
+local LP = Players.LocalPlayer
 
-local function CreatePlayerESP(p)
-    local char = p.Character
-    if char and not char:FindFirstChild("Cat_Plr_ESP") then
-        local b = Instance.new("BillboardGui", char)
-        b.Name = "Cat_Plr_ESP"
-        b.AlwaysOnTop = true
-        b.Size = UDim2.new(0, 200, 0, 50)
-        b.Adornee = char:WaitForChild("HumanoidRootPart", 5)
-        
-        local t = Instance.new("TextLabel", b)
-        t.Size = UDim2.new(1, 0, 1, 0)
-        t.BackgroundTransparency = 1
-        t.TextColor3 = Color3.fromRGB(255, 255, 255)
-        t.TextSize = 14
-        t.Font = "SourceSansBold"
-        t.TextStrokeTransparency = 0
-        
-        local hl = Instance.new("Highlight", char)
-        hl.Name = "Cat_Hl"
-        hl.FillTransparency = 0.5
+local function ApplyESP(obj, type)
+    if obj:FindFirstChild("Cat_ESP") then return end
+    local Bb = Instance.new("BillboardGui", obj)
+    Bb.Name = "Cat_ESP"
+    Bb.AlwaysOnTop = true
+    Bb.Size = UDim2.new(0, 200, 0, 50)
+    local T = Instance.new("TextLabel", Bb)
+    T.Size = UDim2.new(1,0,1,0)
+    T.BackgroundTransparency = 1
+    T.TextColor3 = Color3.fromRGB(255, 255, 255)
+    T.TextStrokeTransparency = 0
+    T.Font = "SourceSansBold"
+    T.TextSize = (type == "Fruit") and 18 or 14
 
+    if type == "Player" then
+        local Hl = Instance.new("Highlight", obj)
+        Hl.Name = "Cat_Hl"
         task.spawn(function()
-            while char:IsDescendantOf(Workspace) do
-                b.Enabled = UI.Settings.PlayerESP_Enabled
-                hl.Enabled = UI.Settings.PlayerESP_Enabled
-                local dist = math.floor((char.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
-                t.Text = string.format("%s\n[%dM]", p.Name, dist)
-                local col = (p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines") and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(255, 0, 0)
-                t.TextColor3 = col
-                hl.FillColor = col
-                task.wait(0.2)
-            end
-        end)
-    end
-end
-
-local function CreateFruitESP(v)
-    if not v:FindFirstChild("Cat_Fruit") then
-        local b = Instance.new("BillboardGui", v)
-        b.Name = "Cat_Fruit"
-        b.AlwaysOnTop = true
-        b.Size = UDim2.new(0, 150, 0, 40)
-        local t = Instance.new("TextLabel", b)
-        t.Size = UDim2.new(1, 0, 1, 0)
-        t.BackgroundTransparency = 1
-        t.TextColor3 = Color3.fromRGB(255, 255, 255)
-        t.TextStrokeTransparency = 0
-        t.TextSize = 18
-        t.Font = "SourceSansBold"
-        
-        task.spawn(function()
-            while v:IsDescendantOf(Workspace) do
-                b.Enabled = UI.Settings.ESP_Enabled and not v:IsDescendantOf(LocalPlayer.Character)
-                if b.Enabled then
-                    local name = v.Name == "Fruit " and "??? (System)" or v.Name
-                    local dist = math.floor((v:GetModelCFrame().Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
-                    t.Text = string.format("%s\n[%dM]", name, dist)
+            while obj:IsDescendantOf(Workspace) do
+                local p = Players:GetPlayerFromCharacter(obj)
+                Hl.Enabled = UI.Settings.ESP_Players
+                Bb.Enabled = UI.Settings.ESP_Players
+                if p and Hl.Enabled then
+                    local col = (p.Team == LP.Team and tostring(p.Team) == "Marines") and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(255, 0, 0)
+                    Hl.FillColor = col
+                    T.TextColor3 = col
+                    T.Text = p.Name.."\n["..math.floor((obj.PrimaryPart.Position - LP.Character.PrimaryPart.Position).Magnitude).."M]"
                 end
                 task.wait(0.3)
+            end
+        end)
+    else
+        task.spawn(function()
+            while obj:IsDescendantOf(Workspace) do
+                Bb.Enabled = UI.Settings.ESP_Fruits
+                if Bb.Enabled then
+                    T.Text = (obj.Name == "Fruit " and "??? (System)" or obj.Name).."\n["..math.floor((obj:GetModelCFrame().Position - LP.Character.PrimaryPart.Position).Magnitude).."M]"
+                end
+                task.wait(0.5)
             end
         end)
     end
@@ -70,14 +50,14 @@ end
 
 task.spawn(function()
     while task.wait(1) do
-        if UI.Settings.ESP_Enabled then
-            for _, v in pairs(Workspace:GetChildren()) do
-                if (v:IsA("Tool") and v.Name:lower():find("fruit")) or (v:IsA("Model") and v.Name == "Fruit ") then CreateFruitESP(v) end
+        if UI.Settings.ESP_Fruits then
+            for _,v in pairs(Workspace:GetChildren()) do
+                if v:IsA("Tool") or (v:IsA("Model") and v.Name == "Fruit ") then ApplyESP(v, "Fruit") end
             end
         end
-        if UI.Settings.PlayerESP_Enabled then
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character then CreatePlayerESP(p) end
+        if UI.Settings.ESP_Players then
+            for _,p in pairs(Players:GetPlayers()) do
+                if p ~= LP and p.Character then ApplyESP(p.Character, "Player") end
             end
         end
     end
