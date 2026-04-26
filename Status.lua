@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
 local LocalPlayer = _G.Cat.Player
 local Labels = _G.Cat.Labels
 
@@ -15,38 +14,83 @@ local function FormatNum(num)
     return formatted
 end
 
-local function GetStat(ls, keywords)
-    if not ls then return 0, "Unknown" end
-    for _, child in pairs(ls:GetChildren()) do
-        if child:IsA("IntValue") or child:IsA("NumberValue") or child:IsA("IntConstrainedValue") then
-            local nameLower = string.lower(child.Name)
-            for _, keyword in pairs(keywords) do
-                if string.find(nameLower, string.lower(keyword)) then
-                    return child.Value, child.Name
+-- SUPER SCANNER: Baca angka dari StringValue maupun IntValue
+local function GetStat(parent, keywords)
+    if not parent then return 0, "Unknown" end
+    for _, child in pairs(parent:GetChildren()) do
+        local nameLower = string.lower(child.Name)
+        for _, keyword in pairs(keywords) do
+            if string.find(nameLower, string.lower(keyword)) then
+                local val = 0
+                
+                -- Kalau IntValue langsung baca
+                if child:IsA("IntValue") or child:IsA("NumberValue") then
+                    val = child.Value
+                -- Kalau StringValue, extract angkanya (contoh: "Level: 2679" atau "2679")
+                elseif child:IsA("StringValue") then
+                    local numStr = string.match(child.Value, "%d+")
+                    if numStr then val = tonumber(numStr) or 0 end
                 end
+                
+                return val, child.Name
             end
         end
     end
     return 0, "Unknown"
 end
 
+-- Fungsi cari lebih dalam kalau tidak ada di leaderstats
+local function DeepSearchStat(player, keywords)
+    local foldersToSearch = {"leaderstats", "Data", "Stats", "Values"}
+    for _, folderName in pairs(foldersToSearch) do
+        local folder = player:FindFirstChild(folderName)
+        if folder then
+            local val, name = GetStat(folder, keywords)
+            if val > 0 then return val, name end -- Hanya return kalau ketemu angkanya
+        end
+    end
+    
+    -- Terakhir, scan semua child dari Player
+    for _, child in pairs(player:GetChildren()) do
+        local val, name = GetStat(child, keywords)
+        if val > 0 then return val, name end
+    end
+    
+    return 0, "Unknown"
+end
+
+local hasPrinted = false
+
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            local ls = LocalPlayer:FindFirstChild("leaderstats")
+            -- DEBUG CONSOLE: Print semua data 1 kali biar lu tau datanya ketemu apa kagak
+            if not hasPrinted then
+                hasPrinted = true
+                print("[CatHUB] === SCANNING PLAYER DATA ===")
+                local ls = LocalPlayer:FindFirstChild("leaderstats")
+                if ls then
+                    for _, child in pairs(ls:GetChildren()) do
+                        print(" -> " .. child.Name .. " (" .. child.ClassName .. ") = " .. tostring(child.Value))
+                    end
+                else
+                    print(" -> Leaderstats not found!")
+                end
+            end
             
-            -- Scan Level (Cari kata level, lvl, atau exp)
-            local lvl, lvlName = GetStat(ls, {"Level", "Lvl", "Exp", "Xp"})
+            -- Scan Level (Cari Level, Lvl, atau angka besar)
+            local lvl, lvlName = DeepSearchStat(LocalPlayer, {"Level", "Lvl", "Exp"})
             
             -- Scan Uang 
-            local money, moneyName = GetStat(ls, {"$", "Money", "Belly", "Cash"})
+            local money, moneyName = DeepSearchStat(LocalPlayer, {"$", "Money", "Belly", "Cash"})
             
             -- Scan Fragment 
-            local frag, fragName = GetStat(ls, {"Fragment", "Frag"})
+            local frag, fragName = DeepSearchStat(LocalPlayer, {"Fragment", "Frag"})
             
             -- Scan Bounty/Honor 
-            local bounty, bountyName = GetStat(ls, {"Bounty", "Honor"})
+            local bounty, bountyName = DeepSearchStat(LocalPlayer, {"Bounty", "Honor"})
             
+            -- Update UI
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
             
             local displayMoneyName = (moneyName == "$" or string.lower(moneyName) == "money") and "Money" or moneyName
