@@ -1,13 +1,13 @@
--- CatHUB v9.3: Fruit ESP (NO BACKGROUND, TextStroke Only)
+-- CatHUB: Fruit ESP Logic (Zero Lag, Text Only)
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
-local S = _G.Cat.Settings
 local Me = _G.Cat.Player
+local Settings = _G.Cat.Settings
 
 local Data = {}
 local Mem = {}
 local FC = 0
-local SKIP = 10 
+local SKIP = 10 -- Update 6x per detik
 
 local function Pos(f)
     if not f or not f.Parent then return nil end
@@ -38,19 +38,17 @@ local function Add(f)
     pcall(function()
         local bb = Instance.new("BillboardGui", f)
         bb.Name = "CatESP"
-        bb.Size = UDim2.new(0, 150, 0, 20) -- Flat tanpa kotak
+        bb.Size = UDim2.new(0, 150, 0, 20)
         bb.AlwaysOnTop = true
         bb.StudsOffset = Vector3.new(0, 3, 0)
         bb.Enabled = false
         
-        -- TEKS LANGSUNG, TANPA FRAME
         local txt = Instance.new("TextLabel", bb)
         txt.Size = UDim2.new(1, 0, 1, 0)
         txt.BackgroundTransparency = 1
         txt.Text = f.Name .. " []"
         txt.TextColor3 = Color3.fromRGB(255, 255, 255)
-        -- TextStroke biar keliatan tanpa background
-        txt.TextStrokeTransparency = 0
+        txt.TextStrokeTransparency = 0.3
         txt.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         txt.Font = Enum.Font.GothamBold
         txt.TextSize = 13
@@ -76,10 +74,11 @@ RunService.RenderStepped:Connect(function()
     FC = FC + 1
     if FC % SKIP ~= 0 then return end
     pcall(function()
-        if not S.FruitESP then
+        if not Settings.FruitESP then
             for _, d in pairs(Data) do if d and d.bb then d.bb.Enabled = false end end
             return
         end
+        
         local c = Me.Character
         if not c then return end
         local r = c:FindFirstChild("HumanoidRootPart")
