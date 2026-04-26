@@ -1,10 +1,10 @@
--- CatHUB SUPREMACY: UI Module v12.0
+-- CatHUB SUPREMACY: UI Module v13.0
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
-if CoreGui:FindFirstChild("CatHUB_v12") then CoreGui.CatHUB_v12:Destroy() end
+if CoreGui:FindFirstChild("CatHUB_v13") then CoreGui.CatHUB_v13:Destroy() end
 
 local UI = {
     Visible = true, Collapsed = false, Accent = Color3.fromRGB(140, 90, 255),
@@ -12,23 +12,23 @@ local UI = {
         AutoFarm = false, AutoAttack = false, AutoSkill = false, SafeMode = true,
         WeaponType = "Melee", ESP_Fruits = false, AutoTweenFruit = false, 
         AutoStore = false, LockAim = false, AntiStun = true, 
-        ESP_Players = false, RunSpeed = 16, JumpPower = 50, TweenSpeed = 300
+        ESP_Players = false, RunSpeed = 16, JumpPower = 50, TweenSpeed = 350
     }
 }
 
-function UI:Save() pcall(function() writefile("CatHUB_v12.json", HttpService:JSONEncode(self.Settings)) end) end
+function UI:Save() pcall(function() writefile("CatHUB_v13.json", HttpService:JSONEncode(self.Settings)) end) end
 function UI:Load() 
-    if isfile and isfile("CatHUB_v12.json") then 
-        local s, d = pcall(function() return HttpService:JSONDecode(readfile("CatHUB_v12.json")) end)
+    if isfile and isfile("CatHUB_v13.json") then 
+        local s, d = pcall(function() return HttpService:JSONDecode(readfile("CatHUB_v13.json")) end)
         if s then for k,v in pairs(d) do self.Settings[k] = v end end
     end 
 end
 UI:Load()
 
-local ScreenGui = Instance.new("ScreenGui", CoreGui); ScreenGui.Name = "CatHUB_v12"
+local ScreenGui = Instance.new("ScreenGui", CoreGui); ScreenGui.Name = "CatHUB_v13"
 local Main = Instance.new("Frame", ScreenGui)
-Main.Size = UDim2.new(0, 550, 0, 350)
-Main.Position = UDim2.new(0.5, -275, 0.5, -175)
+Main.Size = UDim2.new(0, 540, 0, 360)
+Main.Position = UDim2.new(0.5, -270, 0.5, -180)
 Main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 45)
@@ -36,7 +36,7 @@ Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 45)
 local TopBar = Instance.new("Frame", Main)
 TopBar.Size = UDim2.new(1, 0, 0, 32); TopBar.BackgroundColor3 = Color3.fromRGB(18, 18, 18); Instance.new("UICorner", TopBar)
 
--- TopBar Drag Only
+-- FIXED DRAG (TopBar Only)
 local dragging, dragStart, startPos
 TopBar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true dragStart = i.Position startPos = Main.Position end end)
 UserInputService.InputChanged:Connect(function(i)
@@ -49,7 +49,7 @@ UserInputService.InputEnded:Connect(function() dragging = false end)
 
 local Title = Instance.new("TextLabel", TopBar)
 Title.Size = UDim2.new(1, -120, 1, 0); Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Text = "CATHUB SUPREMACY v12.0"; Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Text = "CATHUB SUPREMACY v13.0"; Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = "SourceSansBold"; Title.TextSize = 14; Title.TextXAlignment = "Left"; Title.BackgroundTransparency = 1
 
 local Close = Instance.new("TextButton", TopBar)
@@ -62,7 +62,7 @@ Mini.MouseButton1Click:Connect(function()
     UI.Collapsed = not UI.Collapsed
     Main:FindFirstChild("Sidebar").Visible = not UI.Collapsed
     Main:FindFirstChild("Content").Visible = not UI.Collapsed
-    Main:TweenSize(UI.Collapsed and UDim2.new(0, 550, 0, 32) or UDim2.new(0, 550, 0, 350), "Out", "Quad", 0.2, true)
+    Main:TweenSize(UI.Collapsed and UDim2.new(0, 540, 0, 32) or UDim2.new(0, 540, 0, 360), "Out", "Quad", 0.2, true)
 end)
 
 local Sidebar = Instance.new("Frame", Main)
