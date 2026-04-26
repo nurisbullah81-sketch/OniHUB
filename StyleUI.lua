@@ -1,4 +1,4 @@
--- CatHUB v13 FINAL: Rollback Drag Stabil & Fix Tab Kiri 100%
+-- CatHUB v12.1: FINAL STABIL + OUTLINE TAB KIRI
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -13,41 +13,39 @@ Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 -- ==========================================
--- THEME: FOKUS TAB KIRI BIAR BEDA SAMA BACKGROUND
+-- PALETTE
 -- ==========================================
 local Theme = {
     MainBG      = Color3.fromRGB(10, 10, 10),   
-    SideBG      = Color3.fromRGB(12, 12, 12),   -- Sidebar kiri (Hitam Pekat)
-    
-    TabOn       = Color3.fromRGB(38, 38, 42),   -- Tab Kiri Aktif (Terang)
-    TabOff      = Color3.fromRGB(22, 22, 24),   -- Tab Kiri Mati (Beda jelas sama SideBG, ga nyatu!)
-    
+    SideBG      = Color3.fromRGB(15, 15, 16),   
     TopBG       = Color3.fromRGB(10, 10, 10),
-    PageBG      = Color3.fromRGB(18, 18, 20),   -- Kotak Kanan
-    CardBG      = Color3.fromRGB(28, 28, 32),   
-    CardHov     = Color3.fromRGB(36, 36, 42),
-    Text        = Color3.fromRGB(245, 245, 245),
-    TextDim     = Color3.fromRGB(140, 140, 145),
+    TabOn       = Color3.fromRGB(38, 38, 42),   
+    TabOff      = Color3.fromRGB(15, 15, 16),   
+    PageBG      = Color3.fromRGB(28, 28, 32),   
+    CardBG      = Color3.fromRGB(38, 38, 44),   
+    CardHov     = Color3.fromRGB(46, 46, 52),
+    Text        = Color3.fromRGB(250, 250, 250),
+    TextDim     = Color3.fromRGB(150, 150, 155),
     ToggleOn    = Color3.fromRGB(138, 43, 226), 
-    ToggleOff   = Color3.fromRGB(75, 75, 80),
+    ToggleOff   = Color3.fromRGB(90, 90, 95),
     CatPurple   = Color3.fromRGB(160, 100, 255),
     Gold        = Color3.fromRGB(255, 200, 50), 
     Accent      = Color3.fromRGB(138, 43, 226), 
-    Line        = Color3.fromRGB(40, 40, 45)    
+    Line        = Color3.fromRGB(45, 45, 50)    
 }
 
 -- ==========================================
--- WIDGET "Cat" & DRAG TRANSPARAN (VERSI STABIL ANTI-MACET)
+-- WIDGET "Cat" & DRAG TRANSPARAN
 -- ==========================================
 local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Size = UDim2.new(0, 65, 0, 40) 
+FloatCont.Size = UDim2.new(0, 70, 0, 40) 
 FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
 FloatCont.BackgroundTransparency = 1
 FloatCont.ZIndex = 99999 
 
 local FloatBtn = Instance.new("TextButton", FloatCont)
-FloatBtn.Size = UDim2.new(0, 40, 0, 40) 
-FloatBtn.Position = UDim2.new(0, 25, 0, 0) 
+FloatBtn.Size = UDim2.new(0, 40, 1, 0)
+FloatBtn.Position = UDim2.new(0, 30, 0, 0) 
 FloatBtn.BackgroundColor3 = Theme.CardBG
 FloatBtn.Text = "Cat"
 FloatBtn.TextColor3 = Theme.CatPurple 
@@ -59,14 +57,12 @@ Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
 local FloatStroke = Instance.new("UIStroke", FloatBtn)
 FloatStroke.Color = Theme.Line
 
--- Area Transparan 100% buat narik kotak Cat (Samping kiri)
 local FloatDrag = Instance.new("TextButton", FloatCont)
-FloatDrag.Size = UDim2.new(0, 25, 1, 0)
+FloatDrag.Size = UDim2.new(0, 30, 1, 0)
 FloatDrag.Position = UDim2.new(0, 0, 0, 0)
-FloatDrag.BackgroundTransparency = 1 -- Gak kelihatan
+FloatDrag.BackgroundTransparency = 1 
 FloatDrag.Text = ""
 
--- LOGIC DRAG WIDGET (Rollback ke versi mulus)
 local draggingFloat, dragStartFloat, startPosFloat
 FloatDrag.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -127,7 +123,7 @@ TitleList.FillDirection = Enum.FillDirection.Horizontal
 TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
 TitleList.Padding = UDim.new(0, 4) 
 
-local function CreateTitlePart(text, color, font, order)
+local function CreateTitlePart(text, color, font)
     local label = Instance.new("TextLabel", TitleContainer)
     label.Text = text
     label.TextColor3 = color
@@ -135,12 +131,11 @@ local function CreateTitlePart(text, color, font, order)
     label.TextSize = 13
     label.BackgroundTransparency = 1
     label.AutomaticSize = Enum.AutomaticSize.XY
-    label.LayoutOrder = order
 end
 
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold, 1) 
-CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium, 2)
-CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium, 3) 
+CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
+CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium)
+CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium) 
 
 local BtnX = Instance.new("TextButton", Top)
 BtnX.Size = UDim2.new(0, 35, 0, 35)
@@ -183,7 +178,6 @@ BtnM.MouseButton1Click:Connect(function()
     end
 end)
 
--- LOGIC DRAG MAIN UI (Versi Stabil)
 local draggingMain, dragStartMain, startPosMain
 Top.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -201,42 +195,7 @@ UserInput.InputChanged:Connect(function(input)
 end)
 
 -- ==========================================
--- RESIZER (Versi Stabil)
--- ==========================================
-local Resizer = Instance.new("TextButton", Main)
-Resizer.Size = UDim2.new(0, 20, 0, 20)
-Resizer.Position = UDim2.new(1, -20, 1, -20)
-Resizer.BackgroundTransparency = 1
-Resizer.Text = "⌟"
-Resizer.TextColor3 = Theme.TextDim
-Resizer.TextSize = 16
-Resizer.Font = Enum.Font.Gotham
-Resizer.ZIndex = 50
-Resizer.AutoButtonColor = false
-
-local isResizing, resizeStart, startSizeR
-Resizer.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then
-        isResizing = true
-        resizeStart = input.Position
-        startSizeR = Main.Size
-    end
-end)
-Resizer.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end
-end)
-UserInput.InputChanged:Connect(function(input)
-    if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - resizeStart
-        local newX = math.clamp(startSizeR.X.Offset + delta.X, 480, 900)
-        local newY = math.clamp(startSizeR.Y.Offset + delta.Y, 280, 700)
-        Main.Size = UDim2.new(0, newX, 0, newY)
-        lastSize = Main.Size
-    end
-end)
-
--- ==========================================
--- SIDEBAR & KONTEN KANAN
+-- DYNAMIC SIDEBAR & KONTEN
 -- ==========================================
 local ContentContainer = Instance.new("Frame", Main)
 ContentContainer.Size = UDim2.new(1, 0, 1, -35)
@@ -287,10 +246,11 @@ local function CreateTab(name, isFirst)
     Btn.AutoButtonColor = false
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
-    -- STROKE TAB KIRI: Biar kelihatan jelas ini tombol, bukan nyatu sama background
-    local TabStroke = Instance.new("UIStroke", Btn)
-    TabStroke.Color = Theme.Line
-    TabStroke.Thickness = 1
+    -- REQUEST: Outline tipis biar kelihatan batasnya
+    local BtnStroke = Instance.new("UIStroke", Btn)
+    BtnStroke.Color = Theme.Line
+    BtnStroke.Thickness = 1
+    BtnStroke.Transparency = isFirst and 0 or 0.5 -- Kalau off, outlinennya sedikit transparan
     
     local Indicator = Instance.new("Frame", Btn)
     Indicator.Size = UDim2.new(0, 3, 0, 14)
@@ -330,16 +290,22 @@ local function CreateTab(name, isFirst)
     Pad.PaddingRight = UDim.new(0, 14) 
     Pad.PaddingBottom = UDim.new(0, 10)
     
-    Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator}
+    Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator, Stroke = BtnStroke}
     
     Btn.MouseButton1Click:Connect(function()
         for tName, data in pairs(Pages) do
             local active = (tName == name)
             data.Page.Visible = active
             data.Ind.Visible = active
+            
+            -- Update background dan outline tab
             TweenService:Create(data.Btn, TweenInfo.new(0.15), {
                 BackgroundColor3 = active and Theme.TabOn or Theme.TabOff,
                 TextColor3 = active and Theme.Text or Theme.TextDim
+            }):Play()
+            
+            TweenService:Create(data.Stroke, TweenInfo.new(0.15), {
+                Transparency = active and 0 or 0.5
             }):Play()
         end
     end)
