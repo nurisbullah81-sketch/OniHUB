@@ -1,21 +1,27 @@
--- CatHUB SUPREMACY: Fruits Module v11.0
+-- CatHUB SUPREMACY: Fruits Module v12.0
 local UI = _G.UI_Lib
 local LP = game:GetService("Players").LocalPlayer
 local TS = game:GetService("TweenService")
 
 local Tab = UI:NewTab("Fruits")
-UI:NewSwitch(Tab, "ESP_Fruits", "Fruit ESP")
-UI:NewSwitch(Tab, "AutoTweenFruit", "Auto Tween to Fruits")
-UI:NewSwitch(Tab, "AutoStore", "Auto Store Fruit")
+UI:NewSwitch(Tab, "ESP_Fruits", "Fruit ESP (Bold)")
+UI:NewSwitch(Tab, "AutoTweenFruit", "Linear Tween to Fruits")
+UI:NewSwitch(Tab, "AutoStore", "Auto Store to Inventory")
 
-local function TweenToFruit(v)
-    if not UI.Settings.AutoTweenFruit or _G.TPing then return end
-    _G.TPing = true
-    local dist = (v:GetModelCFrame().Position - LP.Character.PrimaryPart.Position).Magnitude
-    local t = TS:Create(LP.Character.PrimaryPart, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = v:GetModelCFrame()})
-    t:Play()
-    t.Completed:Wait()
-    _G.TPing = false
+local function ApplyFruitESP(v)
+    if v:FindFirstChild("Cat_ESP") then return end
+    local Bb = Instance.new("BillboardGui", v); Bb.Name = "Cat_ESP"; Bb.AlwaysOnTop = true; Bb.Size = UDim2.new(0, 150, 0, 40)
+    local T = Instance.new("TextLabel", Bb); T.Size = UDim2.new(1,0,1,0); T.BackgroundTransparency = 1; T.TextColor3 = Color3.fromRGB(255,255,255); T.TextStrokeTransparency = 0; T.Font = "SourceSansBold"; T.TextSize = 18
+    task.spawn(function()
+        while v:IsDescendantOf(workspace) do
+            Bb.Enabled = UI.Settings.ESP_Fruits and not v:IsDescendantOf(LP.Character)
+            if Bb.Enabled then
+                local dist = math.floor((v:GetModelCFrame().Position - LP.Character.PrimaryPart.Position).Magnitude)
+                T.Text = (v.Name == "Fruit " and "??? (System)" or v.Name) .. "\n[" .. dist .. "M]"
+            end
+            task.wait(0.3)
+        end
+    end)
 end
 
 task.spawn(function()
@@ -23,7 +29,13 @@ task.spawn(function()
         if UI.Settings.ESP_Fruits or UI.Settings.AutoTweenFruit then
             for _,v in pairs(workspace:GetChildren()) do
                 if v:IsA("Tool") or (v:IsA("Model") and v.Name == "Fruit ") then
-                    if UI.Settings.AutoTweenFruit then TweenToFruit(v) end
+                    if UI.Settings.ESP_Fruits then ApplyFruitESP(v) end
+                    if UI.Settings.AutoTweenFruit and not _G.TPing then
+                        _G.TPing = true
+                        local dist = (v:GetModelCFrame().Position - LP.Character.PrimaryPart.Position).Magnitude
+                        local t = TS:Create(LP.Character.PrimaryPart, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = v:GetModelCFrame()})
+                        t:Play(); t.Completed:Wait(); _G.TPing = false
+                    end
                 end
             end
         end
