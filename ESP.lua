@@ -1,51 +1,50 @@
--- CatHUB FREEMIUM: ESP Module (Highlight Update)
+-- CatHUB FREEMIUM: ESP Module (v5.0 Fix)
 local UI = _G.CatHUB_UI
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
-local function CreatePlayerHighlight(char)
-    if not char:FindFirstChild("Cat_Highlight") then
-        local Hl = Instance.new("Highlight", char)
-        Hl.Name = "Cat_Highlight"
-        Hl.FillColor = Color3.fromRGB(255, 0, 0) -- Merah untuk musuh
-        Hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-        Hl.FillTransparency = 0.5
-        Hl.OutlineTransparency = 0
+local function CreatePlayerESP(char)
+    if not char:FindFirstChild("Cat_Hl") then
+        local hl = Instance.new("Highlight", char)
+        hl.Name = "Cat_Hl"
+        hl.FillTransparency = 0.5
+        hl.OutlineTransparency = 0
         
         task.spawn(function()
             while char:IsDescendantOf(Workspace) do
-                Hl.Enabled = UI.Settings.PlayerESP_Enabled
+                local p = Players:GetPlayerFromCharacter(char)
+                if p then
+                    hl.Enabled = UI.Settings.PlayerESP_Enabled
+                    hl.FillColor = (p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines") and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(255, 0, 0)
+                end
                 task.wait(0.5)
             end
         end)
     end
 end
 
-local function CreateFruitESP(obj)
-    if not obj:FindFirstChild("Cat_ESP") then
-        local Bb = Instance.new("BillboardGui", obj)
-        Bb.Name = "Cat_ESP"
-        Bb.AlwaysOnTop = true
-        Bb.Size = UDim2.new(0, 200, 0, 50)
+local function CreateFruitESP(v)
+    if not v:FindFirstChild("Cat_Fruit") then
+        local b = Instance.new("BillboardGui", v)
+        b.Name = "Cat_Fruit"
+        b.AlwaysOnTop = true
+        b.Size = UDim2.new(0, 150, 0, 40)
+        local t = Instance.new("TextLabel", b)
+        t.Size = UDim2.new(1, 0, 1, 0)
+        t.BackgroundTransparency = 1
+        t.TextColor3 = Color3.fromRGB(255, 255, 255)
+        t.TextStrokeTransparency = 0
+        t.TextSize = 16
+        t.Font = Enum.Font.SourceSansBold
         
-        local T = Instance.new("TextLabel", Bb)
-        T.Size = UDim2.new(1, 0, 1, 0)
-        T.BackgroundTransparency = 1
-        T.TextColor3 = Color3.fromRGB(255, 255, 255)
-        T.TextSize = 18
-        T.Font = Enum.Font.SourceSansBold
-        T.TextStrokeTransparency = 0
-        T.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-
         task.spawn(function()
-            while obj:IsDescendantOf(Workspace) do
-                Bb.Enabled = UI.Settings.ESP_Enabled
-                if Bb.Enabled then
-                    local name = obj.Name == "Fruit " and "??? (System)" or obj.Name
-                    local pos = obj:IsA("Model") and obj:GetModelCFrame().Position or obj.Position
-                    local dist = math.floor((pos - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
-                    T.Text = string.format("%s\n[%dM]", name, dist)
+            while v:IsDescendantOf(Workspace) do
+                b.Enabled = UI.Settings.ESP_Enabled and not v:IsDescendantOf(LocalPlayer.Character)
+                if b.Enabled then
+                    local name = v.Name == "Fruit " and "??? (System)" or v.Name
+                    local dist = math.floor((v:GetModelCFrame().Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                    t.Text = string.format("%s\n[%dM]", name, dist)
                 end
                 task.wait(0.2)
             end
@@ -57,16 +56,12 @@ task.spawn(function()
     while task.wait(1) do
         if UI.Settings.ESP_Enabled then
             for _, v in pairs(Workspace:GetChildren()) do
-                if (v:IsA("Tool") and v.Name:lower():find("fruit")) or (v:IsA("Model") and v.Name == "Fruit ") then
-                    CreateFruitESP(v)
-                end
+                if (v:IsA("Tool") and v.Name:lower():find("fruit")) or (v:IsA("Model") and v.Name == "Fruit ") then CreateFruitESP(v) end
             end
         end
         if UI.Settings.PlayerESP_Enabled then
             for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character then
-                    CreatePlayerHighlight(p.Character)
-                end
+                if p ~= LocalPlayer and p.Character then CreatePlayerESP(p.Character) end
             end
         end
     end
