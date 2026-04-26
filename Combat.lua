@@ -1,35 +1,123 @@
--- CatHUB SUPREMACY: Combat Module v10.0
-local UI = _G.UI_Lib
-local LP = game:GetService("Players").LocalPlayer
-local Cam = workspace.CurrentCamera
+-- CatHUB FREEMIUM: Combat Module (v6.1)
+local UI = _G.CatHUB_UI
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 
-local Tab = UI:NewTab("PVP Elite")
-UI:NewSwitch(Tab, "LockAim", "Sticky Target Lock")
-UI:NewSwitch(Tab, "AntiStun", "Passive Anti-Stun Override")
-UI:NewSlider(Tab, "RunSpeed", "Run Speed Value", 16, 1000)
+local CombatTab = UI:CreateTab("Combat")
 
-game:GetService("RunService").RenderStepped:Connect(function()
-    local h = LP.Character and LP.Character:FindFirstChild("Humanoid")
-    if h then
-        h.WalkSpeed = UI.Settings.RunSpeed
-        if UI.Settings.AntiStun then
-            h.PlatformStand = false; h.Sit = false
-            if h:GetState() == Enum.HumanoidStateType.Physics then h:ChangeState("GettingUp") end
-        end
+-- Switches
+UI:CreateSwitch(CombatTab, "LockAim_Enabled", "Lock Aim (Nearest Enemy)")
+UI:CreateSwitch(CombatTab, "AntiStun_Enabled", "Anti Stun")
+UI:CreateSwitch(CombatTab, "WalkWater_Enabled", "Walk on Water")
+UI:CreateSwitch(CombatTab, "FastRun_Enabled", "Fast Run")
+UI:CreateSlider(CombatTab, "Run_Speed", "Run Speed", 16, 100, function(val)
+    if UI.Settings.FastRun_Enabled and LocalPlayer.Character then
+        LocalPlayer.Character.Humanoid.WalkSpeed = val
     end
-    if UI.Settings.LockAim then
-        local t, sd = nil, 180
-        for _,p in pairs(game.Players:GetPlayers()) do
-            if p ~= LP and p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                if not (LP.Team == p.Team and tostring(LP.Team) == "Marines") then
-                    local pos, vis = Cam:WorldToViewportPoint(p.Character.PrimaryPart.Position)
-                    if vis then
-                        local d = (Vector2.new(pos.X, pos.Y) - Vector2.new(LP:GetMouse().X, LP:GetMouse().Y)).Magnitude
-                        if d < sd then t, sd = p, d end
+end)
+UI:CreateSwitch(CombatTab, "HighJump_Enabled", "High Jump")
+UI:CreateSlider(CombatTab, "Jump_Power", "Jump Power", 50, 200, function(val)
+    if UI.Settings.HighJump_Enabled and LocalPlayer.Character then
+        LocalPlayer.Character.Humanoid.JumpPower = val
+    end
+end)
+
+-- Lock Aim System
+RunService.RenderStepped:Connect(function()
+    if UI.Settings.LockAim_Enabled and LocalPlayer.Character then
+        pcall(function()
+            local closest, dist = nil, math.huge
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    if p.Character.Humanoid.Health > 0 then
+                        local d = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                        if d < dist then
+                            closest, dist = p, d
+                        end
                     end
                 end
             end
-        end
-        if t then Cam.CFrame = CFrame.new(Cam.CFrame.Position, t.Character.PrimaryPart.Position) end
+            if closest and closest.Character.HumanoidRootPart then
+                Workspace.CurrentCamera.CFrame = CFrame.new(
+                    Workspace.CurrentCamera.CFrame.Position,
+                    closest.Character.HumanoidRootPart.Position
+                )
+            end
+        end)
     end
 end)
+
+-- Anti Stun
+RunService.Heartbeat:Connect(function()
+    if UI.Settings.AntiStun_Enabled and LocalPlayer.Character then
+        pcall(function()
+            local hum = LocalPlayer.Character.Humanoid
+            if hum:GetState() == Enum.HumanoidStateType.PlatformStanding then
+                hum:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end)
+    end
+end)
+
+-- Walk on Water
+task.spawn(function()
+    while task.wait(0.1) do
+        if UI.Settings.WalkWater_Enabled and LocalPlayer.Character then
+            pcall(function()
+                local root = LocalPlayer.Character.HumanoidRootPart
+                local pos = root.Position
+                -- Check if in water region
+                for _, v in pairs(Workspace:GetChildren()) do
+                    if v:IsA("Terrain") then
+                        local cell = v:ReadVoxel(pos)
+                        if cell.Material == Enum.Material.Water then
+                            root.Velocity = Vector3.new(root.Velocity.X, 25, root.Velocity.Z)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Fast Run
+task.spawn(function()
+    while task.wait(0.5) do
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            local hum = LocalPlayer.Character.Humanoid
+            if UI.Settings.FastRun_Enabled then
+                hum.WalkSpeed = UI.Settings.Run_Speed
+            else
+                hum.WalkSpeed = 16
+            end
+            
+            if UI.Settings.HighJump_Enabled then
+                hum.JumpPower = UI.Settings.Jump_Power
+                hum.UseJumpPower = true
+            else
+                hum.JumpPower = 50
+            end
+        end
+    end
+end)
+
+-- Get Nearest Player Function (For Bounty)
+function _G.CatHUB_GetNearestPlayer()
+    local closest, dist = nil, math.huge
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            if p.Character.Humanoid.Health > 0 then
+                local d = (p.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if d < dist then
+                    closest, dist = p, d
+                end
+            end
+        end
+    end
+    return closest
+end
+
+print("[CatHUB]: Combat Module Loaded.")
