@@ -1,4 +1,4 @@
--- CatHUB v8.9: Fruit ESP (Clear Text + Background Box)
+-- CatHUB v9.0: Fruit ESP (Item & Clear Background)
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local S = _G.Cat.Settings
@@ -34,7 +34,6 @@ local function IsF(o)
     return success and isFruit
 end
 
--- Buat ESP dengan Kotak Background
 local function Add(f)
     if not f or not f.Parent then return end
     if Data[f] then return end
@@ -42,49 +41,30 @@ local function Add(f)
     local success, err = pcall(function()
         local bb = Instance.new("BillboardGui", f)
         bb.Name = "CatESP"
-        bb.Size = UDim2.new(0, 140, 0, 40)
+        bb.Size = UDim2.new(0, 120, 0, 28)
         bb.AlwaysOnTop = true
-        bb.StudsOffset = Vector3.new(0, 4, 0)
+        bb.StudsOffset = Vector3.new(0, 3, 0)
         bb.Enabled = false
         
-        -- KOTAK BACKGROUND BIAR KELIATAN
+        -- Background Kotak Item
         local bg = Instance.new("Frame", bb)
         bg.Size = UDim2.new(1, 0, 1, 0)
-        bg.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-        bg.BackgroundTransparency = 0.2
+        bg.BackgroundColor3 = Color3.fromRGB(10, 10, 10) -- Hitam pekat
+        bg.BackgroundTransparency = 0.15
         bg.BorderSizePixel = 0
-        Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 3)
         
-        -- Border kotak
-        local stroke = Instance.new("UIStroke", bg)
-        stroke.Color = Color3.fromRGB(120, 80, 210)
-        stroke.Thickness = 0.8
+        local txt = Instance.new("TextLabel", bg)
+        txt.Size = UDim2.new(1, -8, 1, 0)
+        txt.Position = UDim2.new(0, 4, 0, 0)
+        txt.BackgroundTransparency = 1
+        txt.Text = f.Name .. " []"
+        txt.TextColor3 = Color3.fromRGB(220, 220, 220) -- Abu terang
+        txt.Font = Enum.Font.GothamBold
+        txt.TextSize = 11
+        txt.TextXAlignment = "Left"
         
-        local nm = Instance.new("TextLabel", bg)
-        nm.Size = UDim2.new(1, -10, 0, 20)
-        nm.Position = UDim2.new(0, 5, 0, 2)
-        nm.BackgroundTransparency = 1
-        nm.Text = "🍇 " .. f.Name
-        nm.TextColor3 = Color3.fromRGB(230, 230, 255)
-        nm.TextStrokeTransparency = 0.5
-        nm.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        nm.Font = Enum.Font.GothamBold
-        nm.TextSize = 13
-        nm.TextXAlignment = "Left"
-        
-        local dt = Instance.new("TextLabel", bg)
-        dt.Size = UDim2.new(1, -10, 0, 14)
-        dt.Position = UDim2.new(0, 5, 0, 22)
-        dt.BackgroundTransparency = 1
-        dt.Text = ""
-        dt.TextColor3 = Color3.fromRGB(180, 180, 200)
-        dt.TextStrokeTransparency = 0.6
-        dt.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        dt.Font = Enum.Font.Gotham
-        dt.TextSize = 11
-        dt.TextXAlignment = "Left"
-        
-        Data[f] = { bb = bb, nm = nm, dt = dt, bg = bg }
+        Data[f] = { bb = bb, txt = txt, bg = bg }
         Mem[f] = -1
     end)
 end
@@ -133,18 +113,7 @@ RunService.RenderStepped:Connect(function()
             
             if math.abs(m - (Mem[f] or -1)) > 5 then
                 Mem[f] = m
-                d.dt.Text = "Distance: " .. m .. "m"
-                
-                if m < 300 then
-                    d.bg.BackgroundColor3 = Color3.fromRGB(10, 40, 10) -- Hijau
-                    d.nm.TextColor3 = Color3.fromRGB(100, 255, 100)
-                elseif m < 1000 then
-                    d.bg.BackgroundColor3 = Color3.fromRGB(40, 40, 10) -- Kuning
-                    d.nm.TextColor3 = Color3.fromRGB(255, 255, 100)
-                else
-                    d.bg.BackgroundColor3 = Color3.fromRGB(40, 10, 10) -- Merah
-                    d.nm.TextColor3 = Color3.fromRGB(255, 100, 100)
-                end
+                d.txt.Text = f.Name .. " [" .. m .. "m]"
             end
             d.bb.Enabled = true
         end
