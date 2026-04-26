@@ -1,11 +1,12 @@
--- CatHUB FREEMIUM: ESP Module (v6.0 Fix)
+-- CatHUB FREEMIUM: ESP Module (v7.0 Fix)
 local UI = _G.CatHUB_UI
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
-local function CreatePlayerESP(char)
-    if not char:FindFirstChild("Cat_Plr_ESP") then
+local function CreatePlayerESP(p)
+    local char = p.Character
+    if char and not char:FindFirstChild("Cat_Plr_ESP") then
         local b = Instance.new("BillboardGui", char)
         b.Name = "Cat_Plr_ESP"
         b.AlwaysOnTop = true
@@ -17,19 +18,22 @@ local function CreatePlayerESP(char)
         t.BackgroundTransparency = 1
         t.TextColor3 = Color3.fromRGB(255, 255, 255)
         t.TextSize = 14
-        t.Font = Enum.Font.SourceSansBold
+        t.Font = "SourceSansBold"
         t.TextStrokeTransparency = 0
-        t.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         
+        local hl = Instance.new("Highlight", char)
+        hl.Name = "Cat_Hl"
+        hl.FillTransparency = 0.5
+
         task.spawn(function()
             while char:IsDescendantOf(Workspace) do
                 b.Enabled = UI.Settings.PlayerESP_Enabled
-                local p = Players:GetPlayerFromCharacter(char)
-                if p and b.Enabled then
-                    local dist = math.floor((char.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
-                    t.Text = string.format("%s\n[%dM]", p.Name, dist)
-                    t.TextColor3 = (p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines") and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(255, 0, 0)
-                end
+                hl.Enabled = UI.Settings.PlayerESP_Enabled
+                local dist = math.floor((char.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                t.Text = string.format("%s\n[%dM]", p.Name, dist)
+                local col = (p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines") and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(255, 0, 0)
+                t.TextColor3 = col
+                hl.FillColor = col
                 task.wait(0.2)
             end
         end)
@@ -48,7 +52,7 @@ local function CreateFruitESP(v)
         t.TextColor3 = Color3.fromRGB(255, 255, 255)
         t.TextStrokeTransparency = 0
         t.TextSize = 18
-        t.Font = Enum.Font.SourceSansBold
+        t.Font = "SourceSansBold"
         
         task.spawn(function()
             while v:IsDescendantOf(Workspace) do
@@ -58,7 +62,7 @@ local function CreateFruitESP(v)
                     local dist = math.floor((v:GetModelCFrame().Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
                     t.Text = string.format("%s\n[%dM]", name, dist)
                 end
-                task.wait(0.2)
+                task.wait(0.3)
             end
         end)
     end
@@ -73,7 +77,7 @@ task.spawn(function()
         end
         if UI.Settings.PlayerESP_Enabled then
             for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character then CreatePlayerESP(p.Character) end
+                if p ~= LocalPlayer and p.Character then CreatePlayerESP(p) end
             end
         end
     end
