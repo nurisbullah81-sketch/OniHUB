@@ -14,20 +14,6 @@ local function FormatNum(num)
     return formatted
 end
 
--- Super Reader: Baca IntValue, NumberValue, StringValue, IntConstrainedValue
-local function ReadValue(obj)
-    if not obj then return 0 end
-    if obj:IsA("ValueBase") then
-        local val = obj.Value
-        if type(val) == "number" then return val end
-        if type(val) == "string" then
-            local num = string.match(val, "%d+")
-            return tonumber(num) or 0
-        end
-    end
-    return 0
-end
-
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
@@ -39,14 +25,12 @@ task.spawn(function()
             local frag, fragName = 0, "Fragments"
             local bounty, bountyName = 0, "Bounty"
             
-            local function ScanFolder(folder)
-                if not folder then return end
-                for _, child in pairs(folder:GetChildren()) do
+            if ls then
+                for _, child in pairs(ls:GetChildren()) do
                     if child:IsA("ValueBase") then
-                        local rawName = string.lower(child.Name)
-                        -- ANTI-CHEAT BYPASS: Hapus semua spasi/simbol aneh (misal "Level " jadi "level")
-                        local n = string.gsub(rawName, "%W", "") 
-                        local val = ReadValue(child)
+                        local n = string.lower(child.Name)
+                        local val = child.Value
+                        if typeof(val) ~= "number" then val = 0 end
                         
                         if string.find(n, "level") or string.find(n, "lvl") then
                             lvl = val; lvlName = child.Name
@@ -54,10 +38,9 @@ task.spawn(function()
                             bounty = val; bountyName = child.Name
                         elseif string.find(n, "frag") then
                             frag = val; fragName = child.Name
-                        elseif rawName == "$" or string.find(n, "money") or string.find(n, "belly") or string.find(n, "cash") then
+                        elseif string.find(n, "%%$") or string.find(n, "money") or string.find(n, "belly") or string.find(n, "cash") then
                             money = val; moneyName = child.Name
                         else
-                            -- Jika ada angka lain yang belum kekategori, pasti itu uang
                             if val > 0 and money == 0 then
                                 money = val; moneyName = child.Name
                             end
@@ -66,10 +49,17 @@ task.spawn(function()
                 end
             end
             
-            ScanFolder(ls)
-            ScanFolder(dataFolder)
+            if dataFolder then
+                for _, child in pairs(dataFolder:GetChildren()) do
+                    if child:IsA("ValueBase") then
+                        local n = string.lower(child.Name)
+                        if string.find(n, "frag") then
+                            frag = child.Value; fragName = child.Name
+                        end
+                    end
+                end
+            end
             
-            -- Update UI
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
             
             local displayMoney = (moneyName == "$" or string.lower(moneyName) == "money") and "Money" or moneyName
@@ -81,18 +71,24 @@ task.spawn(function()
             
             Labels.Players.Text = "Players: " .. #Players:GetPlayers()
             
+            -- LOGIC WAKTU & CUACA (Blox Fruits Standard)
             local clockTime = Lighting.ClockTime
             local h = math.floor(clockTime)
             local m = math.floor((clockTime % 1) * 60)
             local timeStr = string.format("%02d:%02d", h, m)
             
-            if clockTime >= 6 and clockTime < 18 then
+            -- Di Blox Fruits, malem itu ClockTime antara 19 sampai 5 pagi
+            if clockTime >= 19 or clockTime < 5 then
+                Labels.Time.Text = "Time: " .. timeStr .. " (Night)"
+                
+                -- FULL MOON DETECTION UNTUK RACE V4
+                -- Pas Full Moon, game otomatis naikin Brightness Lighting jadi di atas 2
+                -- Malem biasa cuma 0.5 - 1.2
+                local isFull = Lighting.Brightness >= 2
+                Labels.Moon.Text = isFull and "Moon: Full Moon 🌕" or "Moon: Normal 🌑"
+            else
                 Labels.Time.Text = "Time: " .. timeStr .. " (Day)"
                 Labels.Moon.Text = "Moon: -"
-            else
-                Labels.Time.Text = "Time: " .. timeStr .. " (Night)"
-                local isFull = Lighting.Ambient.r > 0.3 or Lighting.OutdoorAmbient.r > 0.3
-                Labels.Moon.Text = isFull and "Moon: Full Moon" or "Moon: Normal"
             end
             
             -- LOGIC NAMA BUAH
