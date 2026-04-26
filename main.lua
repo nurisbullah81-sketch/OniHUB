@@ -1,126 +1,76 @@
---[[
-    DIZ HUB - CORE LOGIC (Blox Fruits 2026 Engine)
-    Features: Synced ESP (White/Small/???), Secure Tween
-    Dependencies: UI.lua
-]]
-
+-- CatHUB Core Engine
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
--- === MODULAR UI LOADING (Anti-Cache) ===
 local UI_URL = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/UI.lua"
-local success, UI_Module = pcall(function()
-    return loadstring(game:HttpGet(UI_URL .. "?v=" .. math.random()))()
-end)
-
-if not success or not UI_Module then
-    warn("DIZ HUB: Failed to load UI.lua from GitHub. Logic aborted.")
-    return
-end
-
--- === CORE FUNCTIONS ===
+local UI_Module = loadstring(game:HttpGet(UI_URL .. "?v=" .. math.random()))()
 
 local function GetDistance(obj)
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local targetPos = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.Position or obj:FindFirstChildOfClass("BasePart").Position) or (obj:IsA("BasePart") and obj.Position or obj.Handle.Position)
-        return math.floor((targetPos - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+        local pos = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.Position or obj:FindFirstChildOfClass("BasePart").Position) or (obj:IsA("BasePart") and obj.Position or obj.Handle.Position)
+        return math.floor((pos - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
     end
-    return 9999
+    return 0
 end
 
--- ESP Sesuai Harapan DIZX (White, Small, Meter, Mystery)
 local function CreateESP(object)
-    if not object:FindFirstChild("DIZ_ESP") then
-        local Billboard = Instance.new("BillboardGui")
-        Billboard.Name = "DIZ_ESP"
+    if not object:FindFirstChild("Cat_ESP") then
+        local Billboard = Instance.new("BillboardGui", object)
+        Billboard.Name = "Cat_ESP"
         Billboard.AlwaysOnTop = true
         Billboard.Size = UDim2.new(0, 100, 0, 30)
-        Billboard.Adornee = object
-        Billboard.Parent = object
-
-        local TextLabel = Instance.new("TextLabel")
+        
+        local TextLabel = Instance.new("TextLabel", Billboard)
         TextLabel.Size = UDim2.new(1, 0, 1, 0)
         TextLabel.BackgroundTransparency = 1
-        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Warna Putih Murni
-        TextLabel.TextSize = 11 -- Teks Kecil sesuai harapan
+        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TextLabel.TextSize = 11
         TextLabel.Font = Enum.Font.SourceSansBold
-        TextLabel.Parent = Billboard
 
         task.spawn(function()
-            while object:IsDescendantOf(Workspace) and Billboard:FindFirstChild("TextLabel") do
-                -- Cek status Toggle secara real-time
+            while object:IsDescendantOf(Workspace) do
                 if not UI_Module.Settings.ESP_Enabled then
                     Billboard.Enabled = false
                 else
                     Billboard.Enabled = true
-                    local dist = GetDistance(object)
-                    local name = object.Name
-                    
-                    -- LOGIKA: Jika spawn sistem (biasanya Model bernama "Fruit ") atau Folder Khusus 2026
-                    if (object:IsA("Model") and name == "Fruit ") or object:IsDescendantOf(Workspace:FindFirstChild("Fruits")) then
-                        name = "??? (System Spawn)"
-                    end
-                    -- Dropped player mempertahankan nama asli (Tool/Model spesifik)
-
-                    TextLabel.Text = string.format("%s\n%dM", name, dist)
+                    local name = (object:IsA("Model") and object.Name == "Fruit ") and "??? (System Spawn)" or object.Name
+                    TextLabel.Text = string.format("%s\n%dM", name, GetDistance(object))
                 end
-                task.wait(0.1)
+                task.wait(0.2)
             end
-            if Billboard then Billboard:Destroy() end
+            Billboard:Destroy()
         end)
     end
 end
 
--- Secure Tween Logic (Anti-Cheat Bypass)
+-- Tween to Fruit
 local function TweenTo(target)
     if not UI_Module.Settings.Tween_Enabled or not target then return end
-    
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
-        local root = char.HumanoidRootPart
-        local targetPos = target:IsA("Model") and target:GetModelCFrame() or (target:IsA("Tool") and target.Handle.CFrame or target.CFrame)
         local dist = GetDistance(target)
+        if dist < 10 then return end
+        local targetPos = target:IsA("Model") and target:GetModelCFrame() or (target:IsA("Tool") and target.Handle.CFrame or target.CFrame)
+        local tween = TweenService:Create(char.HumanoidRootPart, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = targetPos})
         
-        -- Berhenti jika jarak sudah dekat (mencegah glitch)
-        if dist < 5 then return end
-        
-        local tweenInfo = TweenInfo.new(dist / 300, Enum.EasingStyle.Linear) -- Speed: 300 studs/s
-        local tween = TweenService:Create(root, tweenInfo, {CFrame = targetPos})
-        
-        -- Handle jika tween dibatalkan (misal toggle dimatikan di tengah jalan)
         task.spawn(function()
             while tween.PlaybackState == Enum.PlaybackState.Playing do
-                if not UI_Module.Settings.Tween_Enabled then
-                    tween:Cancel()
-                    break
-                end
+                if not UI_Module.Settings.Tween_Enabled then tween:Cancel() break end
                 task.wait(0.1)
             end
         end)
-        
         tween:Play()
     end
 end
 
--- === MAIN LOOP ===
+-- Main Loop
 task.spawn(function()
     while task.wait(1) do
-        -- Hanya scan jika salah satu fitur aktif
         if UI_Module.Settings.ESP_Enabled or UI_Module.Settings.Tween_Enabled then
-            -- Scan Top-level Workspace (Common Dropped/Spawned)
             for _, v in pairs(Workspace:GetChildren()) do
                 if (v:IsA("Tool") and v.Name:lower():find("fruit")) or (v:IsA("Model") and v.Name == "Fruit ") then
-                    if UI_Module.Settings.ESP_Enabled then CreateESP(v) end
-                    if UI_Module.Settings.Tween_Enabled then TweenTo(v) end
-                end
-            end
-            
-            -- Scan 2026 Fruit Folder (Jika ada)
-            local fruitFolder = Workspace:FindFirstChild("Fruits")
-            if fruitFolder then
-                for _, v in pairs(fruitFolder:GetChildren()) do
                     if UI_Module.Settings.ESP_Enabled then CreateESP(v) end
                     if UI_Module.Settings.Tween_Enabled then TweenTo(v) end
                 end
@@ -129,4 +79,4 @@ task.spawn(function()
     end
 end)
 
-print("DIZ HUB: CORE LOGIC MASTERED & SYNCED.")
+print("CatHUB Logic Loaded.")
