@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: UI Module (Extended Tabs Edition)
+-- CatHUB FREEMIUM: Master UI (Stable Extended Edition)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -25,37 +25,13 @@ UI_Lib.MainGui = ScreenGui
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 460, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -230, 0.5, -150)
+MainFrame.Position = UDim2.new(0.5, -230, 0.5, -140)
 MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
-
--- Resize Engine
-local ResizeBtn = Instance.new("TextButton")
-ResizeBtn.Size = UDim2.new(0, 15, 0, 15)
-ResizeBtn.Position = UDim2.new(1, -15, 1, -15)
-ResizeBtn.BackgroundTransparency = 1
-ResizeBtn.Text = ""
-ResizeBtn.Parent = MainFrame
-
-local isResizing = false
-ResizeBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = true end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local mousePos = UserInputService:GetMouseLocation()
-        local nW = math.max(400, mousePos.X - MainFrame.AbsolutePosition.X)
-        local nH = math.max(250, (mousePos.Y - 36) - MainFrame.AbsolutePosition.Y)
-        MainFrame.Size = UDim2.new(0, nW, 0, nH)
-    end
-end)
 
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 32)
@@ -120,7 +96,7 @@ function UI_Lib:CreateTab(name)
     Instance.new("UIListLayout", Container).Padding = UDim.new(0, 6)
 
     local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, 0, 0, 38) -- FIXED: Taller/Longer Tabs as requested
+    Btn.Size = UDim2.new(1, 0, 0, 38)
     Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Btn.Text = name:upper()
     Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -232,18 +208,18 @@ function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
     UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then move() end end)
 end
 
--- === TABS ===
-local TabFinder = UI_Lib:CreateTab("Fruits Finder")
-local TabSetting = UI_Lib:CreateTab("Setting")
-local TabStatus = UI_Lib:CreateTab("Status")
+-- TABS
+local FinderTab = UI_Lib:CreateTab("Fruits Finder")
+local SettingTab = UI_Lib:CreateTab("Setting")
+local StatusTab = UI_Lib:CreateTab("Status")
 
-UI_Lib:CreateSwitch(TabFinder, "Fruit ESP", function(v) UI_Lib.Settings.ESP_Enabled = v end)
-UI_Lib:CreateSwitch(TabFinder, "Auto Tween", function(v) UI_Lib.Settings.Tween_Enabled = v end)
-UI_Lib:CreateSwitch(TabFinder, "Auto Store", function(v) UI_Lib.Settings.AutoStore = v end)
-UI_Lib:CreateSlider(TabSetting, "Tween Speed", 100, 500, 300, function(v) UI_Lib.Settings.Tween_Speed = v end)
+UI_Lib:CreateSwitch(FinderTab, "Fruit ESP", function(v) UI_Lib.Settings.ESP_Enabled = v end)
+UI_Lib:CreateSwitch(FinderTab, "Auto Tween", function(v) UI_Lib.Settings.Tween_Enabled = v end)
+UI_Lib:CreateSwitch(FinderTab, "Auto Store", function(v) UI_Lib.Settings.AutoStore = v end)
+UI_Lib:CreateSlider(SettingTab, "Tween Speed", 100, 500, 300, function(v) UI_Lib.Settings.Tween_Speed = v end)
 
-TabFinder.Visible = true
-UI_Lib.CurrentTab = TabFinder
+FinderTab.Visible = true
+UI_Lib.CurrentTab = FinderTab
 
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.G and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
