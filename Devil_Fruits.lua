@@ -1,6 +1,7 @@
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Me = _G.Cat.Player
@@ -154,24 +155,77 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 773-PROOF SERVER HOPPER
+-- VIP SMART SERVER HOPPER (ANTI 773)
 -- ==========================================
+local isHopping = false
+
 function _G.Cat.HopServer()
+    if isHopping then return end
+    isHopping = true
+    
     pcall(function()
-        -- Pakai PlaceId lu saat ini. 
-        -- Ini 100% aman dari Error 773 karena cuma cari server di Sea yang SAMA persis.
-        -- Kerjanya seperti klik tombol "Find Server" di game.
-        TeleportService:Teleport(game.PlaceId, Me)
+        local placeId = game.PlaceId
+        local cursor = ""
+        local validServers = {}
+        
+        -- Looping halaman API sampai ketemu server yang valid
+        while #validServers == 0 do
+            local url = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
+            if cursor ~= "" then url = url .. "&cursor=" .. cursor end
+            
+            local success, response = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(url))
+            end)
+            
+            if success and response and response.data then
+                for _, s in pairs(response.data) do
+                    -- Filter: Jangan masuk server bot (harus > 2 pemain), harus ada slot kosong, dan bukan server saat ini
+                    if s.playing < s.maxPlayers and s.playing > 2 and s.id ~= game.JobId then
+                        table.insert(validServers, s)
+                    end
+                end
+                
+                if #validServers == 0 and response.nextPageCursor then
+                    cursor = response.nextPageCursor -- Cari halaman berikutnya
+                else
+                    cursor = "" -- Ulang dari awal
+                    task.wait(1)
+                end
+            else
+                task.wait(3)
+            end
+        end
+        
+        -- Pilih server secara random dari list yang aman
+        if #validServers > 0 then
+            local chosen = validServers[math.random(1, #validServers)]
+            TeleportService:TeleportToPlaceInstance(placeId, chosen.id, Me)
+        end
     end)
+    
+    task.wait(15) -- Cooldown 15 detik setelah teleport biar ga spam
+    isHopping = false
 end
 
+-- CEK BUAH DI MAP UNTUK HOP
 task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
             pcall(function()
+                -- Hitung buah yang VALID (beneran ada di Workspace)
                 local fruitCount = 0
-                for f, _ in pairs(Data) do if f and f.Parent then fruitCount = fruitCount + 1 end end
-                if fruitCount == 0 then _G.Cat.HopServer() end
+                for f, _ in pairs(Data) do
+                    if f and f.Parent and f.Parent == Workspace then 
+                        fruitCount = fruitCount + 1 
+                    else
+                        Rem(f) -- Hapus data buah palsu yang udah ga di map
+                    end
+                end
+                
+                -- Kalau ga ada buah di map, langsung gas hop
+                if fruitCount == 0 then
+                    _G.Cat.HopServer()
+                end
             end)
         end
     end
