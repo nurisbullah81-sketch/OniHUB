@@ -1,16 +1,20 @@
--- CatHUB FREEMIUM: Main Loader v6.2
+-- CatHUB PREMIUM: Main Loader v6.3
 local function Load(file)
     local url = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/" .. file .. "?v=" .. math.random()
     local success, result = pcall(function() return loadstring(game:HttpGet(url))() end)
-    if not success then warn("[CatHUB]: Load Error -> " .. file .. " | " .. tostring(result)) end
+    if not success then warn("[CatHUB]: " .. file .. " failed to load") end
     return result
 end
 
 _G.CatHUB_UI = Load("UI.lua")
-Load("Fruits.lua")   -- Priority 1: Fruits
-Load("ESP.lua")      -- Priority 2: Player ESP
+Load("Fruits.lua")
+Load("ESP.lua")
 Load("Combat.lua")
 Load("Teleport.lua")
 Load("Farm.lua")
 
-print("[CatHUB]: Version 6.2 Active - Fruits Focus Update")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("  🟣 CATHUB PREMIUM v6.3")
+print("  RedzHub Style Interface")
+print("  Press RightCtrl to toggle")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
