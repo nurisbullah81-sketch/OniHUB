@@ -1,4 +1,4 @@
--- CatHUB v10.0: RedzHub Style Page Backgrounds, Purple Toggle, fluid Scale
+-- CatHUB v10.1: Perfect Contrast, Direct Open, & Draggable Float Grip
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,28 +12,36 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Palette Update: Tambah PageBG buat background dalem tab
+-- Palette Update: Kontras Ekstrem Biar Ga Nyatu
 local Theme = {
-    MainBG      = Color3.fromRGB(12, 12, 12),   -- Hitam Pekat (Background Utama)
-    SideBG      = Color3.fromRGB(16, 16, 16),   -- Hitam sedikit terang (Sidebar)
-    TopBG       = Color3.fromRGB(12, 12, 12),
-    PageBG      = Color3.fromRGB(20, 20, 20),   -- UPGRADE: Background khusus area konten dalem tab
-    CardBG      = Color3.fromRGB(26, 26, 28),   -- Background list/toggle (sedikit lebih terang dari PageBG)
-    CardHov     = Color3.fromRGB(32, 32, 35),
+    MainBG      = Color3.fromRGB(8, 8, 8),      -- SUPER GELAP (Latar Utama)
+    SideBG      = Color3.fromRGB(15, 15, 15),   -- Sidebar
+    TopBG       = Color3.fromRGB(8, 8, 8),
+    PageBG      = Color3.fromRGB(24, 24, 26),   -- TERANG (Biar kotak konten Devil Fruits misah jelas)
+    CardBG      = Color3.fromRGB(32, 32, 35),   -- Background Toggle
+    CardHov     = Color3.fromRGB(40, 40, 45),
     Text        = Color3.fromRGB(255, 255, 255),
     TextDim     = Color3.fromRGB(150, 150, 150),
-    ToggleOn    = Color3.fromRGB(138, 43, 226), -- UNGU (Purple)
-    ToggleOff   = Color3.fromRGB(100, 100, 110),-- Abu-abu terang (Kontras tinggi biar kelihatan)
-    Accent      = Color3.fromRGB(138, 43, 226), -- Ungu
-    Line        = Color3.fromRGB(45, 45, 50)    -- Garis pembatas/stroke
+    ToggleOn    = Color3.fromRGB(138, 43, 226), -- Ungu RedzHub
+    ToggleOff   = Color3.fromRGB(100, 100, 110),
+    Accent      = Color3.fromRGB(138, 43, 226), 
+    Line        = Color3.fromRGB(45, 45, 50)    
 }
 
 -- ==========================================
--- FLOATING WIDGET (PERMANENT "C")
+-- FLOATING WIDGET DENGAN GRIP TRANSPARAN
 -- ==========================================
-local FloatBtn = Instance.new("TextButton", Gui)
-FloatBtn.Size = UDim2.new(0, 45, 0, 45)
-FloatBtn.Position = UDim2.new(0, 20, 0.5, -22)
+local FloatCont = Instance.new("Frame", Gui)
+FloatCont.Size = UDim2.new(0, 65, 0, 45) -- Lebar ekstra untuk grip
+FloatCont.Position = UDim2.new(0, 10, 0.5, -22)
+FloatCont.BackgroundTransparency = 1
+FloatCont.Visible = false -- Disembunyikan saat awal
+FloatCont.ZIndex = 99999
+
+-- Tombol "C" Utama
+local FloatBtn = Instance.new("TextButton", FloatCont)
+FloatBtn.Size = UDim2.new(0, 45, 1, 0)
+FloatBtn.Position = UDim2.new(0, 20, 0, 0) -- Geser ngasih ruang buat Grip
 FloatBtn.BackgroundColor3 = Theme.CardBG
 FloatBtn.Text = "C"
 FloatBtn.TextColor3 = Theme.Accent
@@ -41,25 +49,38 @@ FloatBtn.Font = Enum.Font.GothamBold
 FloatBtn.TextSize = 22
 FloatBtn.BorderSizePixel = 0
 FloatBtn.AutoButtonColor = false
-FloatBtn.ZIndex = 99999 -- PERMANEN DI DEPAN
 Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", FloatBtn).Color = Theme.Line
 
-local draggingFloat, dragInputFloat, dragStartFloat, startPosFloat
-FloatBtn.InputBegan:Connect(function(input)
+-- Grip Transparan (Di sebelah kiri kotak C)
+local FloatDrag = Instance.new("TextButton", FloatCont)
+FloatDrag.Size = UDim2.new(0, 15, 1, 0)
+FloatDrag.Position = UDim2.new(0, 0, 0, 0)
+FloatDrag.BackgroundColor3 = Theme.Line
+FloatDrag.BackgroundTransparency = 0.8 -- Transparan tapi masih ada hint
+FloatDrag.Text = "⋮" -- Ikon grip
+FloatDrag.TextColor3 = Theme.TextDim
+FloatDrag.Font = Enum.Font.GothamBold
+FloatDrag.TextSize = 14
+FloatDrag.BorderSizePixel = 0
+Instance.new("UICorner", FloatDrag).CornerRadius = UDim.new(0, 4)
+
+-- Logic Drag murni pakai Grip Transparan
+local draggingFloat, dragStartFloat, startPosFloat
+FloatDrag.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         draggingFloat = true
         dragStartFloat = input.Position
-        startPosFloat = FloatBtn.Position
+        startPosFloat = FloatCont.Position
     end
 end)
-FloatBtn.InputEnded:Connect(function(input)
+FloatDrag.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingFloat = false end
 end)
 UserInput.InputChanged:Connect(function(input)
     if draggingFloat and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStartFloat
-        FloatBtn.Position = UDim2.new(startPosFloat.X.Scale, startPosFloat.X.Offset + delta.X, startPosFloat.Y.Scale, startPosFloat.Y.Offset + delta.Y)
+        FloatCont.Position = UDim2.new(startPosFloat.X.Scale, startPosFloat.X.Offset + delta.X, startPosFloat.Y.Scale, startPosFloat.Y.Offset + delta.Y)
     end
 end)
 
@@ -72,14 +93,15 @@ Main.Position = UDim2.new(0.5, -275, 0.5, -170)
 Main.BackgroundColor3 = Theme.MainBG
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true 
-Main.Visible = false 
+Main.Visible = true -- FIX: LANGSUNG MUNCUL PAS EXECUTE
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 local MainStroke = Instance.new("UIStroke", Main)
 MainStroke.Color = Theme.Line
 MainStroke.Thickness = 1
 
 FloatBtn.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
+    Main.Visible = true
+    FloatCont.Visible = false
 end)
 
 -- Topbar
@@ -130,6 +152,7 @@ BtnM.MouseLeave:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15)
 
 BtnX.MouseButton1Click:Connect(function()
     Main.Visible = false
+    FloatCont.Visible = true
 end)
 
 local isMin = false
@@ -233,9 +256,6 @@ ContentArea.BackgroundTransparency = 1
 
 local Pages = {}
 
--- ==========================================
--- UPGRADE: CreateTab with Page Background
--- ==========================================
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton", SideScroll)
     Btn.Size = UDim2.new(1, 0, 0, 32)
@@ -263,32 +283,28 @@ local function CreateTab(name, isFirst)
         if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.SideBG, TextColor3 = Theme.TextDim}):Play() end
     end)
     
-    -- UPGRADE: ScrollingFrame sekarang punya background sendiri (PageBG)
+    -- PAGE BACKGROUND YANG KONTRAS
     local Page = Instance.new("ScrollingFrame", ContentArea)
-    -- Sedikit dikecilin ukurannya biar kelihatan kontainernya misah dari background utama
-    Page.Size = UDim2.new(1, -12, 1, -12) 
-    Page.Position = UDim2.new(0, 6, 0, 6) -- Centered
-    Page.BackgroundColor3 = Theme.PageBG -- Warna kontainer dalem tab
-    Page.BackgroundTransparency = 0 -- Bikin solid
+    Page.Size = UDim2.new(1, -16, 1, -16) 
+    Page.Position = UDim2.new(0, 8, 0, 8) 
+    Page.BackgroundColor3 = Theme.PageBG -- Warna terang biar misah
+    Page.BackgroundTransparency = 0 
     Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Theme.TextDim -- Warna scrollbar biar kelihatan di PageBG
+    Page.ScrollBarImageColor3 = Theme.TextDim 
     Page.Visible = isFirst
     Page.BorderSizePixel = 0
-    
-    -- Kasih UICorner biar estetik ujungnya tumpul
     Instance.new("UICorner", Page).CornerRadius = UDim.new(0, 6)
     
-    -- Kasih stroke tipis biar makin tegas batasnya
     local PageStroke = Instance.new("UIStroke", Page)
     PageStroke.Color = Theme.Line
     PageStroke.Thickness = 1
 
     local List = Instance.new("UIListLayout", Page)
-    List.Padding = UDim.new(0, 6) -- Jarak antar item
+    List.Padding = UDim.new(0, 6) 
     local Pad = Instance.new("UIPadding", Page)
     Pad.PaddingTop = UDim.new(0, 10)
-    Pad.PaddingLeft = UDim.new(0, 10) -- Sesuaikan padding dalem kontainer
-    Pad.PaddingRight = UDim.new(0, 14) -- Sisain ruang buat scrollbar
+    Pad.PaddingLeft = UDim.new(0, 10)
+    Pad.PaddingRight = UDim.new(0, 14) 
     Pad.PaddingBottom = UDim.new(0, 10)
     
     Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator}
@@ -332,7 +348,6 @@ local function CreateToggle(parent, text, stateRef, callback)
     F.Text = ""
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
     
-    -- PEMBATAS: Outline biar toggle terpisah tegas sama elemen lain
     local Stroke = Instance.new("UIStroke", F)
     Stroke.Color = Theme.Line
     Stroke.Thickness = 1
@@ -389,6 +404,3 @@ CreateSection(DevilFruitsTab, "DEVIL FRUITS")
 CreateToggle(DevilFruitsTab, "ESP Buah (Teks Saja)", false, function(state)
     print("Fruit ESP:", state)
 end)
-
-Main.Visible = false
-FloatBtn.Visible = true
