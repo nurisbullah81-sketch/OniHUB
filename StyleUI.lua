@@ -1,8 +1,9 @@
--- CatHUB v10.6: FIXED LEFT TABS CONTRAST & PERFECT RESIZER
+-- CatHUB v10.7: FINAL REDZHUB CLONE (Zero Bugs, Perfect Pills, Fixed Crash)
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
 
+-- Cleanup UI Lama
 if CoreGui:FindFirstChild("CatUI") then 
     CoreGui.CatUI:Destroy() 
 end
@@ -14,47 +15,34 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Gui.Parent = CoreGui
 
 -- ==========================================
--- PALETTE KONTRAS EKSTREM (SESUAI PANAH MERAH LU)
+-- THEME / PALETTE (Sesuai Redz Hub)
 -- ==========================================
 local Theme = {
-    MainBG      = Color3.fromRGB(15, 15, 17),   -- Background utama
-    SideBG      = Color3.fromRGB(18, 18, 20),   -- Background sidebar kiri (Gelap)
-    TopBG       = Color3.fromRGB(15, 15, 17),
-    TabOn       = Color3.fromRGB(50, 50, 55),   -- FIX: Tab kiri saat AKTIF (Paling terang)
-    TabOff      = Color3.fromRGB(30, 30, 35),   -- FIX: Tab kiri saat MATI (Jelas beda dari SideBG)
-    PageBG      = Color3.fromRGB(24, 24, 27),   -- Background area kanan
-    CardBG      = Color3.fromRGB(35, 35, 40),   
-    CardHov     = Color3.fromRGB(42, 42, 48),
-    Text        = Color3.fromRGB(255, 255, 255),
-    TextDim     = Color3.fromRGB(150, 150, 150),
-    ToggleOn    = Color3.fromRGB(138, 43, 226), 
-    ToggleOff   = Color3.fromRGB(90, 90, 100),
-    Accent      = Color3.fromRGB(138, 43, 226), 
-    Line        = Color3.fromRGB(50, 50, 55)    
+    MainBG      = Color3.fromRGB(12, 12, 12),   -- Background Utama Paling Gelap
+    SideBG      = Color3.fromRGB(18, 18, 20),   -- Sidebar (Sedikit lebih terang dari MainBG)
+    TopBG       = Color3.fromRGB(12, 12, 12),   
+    TabOn       = Color3.fromRGB(35, 35, 40),   -- Tab Aktif (Terang jelas)
+    TabOff      = Color3.fromRGB(18, 18, 20),   -- Tab Mati (Nyatu sama Sidebar)
+    PageBG      = Color3.fromRGB(24, 24, 26),   -- KOTAK KONTEN (Kontras beda dari background utama)
+    CardBG      = Color3.fromRGB(32, 32, 36),   -- Kotak Toggle
+    CardHov     = Color3.fromRGB(40, 40, 45),   
+    Text        = Color3.fromRGB(245, 245, 245),
+    TextDim     = Color3.fromRGB(140, 140, 145),
+    ToggleOn    = Color3.fromRGB(115, 95, 235), -- UNGU REDZHUB
+    ToggleOff   = Color3.fromRGB(70, 70, 75),   -- Abu-abu Toggle Mati (Kelihatan tegas)
+    Accent      = Color3.fromRGB(115, 95, 235), 
+    Line        = Color3.fromRGB(45, 45, 50)    
 }
 
-local function MakeCorner(parent, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius)
-    corner.Parent = parent
-end
-
-local function MakeStroke(parent, color, thickness)
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = color
-    stroke.Thickness = thickness or 1
-    stroke.Parent = parent
-end
-
 -- ==========================================
--- FLOATING WIDGET ("C") & DRAG FIX
+-- FLOATING WIDGET (100% PERMANEN "C")
 -- ==========================================
 local FloatCont = Instance.new("Frame")
 FloatCont.Size = UDim2.new(0, 60, 0, 40) 
 FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
 FloatCont.BackgroundTransparency = 1
 FloatCont.Visible = true
-FloatCont.ZIndex = 99999
+FloatCont.ZIndex = 99999 
 FloatCont.Parent = Gui
 
 local FloatBtn = Instance.new("TextButton")
@@ -67,8 +55,9 @@ FloatBtn.Font = Enum.Font.GothamBold
 FloatBtn.TextSize = 20
 FloatBtn.BorderSizePixel = 0
 FloatBtn.AutoButtonColor = false
-MakeCorner(FloatBtn, 8)
-MakeStroke(FloatBtn, Theme.Line)
+Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
+local FloatStroke = Instance.new("UIStroke", FloatBtn)
+FloatStroke.Color = Theme.Line
 FloatBtn.Parent = FloatCont
 
 local GripLine = Instance.new("Frame")
@@ -77,7 +66,7 @@ GripLine.Position = UDim2.new(0, 6, 0.5, -10)
 GripLine.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
 GripLine.BackgroundTransparency = 0.7 
 GripLine.BorderSizePixel = 0
-MakeCorner(GripLine, 2)
+Instance.new("UICorner", GripLine).CornerRadius = UDim.new(1, 0)
 GripLine.Parent = FloatCont
 
 local FloatDrag = Instance.new("TextButton")
@@ -87,31 +76,33 @@ FloatDrag.BackgroundTransparency = 1
 FloatDrag.Text = ""
 FloatDrag.Parent = FloatCont
 
--- FIX DRAG KOTAK C (Anti Macet)
-local isDraggingC = false
-local dragStartC, startPosC
+-- FIX DRAG WIDGET
+local draggingFloat = false
+local dragStartFloat, startPosFloat
 
-FloatDrag.MouseButton1Down:Connect(function()
-    isDraggingC = true
-    dragStartC = UserInput:GetMouseLocation()
-    startPosC = FloatCont.Position
+FloatDrag.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingFloat = true
+        dragStartFloat = input.Position
+        startPosFloat = FloatCont.Position
+    end
 end)
 
 UserInput.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDraggingC = false
+        draggingFloat = false
     end
 end)
 
 UserInput.InputChanged:Connect(function(input)
-    if isDraggingC and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = UserInput:GetMouseLocation() - dragStartC
-        FloatCont.Position = UDim2.new(startPosC.X.Scale, startPosC.X.Offset + delta.X, startPosC.Y.Scale, startPosC.Y.Offset + delta.Y)
+    if draggingFloat and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStartFloat
+        FloatCont.Position = UDim2.new(startPosFloat.X.Scale, startPosFloat.X.Offset + delta.X, startPosFloat.Y.Scale, startPosFloat.Y.Offset + delta.Y)
     end
 end)
 
 -- ==========================================
--- MAIN FRAME
+-- MAIN FRAME (KOTAK UTAMA UI)
 -- ==========================================
 local Main = Instance.new("Frame")
 Main.Size = UDim2.new(0, 580, 0, 360)
@@ -120,20 +111,23 @@ Main.BackgroundColor3 = Theme.MainBG
 Main.BorderSizePixel = 0
 Main.ClipsDescendants = true 
 Main.Visible = true 
-MakeCorner(Main, 8)
-MakeStroke(Main, Theme.Line)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+local MainStroke = Instance.new("UIStroke", Main)
+MainStroke.Color = Theme.Line
 Main.Parent = Gui
 
 FloatBtn.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
 end)
 
--- Topbar
+-- ==========================================
+-- TOPBAR & TOMBOL KONTROL
+-- ==========================================
 local Top = Instance.new("Frame")
 Top.Size = UDim2.new(1, 0, 0, 35)
 Top.BackgroundColor3 = Theme.TopBG
 Top.BorderSizePixel = 0
-MakeCorner(Top, 8)
+Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 8)
 Top.Parent = Main
 
 local TopFix = Instance.new("Frame")
@@ -154,14 +148,15 @@ TitleStr.TextXAlignment = Enum.TextXAlignment.Left
 TitleStr.BackgroundTransparency = 1
 TitleStr.Parent = Top
 
+-- FIX: Tombol X Pakai huruf "X" biar ga ngebug jadi kotak
 local BtnX = Instance.new("TextButton")
 BtnX.Size = UDim2.new(0, 35, 0, 35)
 BtnX.Position = UDim2.new(1, -35, 0, 0)
-BtnX.Text = "✕" 
+BtnX.Text = "X" 
 BtnX.TextColor3 = Theme.TextDim
 BtnX.BackgroundTransparency = 1
-BtnX.Font = Enum.Font.Gotham
-BtnX.TextSize = 16
+BtnX.Font = Enum.Font.GothamBold
+BtnX.TextSize = 14
 BtnX.Parent = Top
 
 local BtnM = Instance.new("TextButton")
@@ -195,51 +190,53 @@ BtnM.MouseButton1Click:Connect(function()
     end
 end)
 
--- FIX DRAG MAIN FRAME (Anti Macet)
-local isDraggingMain = false
+-- FIX: Drag UI Utama (Pake InputBegan biar nggak crash)
+local draggingMain = false
 local dragStartMain, startPosMain
 
-Top.MouseButton1Down:Connect(function()
-    isDraggingMain = true
-    dragStartMain = UserInput:GetMouseLocation()
-    startPosMain = Main.Position
+Top.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingMain = true
+        dragStartMain = input.Position
+        startPosMain = Main.Position
+    end
 end)
 
 UserInput.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDraggingMain = false
+        draggingMain = false
     end
 end)
 
 UserInput.InputChanged:Connect(function(input)
-    if isDraggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = UserInput:GetMouseLocation() - dragStartMain
+    if draggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStartMain
         Main.Position = UDim2.new(startPosMain.X.Scale, startPosMain.X.Offset + delta.X, startPosMain.Y.Scale, startPosMain.Y.Offset + delta.Y)
     end
 end)
 
 -- ==========================================
--- RESIZER (FIXED: GetMouseLocation biar ga bug)
+-- RESIZER (POJOK KANAN BAWAH)
 -- ==========================================
 local Resizer = Instance.new("TextButton")
-Resizer.Size = UDim2.new(0, 30, 0, 30) -- Dibuat lebih besar biar gampang diklik
-Resizer.Position = UDim2.new(1, -30, 1, -30)
+Resizer.Size = UDim2.new(0, 25, 0, 25)
+Resizer.Position = UDim2.new(1, -25, 1, -25)
 Resizer.BackgroundTransparency = 1
 Resizer.Text = "⌟"
 Resizer.TextColor3 = Theme.TextDim
-Resizer.TextSize = 20
+Resizer.TextSize = 18
 Resizer.Font = Enum.Font.Gotham
-Resizer.ZIndex = 100 -- FIX: Pastikan ga ketutup
+Resizer.ZIndex = 50
 Resizer.Parent = Main
 
 local isResizing = false
-local resizerStartPos, resizerStartSize
+local resizeStart, startSizeR
 
-Resizer.MouseButton1Down:Connect(function()
-    if not isMin then
+Resizer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then
         isResizing = true
-        resizerStartPos = UserInput:GetMouseLocation()
-        resizerStartSize = Main.Size
+        resizeStart = input.Position
+        startSizeR = Main.Size
     end
 end)
 
@@ -251,16 +248,16 @@ end)
 
 UserInput.InputChanged:Connect(function(input)
     if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = UserInput:GetMouseLocation() - resizerStartPos
-        local newX = math.clamp(resizerStartSize.X.Offset + delta.X, 480, 1000)
-        local newY = math.clamp(resizerStartSize.Y.Offset + delta.Y, 280, 800)
+        local delta = input.Position - resizeStart
+        local newX = math.clamp(startSizeR.X.Offset + delta.X, 500, 1000)
+        local newY = math.clamp(startSizeR.Y.Offset + delta.Y, 300, 800)
         Main.Size = UDim2.new(0, newX, 0, newY)
         lastSize = Main.Size
     end
 end)
 
 -- ==========================================
--- DYNAMIC SIDEBAR & KONTEN 
+-- SIDEBAR & AREA KONTEN
 -- ==========================================
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Size = UDim2.new(1, 0, 1, -35)
@@ -308,8 +305,7 @@ local Pages = {}
 
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, 0, 0, 36)
-    -- FIX WARNA KOTAK TAB: Langsung pakai TabOn / TabOff yang udah diatur
+    Btn.Size = UDim2.new(1, 0, 0, 34)
     Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff 
     Btn.Text = "    " .. name
     Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim
@@ -317,8 +313,7 @@ local function CreateTab(name, isFirst)
     Btn.TextSize = 13
     Btn.BorderSizePixel = 0
     Btn.TextXAlignment = Enum.TextXAlignment.Left
-    MakeCorner(Btn, 6)
-    MakeStroke(Btn, Theme.Line) -- Tambah stroke tipis biar makin tegas woi!
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     Btn.Parent = SideScroll
     
     local Indicator = Instance.new("Frame")
@@ -326,12 +321,12 @@ local function CreateTab(name, isFirst)
     Indicator.Position = UDim2.new(0, 5, 0.5, -8)
     Indicator.BackgroundColor3 = Theme.Accent
     Indicator.BorderSizePixel = 0
-    MakeCorner(Indicator, 2)
+    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
     Indicator.Visible = isFirst
     Indicator.Parent = Btn
     
     Btn.MouseEnter:Connect(function()
-        if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.TabOn}):Play() end
+        if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play() end
     end)
     Btn.MouseLeave:Connect(function()
         if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.TabOff}):Play() end
@@ -346,8 +341,9 @@ local function CreateTab(name, isFirst)
     Page.ScrollBarImageColor3 = Theme.TextDim 
     Page.Visible = isFirst
     Page.BorderSizePixel = 0
-    MakeCorner(Page, 8)
-    MakeStroke(Page, Theme.Line)
+    Instance.new("UICorner", Page).CornerRadius = UDim.new(0, 8)
+    local PageStroke = Instance.new("UIStroke", Page)
+    PageStroke.Color = Theme.Line
     Page.Parent = ContentArea
 
     local List = Instance.new("UIListLayout")
@@ -396,14 +392,18 @@ local function CreateSection(parent, text)
     L.Parent = F
 end
 
+-- ==========================================
+-- TOGGLE KONTROL (BULAT SEMPURNA / PILL)
+-- ==========================================
 local function CreateToggle(parent, text, stateRef, callback)
     local F = Instance.new("TextButton")
     F.Size = UDim2.new(1, 0, 0, 40)
     F.BackgroundColor3 = Theme.CardBG
     F.BorderSizePixel = 0
     F.Text = ""
-    MakeCorner(F, 6)
-    MakeStroke(F, Theme.Line)
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
+    local Stroke = Instance.new("UIStroke", F)
+    Stroke.Color = Theme.Line
     F.Parent = parent
     
     local L = Instance.new("TextLabel")
@@ -417,20 +417,22 @@ local function CreateToggle(parent, text, stateRef, callback)
     L.BackgroundTransparency = 1
     L.Parent = F
     
+    -- FIX: PILL SHAPE (Bulat Kapsul) Menggunakan UDim.new(1, 0)
     local Sw = Instance.new("Frame")
     Sw.Size = UDim2.new(0, 38, 0, 20)
     Sw.Position = UDim2.new(1, -52, 0.5, -10)
     Sw.BackgroundColor3 = stateRef and Theme.ToggleOn or Theme.ToggleOff
     Sw.BorderSizePixel = 0
-    MakeCorner(Sw, 10) 
+    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0) 
     Sw.Parent = F
     
+    -- FIX: LINGKARAN SEMPURNA Menggunakan UDim.new(1, 0)
     local Dot = Instance.new("Frame")
     Dot.Size = UDim2.new(0, 14, 0, 14)
     Dot.Position = stateRef and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
     Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Dot.BorderSizePixel = 0
-    MakeCorner(Dot, 7) 
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0) 
     Dot.Parent = Sw
     
     F.MouseEnter:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play() end)
@@ -452,10 +454,10 @@ local DevilFruitsTab = CreateTab("Devil Fruits", false)
 
 CreateSection(StatusTab, "PLAYER STATUS")
 CreateToggle(StatusTab, "Tampilkan Statistik Pemain", false, function(state)
-    -- Logic placeholder
+    -- Logic 
 end)
 
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
 CreateToggle(DevilFruitsTab, "ESP Buah (Teks Saja)", false, function(state)
-    print("Fruit ESP:", state)
+    -- Logic 
 end)
