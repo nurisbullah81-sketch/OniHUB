@@ -111,16 +111,14 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- AUTO STORE FRUITS (REDZHUB STYLE)
+-- AUTO STORE FRUITS
 -- ==========================================
-local StoreBlacklist = {} -- Buah yang gagal distore (misal udah punya/inventory penuh)
+local StoreBlacklist = {}
 
 local function GetFruitRealName(tool)
     if not tool then return nil end
     local fruitVal = tool:FindFirstChild("Fruit")
-    if fruitVal and fruitVal:IsA("StringValue") then
-        return fruitVal.Value -- Nama asli buah di Blox Fruits
-    end
+    if fruitVal and fruitVal:IsA("StringValue") then return fruitVal.Value end
     return tool.Name
 end
 
@@ -137,7 +135,6 @@ task.spawn(function()
                             local realName = GetFruitRealName(tool)
                             local success = remote:InvokeServer("StoreFruit", realName, tool)
                             if success ~= true then
-                                -- Gagal store = Inventory penuh atau udah punya
                                 table.insert(StoreBlacklist, tool.Name)
                                 if Settings.AutoHop then
                                     task.wait(1)
@@ -150,7 +147,6 @@ task.spawn(function()
 
                 local backpack = Me.Backpack
                 local char = Me.Character
-                
                 if backpack then for _, tool in pairs(backpack:GetChildren()) do TryStore(tool) end end
                 if char then for _, tool in pairs(char:GetChildren()) do TryStore(tool) end end
             end)
@@ -159,45 +155,61 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- AUTO HOP SERVER (PINTER)
+-- ROBUST SERVER HOPPER (ANTI BOT & ANTI FULL)
 -- ==========================================
 function _G.Cat.HopServer()
     pcall(function()
-        local req = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local servers = req.data
-        for _, s in pairs(servers) do
-            if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, Me)
-                break
+        local cursor = ""
+        local found = false
+        
+        while not found do
+            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+            if cursor ~= "" then url = url .. "&cursor=" .. cursor end
+            
+            local success, response = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(url))
+            end)
+            
+            if success and response and response.data then
+                for _, s in pairs(response.data) do
+                    -- FILTER PINTAR: Cari server yang ada orangnya (>2 pemain biar ga bot), dan belum penuh
+                    if s.playing < s.maxPlayers and s.playing > 2 and s.id ~= game.JobId then
+                        pcall(function()
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, Me)
+                        end)
+                        task.wait(5) -- Nunggu 5 detik biar teleportasi selesai, ga nge-spam
+                        found = true
+                        break
+                    end
+                end
+                
+                if not found and response.nextPageCursor then
+                    cursor = response.nextPageCursor -- Cari halaman server berikutnya
+                else
+                    cursor = "" -- Ulang dari awal kalau ga nemu
+                    task.wait(2)
+                end
+            else
+                task.wait(5)
             end
         end
     end)
 end
 
 task.spawn(function()
-    while task.wait(10) do -- Cek tiap 10 detik
+    while task.wait(10) do
         if Settings.AutoHop then
             pcall(function()
                 local fruitCount = 0
-                for f, _ in pairs(Data) do
-                    if f and f.Parent then fruitCount = fruitCount + 1 end
-                end
-                
-                -- KALAU GA ADA BUAH DI MAP -> LANGSUNG HOP
-                if fruitCount == 0 then
-                    _G.Cat.HopServer()
-                end
-                -- KALAU ADA BUAH -> TUNGGU SAMPE DAPAT (JANGAN HOP)
+                for f, _ in pairs(Data) do if f and f.Parent then fruitCount = fruitCount + 1 end end
+                if fruitCount == 0 then _G.Cat.HopServer() end
             end)
         end
     end
 end)
 
--- EXPORT DAFTAR BUAH BIAR DIBACA STATUS.LUA
 function _G.Cat.GetFruitsList()
     local names = {}
-    for f, _ in pairs(Data) do
-        if f and f.Parent then table.insert(names, f.Name) end
-    end
+    for f, _ in pairs(Data) do if f and f.Parent then table.insert(names, f.Name) end end
     return names
 end
