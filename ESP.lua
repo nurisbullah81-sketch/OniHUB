@@ -1,13 +1,13 @@
--- CatHUB v8.3: Fruit ESP (Ultra Minimal)
+-- CatHUB v8.4: Fruit ESP (Clean)
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local S = _G.Cat.Settings
 local Me = _G.Cat.Player
 
 local Data = {}
-local Cache = {}
+local Mem = {}
 local FC = 0
-local SKIP = 12
+local SKIP = 10
 
 local function Pos(f)
     if f:IsA("Tool") then
@@ -30,37 +30,35 @@ local function Add(f)
     
     local bb = Instance.new("BillboardGui", f)
     bb.Name = "CatESP"
-    bb.Size = UDim2.new(0, 100, 0, 30)
+    bb.Size = UDim2.new(0, 120, 0, 32)
     bb.AlwaysOnTop = true
-    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+    bb.StudsOffset = Vector3.new(0, 3, 0)
     bb.Enabled = false
     
-    -- Nama buah
-    local name = Instance.new("TextLabel", bb)
-    name.Size = UDim2.new(1, 0, 0, 16)
-    name.Position = UDim2.new(0, 0, 0, 0)
-    name.BackgroundTransparency = 1
-    name.Text = f.Name
-    name.TextColor3 = Color3.fromRGB(255, 255, 255)
-    name.TextStrokeTransparency = 0.7
-    name.TextStrokeColor3 = Color3.new(0, 0, 0)
-    name.Font = Enum.Font.GothamBold
-    name.TextSize = 12
+    local nm = Instance.new("TextLabel", bb)
+    nm.Size = UDim2.new(1, 0, 0, 18)
+    nm.Position = UDim2.new(0, 0, 0, 0)
+    nm.BackgroundTransparency = 1
+    nm.Text = f.Name
+    nm.TextColor3 = Color3.new(1, 1, 1)
+    nm.TextStrokeTransparency = 0.8
+    nm.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nm.Font = Enum.Font.GothamMedium
+    nm.TextSize = 12
     
-    -- Jarak kecil di bawah
-    local dist = Instance.new("TextLabel", bb)
-    dist.Size = UDim2.new(1, 0, 0, 12)
-    dist.Position = UDim2.new(0, 0, 0, 16)
-    dist.BackgroundTransparency = 1
-    dist.Text = ""
-    dist.TextColor3 = Color3.fromRGB(180, 180, 180)
-    dist.TextStrokeTransparency = 0.8
-    dist.TextStrokeColor3 = Color3.new(0, 0, 0)
-    dist.Font = Enum.Font.Gotham
-    dist.TextSize = 9
+    local dt = Instance.new("TextLabel", bb)
+    dt.Size = UDim2.new(1, 0, 0, 12)
+    dt.Position = UDim2.new(0, 0, 0, 18)
+    dt.BackgroundTransparency = 1
+    dt.Text = ""
+    dt.TextColor3 = Color3.fromRGB(170, 170, 180)
+    dt.TextStrokeTransparency = 0.9
+    dt.TextStrokeColor3 = Color3.new(0, 0, 0)
+    dt.Font = Enum.Font.Gotham
+    dt.TextSize = 10
     
-    Data[f] = { bb = bb, name = name, dist = dist }
-    Cache[f] = -1
+    Data[f] = { bb = bb, nm = nm, dt = dt }
+    Mem[f] = -1
 end
 
 local function Rem(f)
@@ -68,7 +66,7 @@ local function Rem(f)
     if d then
         d.bb:Destroy()
         Data[f] = nil
-        Cache[f] = nil
+        Mem[f] = nil
     end
 end
 
@@ -118,20 +116,20 @@ RunService.RenderStepped:Connect(function()
         local dz = p.Z - mp.Z
         local m = math.floor(math.sqrt(dx*dx + dy*dy + dz*dz))
         
-        local last = Cache[f] or -1
-        if math.abs(m - last) > 8 then
-            Cache[f] = m
-            d.dist.Text = m .. "m"
+        local last = Mem[f] or -1
+        if math.abs(m - last) > 6 then
+            Mem[f] = m
+            d.dt.Text = m .. "m"
             
             if m < 300 then
-                d.name.TextColor3 = Color3.fromRGB(130, 255, 130)
-                d.dist.TextColor3 = Color3.fromRGB(100, 200, 100)
+                d.nm.TextColor3 = Color3.fromRGB(140, 255, 140)
+                d.dt.TextColor3 = Color3.fromRGB(110, 200, 110)
             elseif m < 1000 then
-                d.name.TextColor3 = Color3.fromRGB(255, 255, 150)
-                d.dist.TextColor3 = Color3.fromRGB(200, 200, 100)
+                d.nm.TextColor3 = Color3.fromRGB(255, 255, 160)
+                d.dt.TextColor3 = Color3.fromRGB(200, 200, 120)
             else
-                d.name.TextColor3 = Color3.fromRGB(255, 160, 140)
-                d.dist.TextColor3 = Color3.fromRGB(200, 120, 100)
+                d.nm.TextColor3 = Color3.fromRGB(255, 170, 150)
+                d.dt.TextColor3 = Color3.fromRGB(200, 130, 110)
             end
         end
         
