@@ -12,15 +12,30 @@ local SKIP = 10
 local function Pos(f)
     if not f or not f.Parent then return nil end
     local ok, r = pcall(function()
-        if f:IsA("Tool") then local h = f:FindFirstChild("Handle") if h then return h.Position end
-        elseif f:IsA("Model") then if f.PrimaryPart then return f.PrimaryPart.Position end local root = f:FindFirstChild("HumanoidRootPart") or f:FindFirstChildWhichIsA("BasePart") if root then return root.Position end end
+        -- Buah selalu Tool, jadi cuma cari Handle
+        if f:IsA("Tool") then 
+            local h = f:FindFirstChild("Handle") 
+            if h then return h.Position end
+        elseif f:IsA("Model") then 
+            if f.PrimaryPart then return f.PrimaryPart.Position end 
+            local root = f:FindFirstChild("HumanoidRootPart") or f:FindFirstChildWhichIsA("BasePart") 
+            if root then return root.Position end 
+        end
     end)
     return ok and r or nil
 end
 
+-- FILTER CERDAS: Khusus Blox Fruits (Anti Nyangkut NPC)
 local function IsF(o)
     if not o or not o.Parent then return false end
-    local ok, r = pcall(function() local n = o.Name:lower() return (o:IsA("Tool") or o:IsA("Model")) and n:find("fruit") end)
+    local ok, r = pcall(function()
+        -- RAHASIANYA: Buah asli di Blox Fruits itu Tool yang di dalamnya ada Value bernama "Fruit"
+        -- NPC Dealer/Gacha tidak punya anak bernama "Fruit"
+        if o:IsA("Tool") and o:FindFirstChild("Fruit") then
+            return true
+        end
+        return false
+    end)
     return ok and r
 end
 
@@ -87,7 +102,7 @@ task.spawn(function()
                             if fruitTween then fruitTween:Cancel() end
                             local speed = 200 
                             local timeToTween = dist / speed
-                            local targetCFrame = CFrame.new(pos + Vector3.new(0, 15, 0)) -- Hover 15 stud di atas buah
+                            local targetCFrame = CFrame.new(pos + Vector3.new(0, 15, 0)) 
                             fruitTween = TweenService:Create(hrp, TweenInfo.new(timeToTween, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
                             fruitTween:Play()
                         end
@@ -101,3 +116,14 @@ task.spawn(function()
         end)
     end
 end)
+
+-- EXPORT DAFTAR BUAH BIAR DIBACA STATUS.LUA
+function _G.Cat.GetFruitsList()
+    local names = {}
+    for f, _ in pairs(Data) do
+        if f and f.Parent then
+            table.insert(names, f.Name)
+        end
+    end
+    return names
+end
