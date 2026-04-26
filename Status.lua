@@ -14,18 +14,19 @@ local function FormatNum(num)
     return formatted
 end
 
--- Fungsi aman baca value (Bisa angka atau teks yang isinya angka)
+-- Super Reader: Baca IntValue, NumberValue, StringValue, IntConstrainedValue
 local function ReadValue(obj)
     if not obj then return 0 end
-    if obj:IsA("IntValue") or obj:IsA("NumberValue") then return obj.Value end
-    if obj:IsA("StringValue") then
-        local num = string.match(obj.Value, "%d+")
-        return tonumber(num) or 0
+    if obj:IsA("ValueBase") then
+        local val = obj.Value
+        if type(val) == "number" then return val end
+        if type(val) == "string" then
+            local num = string.match(val, "%d+")
+            return tonumber(num) or 0
+        end
     end
     return 0
 end
-
-local hasPrinted = false
 
 task.spawn(function()
     while task.wait(1) do
@@ -33,53 +34,45 @@ task.spawn(function()
             local ls = LocalPlayer:FindFirstChild("leaderstats")
             local dataFolder = LocalPlayer:FindFirstChild("Data")
             
-            -- DEBUG: Print 1 kali aja biar lu tau isinya apa
-            if not hasPrinted and ls then
-                hasPrinted = true
-                print("[CatHUB] === SCANNING LEADERSTATS ===")
-                for _, child in pairs(ls:GetChildren()) do
-                    print(" -> Nama: '" .. child.Name .. "' | Tipe: " .. child.ClassName .. " | Value: " .. tostring(child.Value))
-                end
-                if dataFolder then
-                    print("[CatHUB] === SCANNING DATA FOLDER ===")
-                    for _, child in pairs(dataFolder:GetChildren()) do
-                        print(" -> Nama: '" .. child.Name .. "' | Tipe: " .. child.ClassName .. " | Value: " .. tostring(child.Value))
+            local lvl, lvlName = 0, "Level"
+            local money, moneyName = 0, "Money"
+            local frag, fragName = 0, "Fragments"
+            local bounty, bountyName = 0, "Bounty"
+            
+            local function ScanFolder(folder)
+                if not folder then return end
+                for _, child in pairs(folder:GetChildren()) do
+                    if child:IsA("ValueBase") then
+                        local rawName = string.lower(child.Name)
+                        -- ANTI-CHEAT BYPASS: Hapus semua spasi/simbol aneh (misal "Level " jadi "level")
+                        local n = string.gsub(rawName, "%W", "") 
+                        local val = ReadValue(child)
+                        
+                        if string.find(n, "level") or string.find(n, "lvl") then
+                            lvl = val; lvlName = child.Name
+                        elseif string.find(n, "bounty") or string.find(n, "honor") then
+                            bounty = val; bountyName = child.Name
+                        elseif string.find(n, "frag") then
+                            frag = val; fragName = child.Name
+                        elseif rawName == "$" or string.find(n, "money") or string.find(n, "belly") or string.find(n, "cash") then
+                            money = val; moneyName = child.Name
+                        else
+                            -- Jika ada angka lain yang belum kekategori, pasti itu uang
+                            if val > 0 and money == 0 then
+                                money = val; moneyName = child.Name
+                            end
+                        end
                     end
                 end
             end
             
-            -- 1. LEVEL (Pasti di leaderstats)
-            local lvlObj = ls and (ls:FindFirstChild("Level") or ls:FindFirstChild("Lvl"))
-            local lvl = ReadValue(lvlObj)
+            ScanFolder(ls)
+            ScanFolder(dataFolder)
             
-            -- 2. MONEY (Cari nama aneh atau simbol $)
-            local moneyObj = ls and (ls:FindFirstChild("$") or ls:FindFirstChild("Money") or ls:FindFirstChild("Belly") or ls:FindFirstChild("Cash"))
-            -- Fallback kalau ga ketemu, cari IntValue lain yang bukan Level/Bounty
-            if not moneyObj and ls then
-                for _, child in pairs(ls:GetChildren()) do
-                    local n = string.lower(child.Name)
-                    if child:IsA("IntValue") and n ~= "level" and n ~= "lvl" and n ~= "bounty" and n ~= "honor" and n ~= "fragments" then
-                        moneyObj = child
-                    end
-                end
-            end
-            local money = ReadValue(moneyObj)
-            local moneyName = moneyObj and moneyObj.Name or "Money"
-            
-            -- 3. FRAGMENTS (Di Blox Fruits, ini ada di FOLDER DATA, bukan leaderstats!)
-            local fragObj = dataFolder and (dataFolder:FindFirstChild("Fragments") or dataFolder:FindFirstChild("Fragment"))
-            if not fragObj and ls then fragObj = ls:FindFirstChild("Fragments") or ls:FindFirstChild("Fragment") end
-            local frag = ReadValue(fragObj)
-            
-            -- 4. BOUNTY / HONOR (Dinamis, tergantung Pirate/Marine)
-            local bountyObj = ls and (ls:FindFirstChild("Bounty") or ls:FindFirstChild("Honor"))
-            local bounty = ReadValue(bountyObj)
-            local bountyName = bountyObj and bountyObj.Name or "Bounty"
-            
-            -- UPDATE UI
+            -- Update UI
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
             
-            local displayMoney = (moneyName == "$") and "Money" or moneyName
+            local displayMoney = (moneyName == "$" or string.lower(moneyName) == "money") and "Money" or moneyName
             Labels.Money.Text = displayMoney .. ": $" .. FormatNum(money)
             
             Labels.Fragments.Text = "Fragments: " .. FormatNum(frag)
