@@ -1,4 +1,4 @@
--- CatHUB v10.9: FIX AutoButtonColor (Anti Kedap-Kedip) & Flawless Drag
+-- CatHUB v11.0: GOLD & PURPLE EDITION (Modern "Cat" Widget, Darker Inner BG)
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,26 +12,37 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- PALETTE: Konsisten dan Misah Tegas
+-- ==========================================
+-- THEME / PALETTE (Updated Colors)
+-- ==========================================
 local Theme = {
-    MainBG      = Color3.fromRGB(12, 12, 12),
-    SideBG      = Color3.fromRGB(16, 16, 16),   
-    TopBG       = Color3.fromRGB(12, 12, 12),
-    TabOn       = Color3.fromRGB(38, 38, 42),   
-    TabOff      = Color3.fromRGB(26, 26, 28),   
-    PageBG      = Color3.fromRGB(24, 24, 26),   
-    CardBG      = Color3.fromRGB(32, 32, 36),
-    CardHov     = Color3.fromRGB(40, 40, 45),
-    Text        = Color3.fromRGB(255, 255, 255),
-    TextDim     = Color3.fromRGB(150, 150, 150),
-    ToggleOn    = Color3.fromRGB(138, 43, 226), 
-    ToggleOff   = Color3.fromRGB(80, 80, 85),
-    Accent      = Color3.fromRGB(138, 43, 226), 
-    Line        = Color3.fromRGB(45, 45, 50)    
+    MainBG      = Color3.fromRGB(10, 10, 10),   -- Hitam Pekat Dasar
+    SideBG      = Color3.fromRGB(14, 14, 16),   -- Sidebar Gelap
+    TopBG       = Color3.fromRGB(10, 10, 10),
+    TabOn       = Color3.fromRGB(32, 32, 38),   -- Tab Aktif
+    TabOff      = Color3.fromRGB(14, 14, 16),   -- Tab Mati (Nyatu Side)
+    
+    -- REQUEST 1: Background besar di dalam sedikit hitam ke abu-abuan (Gelap)
+    PageBG      = Color3.fromRGB(17, 18, 22),   -- Gelap Elegant, Gak abu-abu banget
+    
+    CardBG      = Color3.fromRGB(28, 28, 32),   -- Kotak Toggle
+    CardHov     = Color3.fromRGB(36, 36, 42),
+    Text        = Color3.fromRGB(245, 245, 245),
+    TextDim     = Color3.fromRGB(140, 140, 145),
+    
+    ToggleOn    = Color3.fromRGB(138, 43, 226), -- Ungu Accent
+    ToggleOff   = Color3.fromRGB(75, 75, 80),
+    Accent      = Color3.fromRGB(138, 43, 226), -- Ungu
+    
+    -- REQUEST 3 & 4 (Colors for Text)
+    CatPurple   = Color3.fromRGB(160, 100, 255),-- Ungu Cerah buat CatHUB
+    Gold        = Color3.fromRGB(255, 200, 50), -- Emas buat Freemium
+    
+    Line        = Color3.fromRGB(40, 40, 45)    -- Garis Pembatas
 }
 
 -- ==========================================
--- FUNGSI DRAG ANTI-MACET
+-- FUNGSI DRAG STABIL
 -- ==========================================
 local function MakeDraggable(dragArea, objectToMove)
     local dragging = false
@@ -66,23 +77,28 @@ local function MakeDraggable(dragArea, objectToMove)
 end
 
 -- ==========================================
--- FLOATING WIDGET (PERMANEN "C")
+-- REQUEST 3 & 4: MODERN "Cat" WIDGET (Transparan & Draggable)
 -- ==========================================
 local FloatBtn = Instance.new("TextButton", Gui)
-FloatBtn.Size = UDim2.new(0, 45, 0, 45)
-FloatBtn.Position = UDim2.new(0, 20, 0.5, -22)
-FloatBtn.BackgroundColor3 = Theme.CardBG
-FloatBtn.Text = "C"
-FloatBtn.TextColor3 = Theme.Accent
-FloatBtn.Font = Enum.Font.GothamBold
-FloatBtn.TextSize = 22
+FloatBtn.Size = UDim2.new(0, 55, 0, 35) -- Sedikit lebih lebar buat tulisan "Cat"
+FloatBtn.Position = UDim2.new(0, 20, 0.5, -17)
+-- Request 4: Background sedikit saja tapi transparan
+FloatBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+FloatBtn.BackgroundTransparency = 0.5 
+-- Request 3: Ganti jadi Cat yang keren dan modern
+FloatBtn.Text = "Cat"
+FloatBtn.TextColor3 = Theme.CatPurple -- Pake warna ungu
+FloatBtn.Font = Enum.Font.GothamBold -- Modern & Bold
+FloatBtn.TextSize = 18
 FloatBtn.BorderSizePixel = 0
-FloatBtn.AutoButtonColor = false -- FIX: Anti kedap-kedip pas diklik
+FloatBtn.AutoButtonColor = false -- Tetap dimatiin biar ga kedap-kedip norak
 FloatBtn.ZIndex = 99999 
 Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", FloatBtn).Color = Theme.Line
+local FloatStroke = Instance.new("UIStroke", FloatBtn)
+FloatStroke.Color = Theme.Line
+FloatStroke.Thickness = 1
 
--- Aktifin fungsi drag buat kotak C
+-- Aktifin fungsi drag buat tombol "Cat" biar bisa digeser sembunyiin
 MakeDraggable(FloatBtn, FloatBtn)
 
 -- ==========================================
@@ -100,7 +116,6 @@ local MainStroke = Instance.new("UIStroke", Main)
 MainStroke.Color = Theme.Line
 MainStroke.Thickness = 1
 
--- Buka/Tutup menu lewat kotak C
 FloatBtn.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
 end)
@@ -118,15 +133,34 @@ TopFix.Position = UDim2.new(0, 0, 1, -10)
 TopFix.BackgroundColor3 = Theme.TopBG
 TopFix.BorderSizePixel = 0
 
-local TitleStr = Instance.new("TextLabel", Top)
-TitleStr.Size = UDim2.new(0, 300, 1, 0)
-TitleStr.Position = UDim2.new(0, 15, 0, 0)
-TitleStr.Text = "CatHub Blox Fruits [Freemium]"
-TitleStr.TextColor3 = Theme.Text
-TitleStr.Font = Enum.Font.GothamMedium
-TitleStr.TextSize = 13
-TitleStr.TextXAlignment = Enum.TextXAlignment.Left
-TitleStr.BackgroundTransparency = 1
+-- ==========================================
+-- REQUEST 2: CatHUB (Ungu Bold) & Freemium (Emas)
+-- ==========================================
+local TitleContainer = Instance.new("Frame", Top)
+TitleContainer.Size = UDim2.new(0, 350, 1, 0)
+TitleContainer.Position = UDim2.new(0, 15, 0, 0)
+TitleContainer.BackgroundTransparency = 1
+
+local TitleList = Instance.new("UIListLayout", TitleContainer)
+TitleList.FillDirection = Enum.FillDirection.Horizontal
+TitleList.SortOrder = Enum.SortOrder.LayoutOrder
+TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
+TitleList.Padding = UDim.new(0, 4) -- Jarak antar kata
+
+local function CreateTitlePart(text, color, font, order)
+    local label = Instance.new("TextLabel", TitleContainer)
+    label.Text = text
+    label.TextColor3 = color
+    label.Font = font
+    label.TextSize = 13
+    label.BackgroundTransparency = 1
+    label.AutomaticSize = Enum.AutomaticSize.XY
+    label.LayoutOrder = order
+end
+
+CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold, 1) -- Request 3: Sedikit unguan & bold
+CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium, 2)
+CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium, 3) -- Request 2: Warna Freemium Emas
 
 local BtnX = Instance.new("TextButton", Top)
 BtnX.Size = UDim2.new(0, 35, 0, 35)
@@ -169,7 +203,6 @@ BtnM.MouseButton1Click:Connect(function()
     end
 end)
 
--- Aktifin drag buat Menu Utama
 MakeDraggable(Top, Main)
 
 -- ==========================================
@@ -208,7 +241,7 @@ UserInput.InputChanged:Connect(function(input)
 end)
 
 -- ==========================================
--- DYNAMIC SIDEBAR & KONTEN
+-- SIDEBAR & KONTEN
 -- ==========================================
 local ContentContainer = Instance.new("Frame", Main)
 ContentContainer.Size = UDim2.new(1, 0, 1, -35)
@@ -256,7 +289,7 @@ local function CreateTab(name, isFirst)
     Btn.TextSize = 12
     Btn.BorderSizePixel = 0
     Btn.TextXAlignment = Enum.TextXAlignment.Left
-    Btn.AutoButtonColor = false -- FIX: Biar tab kiri ga kedap-kedip pas diklik
+    Btn.AutoButtonColor = false
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
     local Indicator = Instance.new("Frame", Btn)
@@ -277,7 +310,10 @@ local function CreateTab(name, isFirst)
     local Page = Instance.new("ScrollingFrame", ContentArea)
     Page.Size = UDim2.new(1, -16, 1, -16) 
     Page.Position = UDim2.new(0, 8, 0, 8) 
-    Page.BackgroundColor3 = Theme.PageBG 
+    
+    -- Request 1: Ganti warna background besar di dalam jadi sedikit hitam ke abu-abuan
+    Page.BackgroundColor3 = Theme.PageBG -- Gelap Elegant
+    
     Page.BackgroundTransparency = 0 
     Page.ScrollBarThickness = 2
     Page.ScrollBarImageColor3 = Theme.TextDim 
@@ -336,7 +372,7 @@ local function CreateToggle(parent, text, stateRef, callback)
     F.BackgroundColor3 = Theme.CardBG
     F.BorderSizePixel = 0
     F.Text = ""
-    F.AutoButtonColor = false -- FIX UTAMA: Matiin efek kedap-kedip bawaan Roblox!
+    F.AutoButtonColor = false
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
     
     local Stroke = Instance.new("UIStroke", F)
