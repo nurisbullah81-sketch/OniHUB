@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: Master UI (Precision Update)
+-- CatHUB FREEMIUM: UI Module (Anti-Stun Update)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -24,7 +24,8 @@ local UI_Lib = {
         FastRun_Enabled = false,
         Run_Speed = 16,
         HighJump_Enabled = false,
-        Jump_Power = 50
+        Jump_Power = 50,
+        AntiStun_Enabled = false -- New Setting
     }
 }
 
@@ -47,8 +48,8 @@ ScreenGui.Parent = CoreGui
 UI_Lib.MainGui = ScreenGui
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 450, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
+MainFrame.Size = UDim2.new(0, 480, 0, 340)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -170)
 MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -93,6 +94,7 @@ Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 4)
 
 local TabList = Instance.new("ScrollingFrame")
 TabList.Size = UDim2.new(1, -6, 1, -6)
+TabList.Position = UDim2.new(0, 3, 0, 3)
 TabList.BackgroundTransparency = 1
 TabList.ScrollBarThickness = 0
 TabList.Parent = Sidebar
@@ -236,6 +238,7 @@ local FinderTab = UI_Lib:CreateTab("Finder")
 local SettingTab = UI_Lib:CreateTab("Setting")
 
 UI_Lib:CreateSwitch(PVPTab, "LockAim_Enabled", "Sticky Lock Aim", function(v) end)
+UI_Lib:CreateSwitch(PVPTab, "AntiStun_Enabled", "Anti-Stun (Passive)", function(v) end)
 UI_Lib:CreateSwitch(PVPTab, "PlayerESP_Enabled", "Player ESP", function(v) end)
 UI_Lib:CreateSwitch(PVPTab, "WalkWater_Enabled", "Walk On Water", function(v) end)
 UI_Lib:CreateSwitch(PVPTab, "FastRun_Enabled", "Enable Run Speed", function(v) end)
