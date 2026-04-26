@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: UI Module (v4.0)
+-- CatHUB FREEMIUM: UI Module (v5.0 Fix)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -19,6 +19,7 @@ local UI = {
     }
 }
 
+-- Persistent Data
 function UI:Save() pcall(function() writefile("CatHUB_Config.json", HttpService:JSONEncode(self.Settings)) end) end
 function UI:Load() 
     if isfile and isfile("CatHUB_Config.json") then 
@@ -30,17 +31,23 @@ UI:Load()
 
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
 ScreenGui.Name = "CatHUB_Freemium"
+UI.MainGui = ScreenGui
 
 local Main = Instance.new("Frame", ScreenGui)
 Main.Size = UDim2.new(0, 480, 0, 320)
 Main.Position = UDim2.new(0.5, -240, 0.5, -160)
-Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+Main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 45)
 
--- Custom Drag Logic
+-- FIXED DRAG LOGIC: Only TopBar
+local TopBar = Instance.new("Frame", Main)
+TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 6)
+
 local dragging, dragInput, dragStart, startPos
-Main.InputBegan:Connect(function(input)
+TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
@@ -53,14 +60,7 @@ UserInputService.InputChanged:Connect(function(input)
         Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
-
-local TopBar = Instance.new("Frame", Main)
-TopBar.Size = UDim2.new(1, 0, 0, 30)
-TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 6)
+UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
 local Title = Instance.new("TextLabel", TopBar)
 Title.Size = UDim2.new(1, -90, 1, 0)
@@ -80,24 +80,24 @@ Close.TextColor3 = Color3.fromRGB(150, 150, 150)
 Close.BackgroundTransparency = 1
 Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-local Collapse = Instance.new("TextButton", TopBar)
-Collapse.Size = UDim2.new(0, 30, 0, 30)
-Collapse.Position = UDim2.new(1, -60, 0, 0)
-Collapse.Text = "-"
-Collapse.TextColor3 = Color3.fromRGB(150, 150, 150)
-Collapse.BackgroundTransparency = 1
-Collapse.MouseButton1Click:Connect(function()
+local Minimize = Instance.new("TextButton", TopBar)
+Minimize.Size = UDim2.new(0, 30, 0, 30)
+Minimize.Position = UDim2.new(1, -60, 0, 0)
+Minimize.Text = "-"
+Minimize.TextColor3 = Color3.fromRGB(150, 150, 150)
+Minimize.BackgroundTransparency = 1
+Minimize.MouseButton1Click:Connect(function()
     UI.Collapsed = not UI.Collapsed
     Main:FindFirstChild("Sidebar").Visible = not UI.Collapsed
     Main:FindFirstChild("ContentArea").Visible = not UI.Collapsed
-    Main:TweenSize(UI.Collapsed and UDim2.new(0, 480, 0, 30) or UDim2.new(0, 480, 0, 320), "Out", "Quad", 0.3, true)
+    Main:TweenSize(UI.Collapsed and UDim2.new(0, 480, 0, 30) or UDim2.new(0, 480, 0, 320), "Out", "Quad", 0.2, true)
 end)
 
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Name = "Sidebar"
-Sidebar.Size = UDim2.new(0, 120, 1, -40)
+Sidebar.Size = UDim2.new(0, 115, 1, -40)
 Sidebar.Position = UDim2.new(0, 5, 0, 35)
-Sidebar.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
+Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Instance.new("UICorner", Sidebar)
 
 local TabList = Instance.new("ScrollingFrame", Sidebar)
@@ -105,12 +105,12 @@ TabList.Size = UDim2.new(1, -6, 1, -6)
 TabList.Position = UDim2.new(0, 3, 0, 3)
 TabList.BackgroundTransparency = 1
 TabList.ScrollBarThickness = 0
-Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 4)
+Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 3)
 
 local ContentArea = Instance.new("Frame", Main)
 ContentArea.Name = "ContentArea"
-ContentArea.Size = UDim2.new(1, -135, 1, -40)
-ContentArea.Position = UDim2.new(0, 130, 0, 35)
+ContentArea.Size = UDim2.new(1, -130, 1, -40)
+ContentArea.Position = UDim2.new(0, 125, 0, 35)
 ContentArea.BackgroundTransparency = 1
 
 function UI:CreateTab(name)
@@ -120,7 +120,7 @@ function UI:CreateTab(name)
     Container.BackgroundTransparency = 1
     Container.Visible = false
     Container.ScrollBarThickness = 2
-    Instance.new("UIListLayout", Container).Padding = UDim.new(0, 6)
+    Instance.new("UIListLayout", Container).Padding = UDim.new(0, 5)
 
     local B = Instance.new("TextButton", TabList)
     B.Size = UDim2.new(1, 0, 0, 32)
@@ -141,13 +141,10 @@ function UI:CreateTab(name)
     return Container
 end
 
--- Helper functions (Switches, Sliders) remain similar to previous version...
--- [Include CreateSwitch and CreateSlider here]
-
 function UI:CreateSwitch(parent, set, title, cb)
     local C = Instance.new("Frame", parent)
     C.Size = UDim2.new(1, 0, 0, 35)
-    C.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    C.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Instance.new("UICorner", C)
     local L = Instance.new("TextLabel", C)
     L.Size = UDim2.new(1, -50, 1, 0)
@@ -155,23 +152,23 @@ function UI:CreateSwitch(parent, set, title, cb)
     L.Text = title
     L.TextColor3 = Color3.fromRGB(200, 200, 200)
     L.Font = Enum.Font.SourceSansBold
-    L.TextSize = 12
+    L.TextSize = 11
     L.TextXAlignment = "Left"
     L.BackgroundTransparency = 1
     local Sw = Instance.new("TextButton", C)
-    Sw.Size = UDim2.new(0, 32, 0, 16)
-    Sw.Position = UDim2.new(1, -40, 0.5, -8)
+    Sw.Size = UDim2.new(0, 30, 0, 14)
+    Sw.Position = UDim2.new(1, -38, 0.5, -7)
     Sw.BackgroundColor3 = self.Settings[set] and self.AccentColor or Color3.fromRGB(40, 40, 40)
     Sw.Text = ""
     Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
     local K = Instance.new("Frame", Sw)
-    K.Size = UDim2.new(0, 12, 0, 12)
-    K.Position = self.Settings[set] and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)
+    K.Size = UDim2.new(0, 10, 0, 10)
+    K.Position = self.Settings[set] and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5)
     K.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Instance.new("UICorner", K).CornerRadius = UDim.new(1, 0)
     Sw.MouseButton1Click:Connect(function()
         self.Settings[set] = not self.Settings[set]
-        TweenService:Create(K, TweenInfo.new(0.2), {Position = self.Settings[set] and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)}):Play()
+        TweenService:Create(K, TweenInfo.new(0.2), {Position = self.Settings[set] and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5)}):Play()
         TweenService:Create(Sw, TweenInfo.new(0.2), {BackgroundColor3 = self.Settings[set] and self.AccentColor or Color3.fromRGB(40, 40, 40)}):Play()
         self:Save()
         if cb then cb(self.Settings[set]) end
@@ -181,11 +178,11 @@ end
 function UI:CreateSlider(parent, set, title, min, max, cb)
     local C = Instance.new("Frame", parent)
     C.Size = UDim2.new(1, 0, 0, 45)
-    C.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+    C.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Instance.new("UICorner", C)
     local T = Instance.new("TextLabel", C)
-    T.Size = UDim2.new(1, 0, 0, 20)
-    T.Position = UDim2.new(0, 10, 0, 5)
+    T.Size = UDim2.new(1, 0, 0, 18)
+    T.Position = UDim2.new(0, 10, 0, 4)
     T.Text = title .. ": " .. self.Settings[set]
     T.TextColor3 = Color3.fromRGB(255, 255, 255)
     T.Font = Enum.Font.SourceSansBold
@@ -194,7 +191,7 @@ function UI:CreateSlider(parent, set, title, min, max, cb)
     T.BackgroundTransparency = 1
     local B = Instance.new("Frame", C)
     B.Size = UDim2.new(1, -20, 0, 4)
-    B.Position = UDim2.new(0, 10, 0, 30)
+    B.Position = UDim2.new(0, 10, 0, 28)
     B.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     local F = Instance.new("Frame", B)
     F.Size = UDim2.new((self.Settings[set]-min)/(max-min), 0, 1, 0)
