@@ -276,7 +276,7 @@ _G.Cat.Labels.Bounty = CreateLabel(StatusTab, "Bounty/Honor: ...", "PvP score tr
 CreateSection(StatusTab, "SERVER STATUS")
 _G.Cat.Labels.Players = CreateLabel(StatusTab, "Players: ...", "Currently in this server")
 _G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycle")
-_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Required for V3/V4 race")
+_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
 _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
 -- DEVIL FRUITS TAB
