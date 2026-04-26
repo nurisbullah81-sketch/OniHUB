@@ -1,16 +1,7 @@
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local Me = _G.Cat.Player
-local UI = _G.Cat.Funcs
-local Tab = _G.Cat.Tabs["Devil Fruits"]
 
--- UI
-UI:Section(Tab, "DEVIL FRUITS")
-UI:Toggle(Tab, "Fruit ESP", false, function(state)
-    _G.Cat.Settings.FruitESP = state
-end)
-
--- LOGIC
 local Data = {}
 local Mem = {}
 local FC = 0
