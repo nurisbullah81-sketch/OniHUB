@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM Core
+-- CatHUB FREEMIUM Logic Core
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
@@ -15,28 +15,28 @@ local function GetDist(obj)
     return 0
 end
 
--- UPGRADED ESP: Larger & Clearer
 local function CreateESP(object)
     if not object:FindFirstChild("Cat_ESP") then
         local Bb = Instance.new("BillboardGui", object)
         Bb.Name = "Cat_ESP"
         Bb.AlwaysOnTop = true
-        Bb.Size = UDim2.new(0, 150, 0, 40)
+        Bb.Size = UDim2.new(0, 200, 0, 50)
         
         local T = Instance.new("TextLabel", Bb)
         T.Size = UDim2.new(1, 0, 1, 0)
         T.BackgroundTransparency = 1
         T.TextColor3 = Color3.fromRGB(255, 255, 255)
-        T.TextSize = 14 -- INCREASED SIZE
+        T.TextSize = 16 -- Optimized size for clarity
         T.Font = Enum.Font.SourceSansBold
-        T.TextStrokeTransparency = 0.5
+        T.TextStrokeTransparency = 0.3
+        T.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 
         task.spawn(function()
             while object:IsDescendantOf(Workspace) do
                 Bb.Enabled = UI_Module.Settings.ESP_Enabled
                 if Bb.Enabled then
                     local name = (object:IsA("Model") and object.Name == "Fruit ") and "??? (System)" or object.Name
-                    T.Text = string.format("%s\n[%dM]", name, math.floor(GetDist(object)))
+                    T.Text = string.format("%s\n%dM", name, math.floor(GetDist(object)))
                 end
                 task.wait(0.2)
             end
