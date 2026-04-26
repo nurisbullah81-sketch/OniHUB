@@ -1,18 +1,16 @@
--- CatHUB FREEMIUM: Farm Module (v7.0)
-local UI = _G.CatHUB_UI
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
+-- CatHUB SUPREMACY: Farm Module v8.0
+local UI = _G.UI
+local LP = game:GetService("Players").LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
-local LocalPlayer = Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
 
-local FarmTab = UI:CreateTab("Auto Farm")
-UI:CreateSwitch(FarmTab, "AutoFarm", "Auto Farm NPC")
-UI:CreateSwitch(FarmTab, "AutoAttack", "Fast High Speed Attack")
-UI:CreateSwitch(FarmTab, "AutoSkill", "Auto Skills (Z,X,C,V,1-4)")
-UI:CreateSwitch(FarmTab, "SafeMode", "Safety 10% HP Escape")
+local Tab = UI:NewTab("Main Farm")
+UI:NewSwitch(Tab, "AutoFarm", "Auto Farm NPC")
+UI:NewSwitch(Tab, "AutoAttack", "Elite Fast Attack")
+UI:NewSwitch(Tab, "AutoSkill", "Use All Skills (Z,X,C,V,1-4)")
+UI:NewSwitch(Tab, "SafeMode", "Escape at 10% HP")
 
--- Fast Attack (Optimized Clicker)
+-- Fast Attack
 task.spawn(function()
     while task.wait() do
         if UI.Settings.AutoAttack and UI.Settings.AutoFarm then
@@ -22,61 +20,45 @@ task.spawn(function()
     end
 end)
 
--- Skills Engine
+-- Skills
 task.spawn(function()
     local keys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V, Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four}
     while task.wait(0.3) do
         if UI.Settings.AutoSkill and UI.Settings.AutoFarm then
-            for _, k in pairs(keys) do
-                VIM:SendKeyEvent(true, k, false, game)
-                task.wait(0.05)
-                VIM:SendKeyEvent(false, k, false, game)
-            end
+            for _,k in pairs(keys) do VIM:SendKeyEvent(true, k, false, game) task.wait(0.05) VIM:SendKeyEvent(false, k, false, game) end
         end
     end
 end)
 
--- Safe Escape Logic
+-- Safe Mode
 task.spawn(function()
     while task.wait(0.1) do
-        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-        if UI.Settings.SafeMode and hum and hum.Health > 0 and hum.Health < (hum.MaxHealth * 0.1) then
+        local h = LP.Character and LP.Character:FindFirstChild("Humanoid")
+        if UI.Settings.SafeMode and h and h.Health > 0 and h.Health < (h.MaxHealth * 0.1) then
             UI.Settings.AutoFarm = false
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 10000, 0)
-            print("[CatHUB]: Danger! Teleporting to Safe Sky.")
+            LP.Character.HumanoidRootPart.CFrame = CFrame.new(0, 15000, 0)
         end
     end
 end)
 
-local function GetNearestNPC()
-    local t, d = nil, math.huge
-    for _, v in pairs(Workspace.Enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-            local dist = (v.PrimaryPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-            if dist < d then t, d = v, dist end
-        end
-    end
-    return t
-end
-
--- Farm Tween Engine (Above NPC Logic)
+-- Farm Loop (Above NPC)
 task.spawn(function()
     while task.wait() do
         if UI.Settings.AutoFarm then
-            local npc = GetNearestNPC()
-            if npc and npc.PrimaryPart then
-                local hrp = LocalPlayer.Character.HumanoidRootPart
-                -- Terbang 25 stud di atas NPC
-                local targetPos = npc.PrimaryPart.CFrame * CFrame.new(0, 25, 0)
-                local dist = (targetPos.Position - hrp.Position).Magnitude
-                
-                -- Smooth High Speed Tween
-                local t = TweenService:Create(hrp, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = targetPos})
-                t:Play()
-                
-                -- Noclip while farming
-                for _, v in pairs(LocalPlayer.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
-            end
+            pcall(function()
+                local t, d = nil, math.huge
+                for _,v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        local dist = (v.PrimaryPart.Position - LP.Character.HumanoidRootPart.Position).Magnitude
+                        if dist < d then t, d = v, dist end
+                    end
+                end
+                if t then
+                    local targetPos = t.PrimaryPart.CFrame * CFrame.new(0, 30, 0) -- Terbang Tinggi
+                    LP.Character.HumanoidRootPart.CFrame = targetPos
+                    for _,v in pairs(LP.Character:GetDescendants()) do if v:IsA("BasePart") then v.CanCollide = false end end
+                end
+            end)
         end
     end
 end)
