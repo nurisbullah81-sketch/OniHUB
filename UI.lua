@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: UI Module (v5.0 Fix)
+-- CatHUB FREEMIUM: UI Module (v6.0 Fix)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -11,20 +11,24 @@ local UI = {
     Collapsed = false,
     AccentColor = Color3.fromRGB(130, 80, 255),
     Settings = {
+        -- Finder & ESP
         ESP_Enabled = false, PlayerESP_Enabled = false,
         Tween_Enabled = false, Tween_Speed = 300, AutoStore = false,
+        -- Combat
         LockAim_Enabled = false, AntiStun_Enabled = false,
         WalkWater_Enabled = false, FastRun_Enabled = false, Run_Speed = 16,
-        HighJump_Enabled = false, Jump_Power = 50
+        HighJump_Enabled = false, Jump_Power = 50,
+        -- Farm (New)
+        AutoFarm = false, AutoAttack = false, AutoSkill = false, 
+        BountyHunt = false, SafeMode = true
     }
 }
 
--- Persistent Data
 function UI:Save() pcall(function() writefile("CatHUB_Config.json", HttpService:JSONEncode(self.Settings)) end) end
 function UI:Load() 
     if isfile and isfile("CatHUB_Config.json") then 
         local s, d = pcall(function() return HttpService:JSONDecode(readfile("CatHUB_Config.json")) end)
-        if s then for k, v in pairs(d) do self.Settings[k] = v end end
+        if s then for k, v in pairs(d) do UI.Settings[k] = v end end
     end 
 end
 UI:Load()
@@ -36,17 +40,17 @@ UI.MainGui = ScreenGui
 local Main = Instance.new("Frame", ScreenGui)
 Main.Size = UDim2.new(0, 480, 0, 320)
 Main.Position = UDim2.new(0.5, -240, 0.5, -160)
-Main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+Main.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", Main).Color = Color3.fromRGB(45, 45, 45)
 
--- FIXED DRAG LOGIC: Only TopBar
 local TopBar = Instance.new("Frame", Main)
 TopBar.Size = UDim2.new(1, 0, 0, 30)
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+TopBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 6)
 
-local dragging, dragInput, dragStart, startPos
+-- Drag Logic (TopBar Only)
+local dragging, dragStart, startPos
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
