@@ -1,4 +1,4 @@
--- CatHUB v9.8: Title Update, Status Tab Added, No Downgrade
+-- CatHUB v9.9: Perfect RedzHub Clone (Purple Toggle, Clear Borders, Fluid Scale)
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -12,21 +12,23 @@ Gui.Name = "CatUI"
 Gui.ResetOnSpawn = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- Palette Hitam Pekat & Abu Gelap
+-- Palette: Hitam Pekat, Ungu, dan Abu Terang buat OFF
 local Theme = {
     MainBG      = Color3.fromRGB(12, 12, 12),
     SideBG      = Color3.fromRGB(16, 16, 16),
     TopBG       = Color3.fromRGB(12, 12, 12),
-    CardBG      = Color3.fromRGB(22, 22, 22),
-    CardHov     = Color3.fromRGB(28, 28, 28),
+    CardBG      = Color3.fromRGB(24, 24, 26),   -- Background list/toggle
+    CardHov     = Color3.fromRGB(32, 32, 35),
     Text        = Color3.fromRGB(255, 255, 255),
-    TextDim     = Color3.fromRGB(140, 140, 140),
-    Accent      = Color3.fromRGB(88, 101, 242),
-    Line        = Color3.fromRGB(28, 28, 28)
+    TextDim     = Color3.fromRGB(150, 150, 150),
+    ToggleOn    = Color3.fromRGB(138, 43, 226), -- UNGU (Purple)
+    ToggleOff   = Color3.fromRGB(100, 100, 110),-- Abu-abu terang (Kontras tinggi biar kelihatan)
+    Accent      = Color3.fromRGB(138, 43, 226), -- Ungu
+    Line        = Color3.fromRGB(45, 45, 50)    -- Garis pembatas (biar list ga nyatu)
 }
 
 -- ==========================================
--- FLOATING WIDGET (PERMANENT)
+-- FLOATING WIDGET (PERMANENT "C")
 -- ==========================================
 local FloatBtn = Instance.new("TextButton", Gui)
 FloatBtn.Size = UDim2.new(0, 45, 0, 45)
@@ -38,7 +40,7 @@ FloatBtn.Font = Enum.Font.GothamBold
 FloatBtn.TextSize = 22
 FloatBtn.BorderSizePixel = 0
 FloatBtn.AutoButtonColor = false
-FloatBtn.ZIndex = 99999
+FloatBtn.ZIndex = 99999 -- PERMANEN DI DEPAN
 Instance.new("UICorner", FloatBtn).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", FloatBtn).Color = Theme.Line
 
@@ -90,9 +92,8 @@ TopFix.Position = UDim2.new(0, 0, 1, -10)
 TopFix.BackgroundColor3 = Theme.TopBG
 TopFix.BorderSizePixel = 0
 
--- UPDATE TITLE
 local TitleStr = Instance.new("TextLabel", Top)
-TitleStr.Size = UDim2.new(0, 300, 1, 0) -- Dilebarin biar teks ga kepotong
+TitleStr.Size = UDim2.new(0, 300, 1, 0)
 TitleStr.Position = UDim2.new(0, 15, 0, 0)
 TitleStr.Text = "CatHub Blox Fruits [Freemium]"
 TitleStr.TextColor3 = Theme.Text
@@ -232,7 +233,7 @@ local Pages = {}
 local function CreateTab(name, isFirst)
     local Btn = Instance.new("TextButton", SideScroll)
     Btn.Size = UDim2.new(1, 0, 0, 32)
-    Btn.BackgroundColor3 = isFirst and Theme.CardHov or Theme.SideBG
+    Btn.BackgroundColor3 = isFirst and Theme.CardBG or Theme.SideBG
     Btn.Text = "    " .. name
     Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim
     Btn.Font = Enum.Font.GothamMedium
@@ -250,7 +251,7 @@ local function CreateTab(name, isFirst)
     Indicator.Visible = isFirst
     
     Btn.MouseEnter:Connect(function()
-        if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardBG, TextColor3 = Theme.Text}):Play() end
+        if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov, TextColor3 = Theme.Text}):Play() end
     end)
     Btn.MouseLeave:Connect(function()
         if not Indicator.Visible then TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.SideBG, TextColor3 = Theme.TextDim}):Play() end
@@ -265,7 +266,7 @@ local function CreateTab(name, isFirst)
     Page.BorderSizePixel = 0
     
     local List = Instance.new("UIListLayout", Page)
-    List.Padding = UDim.new(0, 6)
+    List.Padding = UDim.new(0, 6) -- Jarak antar item
     local Pad = Instance.new("UIPadding", Page)
     Pad.PaddingTop = UDim.new(0, 10)
     Pad.PaddingLeft = UDim.new(0, 12)
@@ -279,7 +280,7 @@ local function CreateTab(name, isFirst)
             data.Page.Visible = active
             data.Ind.Visible = active
             TweenService:Create(data.Btn, TweenInfo.new(0.15), {
-                BackgroundColor3 = active and Theme.CardHov or Theme.SideBG,
+                BackgroundColor3 = active and Theme.CardBG or Theme.SideBG,
                 TextColor3 = active and Theme.Text or Theme.TextDim
             }):Play()
         end
@@ -311,7 +312,11 @@ local function CreateToggle(parent, text, stateRef, callback)
     F.BorderSizePixel = 0
     F.Text = ""
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", F).Color = Theme.Line
+    
+    -- PEMBATAS: Outline biar toggle terpisah tegas sama elemen lain
+    local Stroke = Instance.new("UIStroke", F)
+    Stroke.Color = Theme.Line
+    Stroke.Thickness = 1
     
     local L = Instance.new("TextLabel", F)
     L.Size = UDim2.new(1, -60, 1, 0)
@@ -326,7 +331,7 @@ local function CreateToggle(parent, text, stateRef, callback)
     local Sw = Instance.new("Frame", F)
     Sw.Size = UDim2.new(0, 36, 0, 18)
     Sw.Position = UDim2.new(1, -48, 0.5, -9)
-    Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.CardBG
+    Sw.BackgroundColor3 = stateRef and Theme.ToggleOn or Theme.ToggleOff
     Sw.BorderSizePixel = 0
     Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0) 
     
@@ -342,7 +347,7 @@ local function CreateToggle(parent, text, stateRef, callback)
     
     F.MouseButton1Click:Connect(function()
         stateRef = not stateRef
-        TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.CardBG}):Play()
+        TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.ToggleOn or Theme.ToggleOff}):Play()
         TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
         if callback then callback(stateRef) end
     end)
@@ -351,18 +356,18 @@ end
 -- ==========================================
 -- BUILD TABS 
 -- ==========================================
-local StatusTab = CreateTab("Status", true) -- Tab pertama
-local DevilFruitsTab = CreateTab("Devil Fruits", false) -- Tab kedua
+local StatusTab = CreateTab("Status", true) 
+local DevilFruitsTab = CreateTab("Devil Fruits", false) 
 
--- Isi Tab Status (Placeholder)
+-- Isi Tab Status 
 CreateSection(StatusTab, "PLAYER STATUS")
-CreateToggle(StatusTab, "Show Player Stats", false, function(state)
+CreateToggle(StatusTab, "Tampilkan Statistik Pemain", false, function(state)
     -- Logic placeholder
 end)
 
 -- Isi Tab Devil Fruits
 CreateSection(DevilFruitsTab, "DEVIL FRUITS")
-CreateToggle(DevilFruitsTab, "Fruit ESP (Text Only)", false, function(state)
+CreateToggle(DevilFruitsTab, "ESP Buah (Teks Saja)", false, function(state)
     print("Fruit ESP:", state)
 end)
 
