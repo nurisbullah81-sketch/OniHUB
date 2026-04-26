@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: UI Module (PVP Update)
+-- CatHUB FREEMIUM: UI Master (Combat Lock Update)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -11,7 +11,6 @@ local UI_Lib = {
     Visible = true,
     AccentColor = Color3.fromRGB(130, 80, 255),
     Settings = {
-        -- Finder Settings
         ESP_Enabled = false,
         Tween_Enabled = false,
         Tween_Speed = 300,
@@ -21,7 +20,9 @@ local UI_Lib = {
         LockAim_Enabled = false,
         WalkWater_Enabled = false,
         FastRun_Enabled = false,
-        Run_Speed = 16
+        Run_Speed = 16,
+        HighJump_Enabled = false,
+        Jump_Power = 50
     }
 }
 
@@ -32,8 +33,8 @@ UI_Lib.MainGui = ScreenGui
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 480, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -240, 0.5, -160)
+MainFrame.Size = UDim2.new(0, 480, 0, 340)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -170)
 MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -52,7 +53,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -60, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "CATHUB FREEMIUM | ELITE"
+Title.Text = "CATHUB FREEMIUM | ELITE PVP"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 13
@@ -125,33 +126,33 @@ end
 
 function UI_Lib:CreateSwitch(parent, title, callback)
     local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, 0, 0, 35)
+    Card.Size = UDim2.new(1, 0, 0, 32)
     Card.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Card.Parent = parent
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
 
     local L = Instance.new("TextLabel")
-    L.Size = UDim2.new(1, -50, 1, 0)
+    L.Size = UDim2.new(1, -45, 1, 0)
     L.Position = UDim2.new(0, 10, 0, 0)
     L.BackgroundTransparency = 1
     L.Text = title
     L.TextColor3 = Color3.fromRGB(200, 200, 200)
     L.Font = Enum.Font.SourceSansBold
-    L.TextSize = 12
+    L.TextSize = 11
     L.TextXAlignment = Enum.TextXAlignment.Left
     L.Parent = Card
 
     local Bg = Instance.new("TextButton")
-    Bg.Size = UDim2.new(0, 32, 0, 16)
-    Bg.Position = UDim2.new(1, -42, 0.5, -8)
+    Bg.Size = UDim2.new(0, 30, 0, 14)
+    Bg.Position = UDim2.new(1, -38, 0.5, -7)
     Bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Bg.Text = ""
     Bg.Parent = Card
     Instance.new("UICorner", Bg).CornerRadius = UDim.new(1, 0)
 
     local Knob = Instance.new("Frame")
-    Knob.Size = UDim2.new(0, 12, 0, 12)
-    Knob.Position = UDim2.new(0, 2, 0.5, -6)
+    Knob.Size = UDim2.new(0, 10, 0, 10)
+    Knob.Position = UDim2.new(0, 2, 0.5, -5)
     Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Knob.Parent = Bg
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
@@ -159,7 +160,7 @@ function UI_Lib:CreateSwitch(parent, title, callback)
     local active = false
     Bg.MouseButton1Click:Connect(function()
         active = not active
-        TweenService:Create(Knob, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
+        TweenService:Create(Knob, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -12, 0.5, -5) or UDim2.new(0, 2, 0.5, -5)}):Play()
         TweenService:Create(Bg, TweenInfo.new(0.2), {BackgroundColor3 = active and UI_Lib.AccentColor or Color3.fromRGB(40, 40, 40)}):Play()
         callback(active)
     end)
@@ -167,25 +168,25 @@ end
 
 function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
     local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, 0, 0, 50)
+    Card.Size = UDim2.new(1, 0, 0, 48)
     Card.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
     Card.Parent = parent
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
 
     local T = Instance.new("TextLabel")
-    T.Size = UDim2.new(1, 0, 0, 20)
-    T.Position = UDim2.new(0, 10, 0, 5)
+    T.Size = UDim2.new(1, 0, 0, 18)
+    T.Position = UDim2.new(0, 10, 0, 4)
     T.BackgroundTransparency = 1
     T.Text = title .. ": " .. default
     T.TextColor3 = Color3.fromRGB(255, 255, 255)
     T.Font = Enum.Font.SourceSansBold
-    T.TextSize = 12
+    T.TextSize = 11
     T.TextXAlignment = Enum.TextXAlignment.Left
     T.Parent = Card
 
     local Bar = Instance.new("Frame")
     Bar.Size = UDim2.new(1, -20, 0, 4)
-    Bar.Position = UDim2.new(0, 10, 0, 32)
+    Bar.Position = UDim2.new(0, 10, 0, 30)
     Bar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     Bar.Parent = Card
     Instance.new("UICorner", Bar)
@@ -211,26 +212,28 @@ function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
     UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then move() end end)
 end
 
--- === TABS INITIALIZATION ===
-local FinderTab = UI_Lib:CreateTab("Fruits Finder")
+-- === TAB SYSTEM ===
 local PVPTab = UI_Lib:CreateTab("PVP Elite")
+local FinderTab = UI_Lib:CreateTab("Finder")
 local SettingTab = UI_Lib:CreateTab("Setting")
 
--- PVP Tab Components
-UI_Lib:CreateSwitch(PVPTab, "Lock Aim (Players)", function(v) UI_Lib.Settings.LockAim_Enabled = v end)
+-- PVP Components
+UI_Lib:CreateSwitch(PVPTab, "Sticky Lock Aim", function(v) UI_Lib.Settings.LockAim_Enabled = v end)
 UI_Lib:CreateSwitch(PVPTab, "Player ESP", function(v) UI_Lib.Settings.PlayerESP_Enabled = v end)
 UI_Lib:CreateSwitch(PVPTab, "Walk On Water", function(v) UI_Lib.Settings.WalkWater_Enabled = v end)
 UI_Lib:CreateSwitch(PVPTab, "Enable Run Speed", function(v) UI_Lib.Settings.FastRun_Enabled = v end)
-UI_Lib:CreateSlider(PVPTab, "Run Speed", 16, 200, 16, function(v) UI_Lib.Settings.Run_Speed = v end)
+UI_Lib:CreateSlider(PVPTab, "Run Speed Value", 16, 250, 16, function(v) UI_Lib.Settings.Run_Speed = v end)
+UI_Lib:CreateSwitch(PVPTab, "Enable High Jump", function(v) UI_Lib.Settings.HighJump_Enabled = v end)
+UI_Lib:CreateSlider(PVPTab, "Jump Power Value", 50, 300, 50, function(v) UI_Lib.Settings.Jump_Power = v end)
 
--- Finder Tab Components
+-- Other Components
 UI_Lib:CreateSwitch(FinderTab, "Fruit ESP", function(v) UI_Lib.Settings.ESP_Enabled = v end)
 UI_Lib:CreateSwitch(FinderTab, "Auto Tween", function(v) UI_Lib.Settings.Tween_Enabled = v end)
 UI_Lib:CreateSwitch(FinderTab, "Auto Store", function(v) UI_Lib.Settings.AutoStore = v end)
 UI_Lib:CreateSlider(SettingTab, "Tween Speed", 100, 500, 300, function(v) UI_Lib.Settings.Tween_Speed = v end)
 
-FinderTab.Visible = true
-UI_Lib.CurrentTab = FinderTab
+PVPTab.Visible = true
+UI_Lib.CurrentTab = PVPTab
 
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.G and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
