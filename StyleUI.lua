@@ -1,195 +1,391 @@
--- StyleUI.lua
-local StyleUI = {}
+-- Redz Hub UI Remake: Pure Visuals, Zero Game Logic
+local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local UserInput = game:GetService("UserInputService")
 
--- Palette Warna Redz Hub (Clean Dark Mode)
-StyleUI.Theme = {
-    MainBG      = Color3.fromRGB(15, 15, 17),   -- Background utama (sangat gelap)
-    SidebarBG   = Color3.fromRGB(20, 20, 23),   -- Background sidebar
-    ElementBG   = Color3.fromRGB(28, 28, 32),   -- Background tombol/toggle mati
-    ElementHov  = Color3.fromRGB(35, 35, 40),   -- Background saat di-hover
-    Accent      = Color3.fromRGB(115, 95, 235), -- Warna nyala (Purple/Blue modern)
-    Text        = Color3.fromRGB(240, 240, 245),-- Teks utama
-    TextDim     = Color3.fromRGB(140, 140, 150),-- Teks sekunder/mati
-    Border      = Color3.fromRGB(35, 35, 42)    -- Garis batas halus
+-- Bersihkan UI lama jika ada
+if CoreGui:FindFirstChild("RedzUI") then 
+    CoreGui.RedzUI:Destroy() 
+end
+
+local Gui = Instance.new("ScreenGui", CoreGui)
+Gui.Name = "RedzUI"
+Gui.ResetOnSpawn = false
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Palette Redz Hub Asli (Pure Dark/Monochrome + Green Toggle)
+local Theme = {
+    MainBG      = Color3.fromRGB(15, 15, 15),   -- Hitam pekat
+    SideBG      = Color3.fromRGB(20, 20, 20),   -- Hitam sedikit terang untuk sidebar
+    TopBG       = Color3.fromRGB(15, 15, 15),   -- Menyatu dengan MainBG
+    CardBG      = Color3.fromRGB(25, 25, 25),   -- Background untuk elemen
+    CardHov     = Color3.fromRGB(32, 32, 32),   -- Efek hover
+    Text        = Color3.fromRGB(255, 255, 255),-- Putih bersih
+    TextDim     = Color3.fromRGB(150, 150, 150),-- Abu-abu untuk teks pasif
+    ToggleOn    = Color3.fromRGB(85, 255, 127), -- Hijau Redz Hub
+    ToggleOff   = Color3.fromRGB(45, 45, 45),   -- Abu gelap
+    Line        = Color3.fromRGB(35, 35, 35),   -- Garis pembatas
+    RedzText    = Color3.fromRGB(255, 65, 65)   -- Aksen merah Redz
 }
 
-StyleUI.Font = {
-    Regular = Enum.Font.Gotham,
-    Bold    = Enum.Font.GothamBold
-}
+-- ==========================================
+-- FLOATING WIDGET (REOPEN) - Bisa di-drag
+-- ==========================================
+local OpenBtn = Instance.new("Frame", Gui)
+OpenBtn.Size = UDim2.new(0, 45, 0, 45)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, 0)
+OpenBtn.BackgroundColor3 = Theme.MainBG
+OpenBtn.BorderSizePixel = 0
+OpenBtn.Visible = false
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0) -- Bulat sempurna
+Instance.new("UIStroke", OpenBtn).Color = Theme.Line
 
--- Fungsi internal untuk bikin corner mulus
-local function ApplyCorner(instance, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius)
-    corner.Parent = instance
-end
+local OpenIcon = Instance.new("TextLabel", OpenBtn)
+OpenIcon.Size = UDim2.new(1, 0, 1, 0)
+OpenIcon.BackgroundTransparency = 1
+OpenIcon.Text = "R"
+OpenIcon.TextColor3 = Theme.RedzText
+OpenIcon.Font = Enum.Font.GothamBold
+OpenIcon.TextSize = 20
 
--- 1. Bikin Frame Utama
-function StyleUI.CreateMainFrame(parent, size, position)
-    local frame = Instance.new("Frame")
-    frame.Size = size
-    frame.Position = position
-    frame.BackgroundColor3 = StyleUI.Theme.MainBG
-    frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true
-    frame.Parent = parent
+local OpenHitbox = Instance.new("TextButton", OpenBtn)
+OpenHitbox.Size = UDim2.new(1, 0, 1, 0)
+OpenHitbox.BackgroundTransparency = 1
+OpenHitbox.Text = ""
+
+local openDrag, openDragStart, openStartPos
+OpenHitbox.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        openDrag = true
+        openDragStart = input.Position
+        openStartPos = OpenBtn.Position
+    end
+end)
+OpenHitbox.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then openDrag = false end
+end)
+UserInput.InputChanged:Connect(function(input)
+    if openDrag and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - openDragStart
+        OpenBtn.Position = UDim2.new(openStartPos.X.Scale, openStartPos.X.Offset + delta.X, openStartPos.Y.Scale, openStartPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- ==========================================
+-- MAIN FRAME
+-- ==========================================
+local Main = Instance.new("Frame", Gui)
+Main.Size = UDim2.new(0, 580, 0, 350)
+Main.Position = UDim2.new(0.5, -290, 0.5, -175)
+Main.BackgroundColor3 = Theme.MainBG
+Main.BorderSizePixel = 0
+Main.ClipsDescendants = true -- Kunci untuk minimize mulus tanpa merusak sudut
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", Main).Color = Theme.Line
+
+-- Topbar
+local Top = Instance.new("Frame", Main)
+Top.Size = UDim2.new(1, 0, 0, 35)
+Top.BackgroundColor3 = Theme.TopBG
+Top.BorderSizePixel = 0
+Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 8)
+
+local TopFix = Instance.new("Frame", Top)
+TopFix.Size = UDim2.new(1, 0, 0, 10)
+TopFix.Position = UDim2.new(0, 0, 1, -10)
+TopFix.BackgroundColor3 = Theme.TopBG
+TopFix.BorderSizePixel = 0
+
+local TitleStr = Instance.new("TextLabel", Top)
+TitleStr.Size = UDim2.new(0, 200, 1, 0)
+TitleStr.Position = UDim2.new(0, 15, 0, 0)
+TitleStr.Text = "redz Hub : Blox Fruits"
+TitleStr.TextColor3 = Theme.Text
+TitleStr.Font = Enum.Font.GothamMedium
+TitleStr.TextSize = 13
+TitleStr.TextXAlignment = Enum.TextXAlignment.Left
+TitleStr.BackgroundTransparency = 1
+
+local BtnX = Instance.new("TextButton", Top)
+BtnX.Size = UDim2.new(0, 35, 0, 35)
+BtnX.Position = UDim2.new(1, -35, 0, 0)
+BtnX.Text = "X"
+BtnX.TextColor3 = Theme.TextDim
+BtnX.BackgroundTransparency = 1
+BtnX.Font = Enum.Font.Gotham
+BtnX.TextSize = 14
+
+local BtnM = Instance.new("TextButton", Top)
+BtnM.Size = UDim2.new(0, 35, 0, 35)
+BtnM.Position = UDim2.new(1, -70, 0, 0)
+BtnM.Text = "-"
+BtnM.TextColor3 = Theme.TextDim
+BtnM.BackgroundTransparency = 1
+BtnM.Font = Enum.Font.Gotham
+BtnM.TextSize = 20
+
+BtnX.MouseEnter:Connect(function() TweenService:Create(BtnX, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(255, 80, 80)}):Play() end)
+BtnX.MouseLeave:Connect(function() TweenService:Create(BtnX, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play() end)
+BtnM.MouseEnter:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.Text}):Play() end)
+BtnM.MouseLeave:Connect(function() TweenService:Create(BtnM, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play() end)
+
+-- Reopen Logic
+BtnX.MouseButton1Click:Connect(function()
+    OpenBtn.Position = UDim2.new(0, Main.Position.X.Offset + (Main.Size.X.Offset/2) - 22, 0, Main.Position.Y.Offset + (Main.Size.Y.Offset/2) - 22)
+    Main.Visible = false
+    OpenBtn.Visible = true
+end)
+
+OpenHitbox.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    OpenBtn.Visible = false
+end)
+
+-- Minimize Logic (Shrink mulus ke Topbar)
+local isMin = false
+local lastSize = Main.Size
+BtnM.MouseButton1Click:Connect(function()
+    isMin = not isMin
+    if isMin then
+        lastSize = Main.Size
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, Main.Size.X.Offset, 0, 35)}):Play()
+    else
+        TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = lastSize}):Play()
+    end
+end)
+
+-- Drag Main Frame
+local dragging, dragStart, startPos
+Top.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true; dragStart = input.Position; startPos = Main.Position
+    end
+end)
+Top.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+UserInput.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- ==========================================
+-- RESIZE HANDLE (Pojok Kanan Bawah)
+-- ==========================================
+local Resizer = Instance.new("TextButton", Main)
+Resizer.Size = UDim2.new(0, 20, 0, 20)
+Resizer.Position = UDim2.new(1, -20, 1, -20)
+Resizer.BackgroundTransparency = 1
+Resizer.Text = "⌟"
+Resizer.TextColor3 = Theme.TextDim
+Resizer.TextSize = 16
+Resizer.Font = Enum.Font.Gotham
+Resizer.ZIndex = 10
+
+local isResizing, resizeStart, startSize
+Resizer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then
+        isResizing = true
+        resizeStart = input.Position
+        startSize = Main.Size
+    end
+end)
+Resizer.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end
+end)
+UserInput.InputChanged:Connect(function(input)
+    if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - resizeStart
+        local newX = math.clamp(startSize.X.Offset + delta.X, 450, 800)
+        local newY = math.clamp(startSize.Y.Offset + delta.Y, 250, 600)
+        Main.Size = UDim2.new(0, newX, 0, newY)
+        lastSize = Main.Size
+    end
+end)
+
+-- ==========================================
+-- SIDEBAR & KONTEN
+-- ==========================================
+local ContentContainer = Instance.new("Frame", Main)
+ContentContainer.Size = UDim2.new(1, 0, 1, -35)
+ContentContainer.Position = UDim2.new(0, 0, 0, 35)
+ContentContainer.BackgroundTransparency = 1
+
+local Side = Instance.new("Frame", ContentContainer)
+Side.Size = UDim2.new(0, 140, 1, 0)
+Side.BackgroundColor3 = Theme.SideBG
+Side.BorderSizePixel = 0
+
+local SideLine = Instance.new("Frame", Side)
+SideLine.Size = UDim2.new(0, 1, 1, 0)
+SideLine.Position = UDim2.new(1, -1, 0, 0)
+SideLine.BackgroundColor3 = Theme.Line
+SideLine.BorderSizePixel = 0
+
+local SideScroll = Instance.new("ScrollingFrame", Side)
+SideScroll.Size = UDim2.new(1, 0, 1, 0)
+SideScroll.BackgroundTransparency = 1
+SideScroll.ScrollBarThickness = 0
+SideScroll.BorderSizePixel = 0
+
+local SideList = Instance.new("UIListLayout", SideScroll)
+SideList.Padding = UDim.new(0, 2)
+local SidePad = Instance.new("UIPadding", SideScroll)
+SidePad.PaddingTop = UDim.new(0, 8)
+SidePad.PaddingLeft = UDim.new(0, 8)
+SidePad.PaddingRight = UDim.new(0, 8)
+
+local ContentArea = Instance.new("Frame", ContentContainer)
+ContentArea.Size = UDim2.new(1, -140, 1, 0)
+ContentArea.Position = UDim2.new(0, 140, 0, 0)
+ContentArea.BackgroundTransparency = 1
+
+local Pages = {}
+
+local function CreateTab(name, isFirst)
+    local Btn = Instance.new("TextButton", SideScroll)
+    Btn.Size = UDim2.new(1, 0, 0, 34)
+    Btn.BackgroundColor3 = isFirst and Theme.CardBG or Theme.SideBG
+    Btn.Text = "   " .. name
+    Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim
+    Btn.Font = Enum.Font.GothamMedium
+    Btn.TextSize = 13
+    Btn.BorderSizePixel = 0
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
     
-    ApplyCorner(frame, 8)
+    local Indicator = Instance.new("Frame", Btn)
+    Indicator.Size = UDim2.new(0, 3, 0, 16)
+    Indicator.Position = UDim2.new(0, 0, 0.5, -8)
+    Indicator.BackgroundColor3 = Theme.RedzText
+    Indicator.BorderSizePixel = 0
+    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0)
+    Indicator.Visible = isFirst
     
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = StyleUI.Theme.Border
-    stroke.Thickness = 1
-    stroke.Parent = frame
-
-    return frame
-end
-
--- 2. Bikin Sidebar
-function StyleUI.CreateSidebar(parent, width)
-    local sidebar = Instance.new("Frame")
-    sidebar.Size = UDim2.new(0, width, 1, 0)
-    sidebar.BackgroundColor3 = StyleUI.Theme.SidebarBG
-    sidebar.BorderSizePixel = 0
-    sidebar.Parent = parent
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = StyleUI.Theme.Border
-    stroke.Thickness = 1
-    stroke.Parent = sidebar
-
-    local listLayout = Instance.new("UIListLayout")
-    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    listLayout.Padding = UDim.new(0, 5)
-    listLayout.Parent = sidebar
-
-    local padding = Instance.new("UIPadding")
-    padding.PaddingTop = UDim.new(0, 10)
-    padding.PaddingLeft = UDim.new(0, 10)
-    padding.PaddingRight = UDim.new(0, 10)
-    padding.Parent = sidebar
-
-    return sidebar
-end
-
--- 3. Bikin Tab Button di Sidebar
-function StyleUI.CreateTabButton(parent, text)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = StyleUI.Theme.SidebarBG
-    btn.Text = "  " .. text
-    btn.TextColor3 = StyleUI.Theme.TextDim
-    btn.Font = StyleUI.Font.Regular
-    btn.TextSize = 14
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.BorderSizePixel = 0
-    btn.AutoButtonColor = false
-    btn.Parent = parent
-
-    ApplyCorner(btn, 6)
-
-    -- Animasi Visual Murni
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = StyleUI.Theme.ElementHov,
-            TextColor3 = StyleUI.Theme.Text
-        }):Play()
-    end)
-
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = StyleUI.Theme.SidebarBG,
-            TextColor3 = StyleUI.Theme.TextDim
-        }):Play()
-    end)
-
-    return btn
-end
-
--- 4. Bikin Section Header (Teks kategori dalam tab)
-function StyleUI.CreateSectionHeader(parent, text)
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 0, 25)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = StyleUI.Theme.Text
-    label.Font = StyleUI.Font.Bold
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = parent
-    
-    return label
-end
-
--- 5. Bikin Toggle (Gaya Redz Hub Modern)
-function StyleUI.CreateToggle(parent, text, defaultState, callback)
-    local state = defaultState or false
-
-    local container = Instance.new("TextButton")
-    container.Size = UDim2.new(1, 0, 0, 38)
-    container.BackgroundColor3 = StyleUI.Theme.ElementBG
-    container.Text = ""
-    container.AutoButtonColor = false
-    container.BorderSizePixel = 0
-    container.Parent = parent
-
-    ApplyCorner(container, 6)
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -60, 1, 0)
-    label.Position = UDim2.new(0, 15, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = text
-    label.TextColor3 = StyleUI.Theme.Text
-    label.Font = StyleUI.Font.Regular
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = container
-
-    local switchBG = Instance.new("Frame")
-    switchBG.Size = UDim2.new(0, 40, 0, 20)
-    switchBG.Position = UDim2.new(1, -50, 0.5, -10)
-    switchBG.BackgroundColor3 = state and StyleUI.Theme.Accent or StyleUI.Theme.Border
-    switchBG.BorderSizePixel = 0
-    switchBG.Parent = container
-
-    ApplyCorner(switchBG, 10) -- Pil penuh
-
-    local indicator = Instance.new("Frame")
-    indicator.Size = UDim2.new(0, 16, 0, 16)
-    indicator.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-    indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    indicator.BorderSizePixel = 0
-    indicator.Parent = switchBG
-
-    ApplyCorner(indicator, 8)
-
-    -- Animasi Visual Hover & Click
-    container.MouseEnter:Connect(function()
-        TweenService:Create(container, TweenInfo.new(0.2), {BackgroundColor3 = StyleUI.Theme.ElementHov}):Play()
-    end)
-    container.MouseLeave:Connect(function()
-        TweenService:Create(container, TweenInfo.new(0.2), {BackgroundColor3 = StyleUI.Theme.ElementBG}):Play()
-    end)
-
-    container.MouseButton1Click:Connect(function()
-        state = not state
-        -- Animasi UI
-        TweenService:Create(switchBG, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            BackgroundColor3 = state and StyleUI.Theme.Accent or StyleUI.Theme.Border
-        }):Play()
-        TweenService:Create(indicator, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
-        }):Play()
-        
-        -- Panggil fungsi dari main.lua jika ada
-        if callback then
-            callback(state)
+    Btn.MouseEnter:Connect(function()
+        if not Indicator.Visible then
+            TweenService:Create(Btn, TweenInfo.new(0.15), {TextColor3 = Theme.Text}):Play()
         end
     end)
-
-    return container
+    Btn.MouseLeave:Connect(function()
+        if not Indicator.Visible then
+            TweenService:Create(Btn, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play()
+        end
+    end)
+    
+    local Page = Instance.new("ScrollingFrame", ContentArea)
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.ScrollBarThickness = 2
+    Page.ScrollBarImageColor3 = Theme.Line
+    Page.Visible = isFirst
+    Page.BorderSizePixel = 0
+    
+    local List = Instance.new("UIListLayout", Page)
+    List.Padding = UDim.new(0, 6)
+    local Pad = Instance.new("UIPadding", Page)
+    Pad.PaddingTop = UDim.new(0, 12)
+    Pad.PaddingLeft = UDim.new(0, 12)
+    Pad.PaddingRight = UDim.new(0, 12)
+    Pad.PaddingBottom = UDim.new(0, 12)
+    
+    Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator}
+    
+    Btn.MouseButton1Click:Connect(function()
+        for tName, data in pairs(Pages) do
+            local active = (tName == name)
+            data.Page.Visible = active
+            data.Ind.Visible = active
+            TweenService:Create(data.Btn, TweenInfo.new(0.15), {
+                BackgroundColor3 = active and Theme.CardBG or Theme.SideBG,
+                TextColor3 = active and Theme.Text or Theme.TextDim
+            }):Play()
+        end
+    end)
+    
+    return Page
 end
 
-return StyleUI
+-- ==========================================
+-- UI ELEMENTS (Sections & Toggles)
+-- ==========================================
+local function CreateSection(parent, text)
+    local F = Instance.new("Frame", parent)
+    F.Size = UDim2.new(1, 0, 0, 24)
+    F.BackgroundTransparency = 1
+    
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, 0, 1, 0)
+    L.Text = text
+    L.TextColor3 = Theme.Text
+    L.Font = Enum.Font.GothamBold
+    L.TextSize = 14
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
+end
+
+local function CreateToggle(parent, text, stateRef, callback)
+    local F = Instance.new("TextButton", parent)
+    F.Size = UDim2.new(1, 0, 0, 38)
+    F.BackgroundColor3 = Theme.CardBG
+    F.BorderSizePixel = 0
+    F.Text = ""
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", F).Color = Theme.Line
+    
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, -60, 1, 0)
+    L.Position = UDim2.new(0, 12, 0, 0)
+    L.Text = text
+    L.TextColor3 = Theme.TextDim
+    L.Font = Enum.Font.GothamMedium
+    L.TextSize = 13
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
+    
+    local Sw = Instance.new("Frame", F)
+    Sw.Size = UDim2.new(0, 38, 0, 20)
+    Sw.Position = UDim2.new(1, -50, 0.5, -10)
+    Sw.BackgroundColor3 = stateRef and Theme.ToggleOn or Theme.ToggleOff
+    Sw.BorderSizePixel = 0
+    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0)
+    
+    local Dot = Instance.new("Frame", Sw)
+    Dot.Size = UDim2.new(0, 14, 0, 14)
+    Dot.Position = stateRef and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Dot.BorderSizePixel = 0
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
+    
+    F.MouseEnter:Connect(function() 
+        TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play()
+        TweenService:Create(L, TweenInfo.new(0.15), {TextColor3 = Theme.Text}):Play()
+    end)
+    F.MouseLeave:Connect(function() 
+        TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardBG}):Play()
+        TweenService:Create(L, TweenInfo.new(0.15), {TextColor3 = Theme.TextDim}):Play()
+    end)
+    
+    F.MouseButton1Click:Connect(function()
+        stateRef = not stateRef
+        TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.ToggleOn or Theme.ToggleOff}):Play()
+        TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}):Play()
+        if callback then callback(stateRef) end
+    end)
+end
+
+-- ==========================================
+-- BUILD TAB ESP
+-- ==========================================
+local EspTab = CreateTab("ESP", true)
+local SettingTab = CreateTab("Settings", false)
+
+CreateSection(EspTab, "DEVIL FRUITS")
+CreateToggle(EspTab, "Fruit ESP (Text Only)", false, function(state)
+    -- Logic ESP lu pasang di sini nanti
+    print("Fruit ESP:", state)
+end)
+
+CreateSection(EspTab, "PLAYERS")
+CreateToggle(EspTab, "Player Name", false, nil)
+CreateToggle(EspTab, "Player Health", false, nil)
