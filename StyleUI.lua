@@ -1,4 +1,4 @@
--- CatHUB v9.7: Pure Dark, Perfect Toggle, Working Resizer
+-- CatHUB v9.8: Title Update, Status Tab Added, No Downgrade
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
@@ -90,10 +90,11 @@ TopFix.Position = UDim2.new(0, 0, 1, -10)
 TopFix.BackgroundColor3 = Theme.TopBG
 TopFix.BorderSizePixel = 0
 
+-- UPDATE TITLE
 local TitleStr = Instance.new("TextLabel", Top)
-TitleStr.Size = UDim2.new(0, 200, 1, 0)
+TitleStr.Size = UDim2.new(0, 300, 1, 0) -- Dilebarin biar teks ga kepotong
 TitleStr.Position = UDim2.new(0, 15, 0, 0)
-TitleStr.Text = "CatHUB"
+TitleStr.Text = "CatHub Blox Fruits [Freemium]"
 TitleStr.TextColor3 = Theme.Text
 TitleStr.Font = Enum.Font.GothamMedium
 TitleStr.TextSize = 13
@@ -156,7 +157,7 @@ UserInput.InputChanged:Connect(function(input)
 end)
 
 -- ==========================================
--- RESIZER (FIXED)
+-- RESIZER 
 -- ==========================================
 local Resizer = Instance.new("TextButton", Main)
 Resizer.Size = UDim2.new(0, 20, 0, 20)
@@ -322,7 +323,6 @@ local function CreateToggle(parent, text, stateRef, callback)
     L.TextXAlignment = Enum.TextXAlignment.Left
     L.BackgroundTransparency = 1
     
-    -- Fix Toggle Shape (Bulat sempurna / pill-shape)
     local Sw = Instance.new("Frame", F)
     Sw.Size = UDim2.new(0, 36, 0, 18)
     Sw.Position = UDim2.new(1, -48, 0.5, -9)
@@ -351,10 +351,18 @@ end
 -- ==========================================
 -- BUILD TABS 
 -- ==========================================
-local EspTab = CreateTab("ESP", true)
+local StatusTab = CreateTab("Status", true) -- Tab pertama
+local DevilFruitsTab = CreateTab("Devil Fruits", false) -- Tab kedua
 
-CreateSection(EspTab, "DEVIL FRUITS")
-CreateToggle(EspTab, "Fruit ESP (Text Only)", false, function(state)
+-- Isi Tab Status (Placeholder)
+CreateSection(StatusTab, "PLAYER STATUS")
+CreateToggle(StatusTab, "Show Player Stats", false, function(state)
+    -- Logic placeholder
+end)
+
+-- Isi Tab Devil Fruits
+CreateSection(DevilFruitsTab, "DEVIL FRUITS")
+CreateToggle(DevilFruitsTab, "Fruit ESP (Text Only)", false, function(state)
     print("Fruit ESP:", state)
 end)
 
