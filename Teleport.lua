@@ -1,54 +1,36 @@
--- CatHUB FREEMIUM: Teleport Module (v5.0 Smooth Tween)
-local UI = _G.CatHUB_UI
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local LocalPlayer = Players.LocalPlayer
+-- CatHUB SUPREMACY: Teleport Module v8.0
+local UI = _G.UI
+local LP = game:GetService("Players").LocalPlayer
+local TS = game:GetService("TweenService")
 
-local TPTab = UI:CreateTab("Teleport")
+local Tab = UI:NewTab("Teleport")
+UI:NewSlider(Tab, "TweenSpeed", "TP Speed", 100, 1000)
 
-local function TweenTP(targetCF)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    
-    _G.CatHUB_TPing = true
-    local dist = (targetCF.Position - hrp.Position).Magnitude
-    local tInfo = TweenInfo.new(dist/300, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tInfo, {CFrame = targetCF * CFrame.new(0, 5, 0)})
-    
-    tween:Play()
-    tween.Completed:Wait()
-    _G.CatHUB_TPing = false
+local function TP(cf)
+    local dist = (cf.Position - LP.Character.PrimaryPart.Position).Magnitude
+    local t = TS:Create(LP.Character.PrimaryPart, TweenInfo.new(dist/UI.Settings.TweenSpeed, Enum.EasingStyle.Linear), {CFrame = cf * CFrame.new(0,5,0)})
+    t:Play()
+    _G.TPing = true
+    t.Completed:Connect(function() _G.TPing = false end)
 end
 
 local function Refresh()
-    for _, v in pairs(TPTab:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            local C = Instance.new("Frame", TPTab)
-            C.Size = UDim2.new(1, 0, 0, 35)
-            C.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-            Instance.new("UICorner", C)
-            local B = Instance.new("TextButton", C)
-            B.Size = UDim2.new(1, -60, 1, 0)
+    for _,v in pairs(Tab:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
+    for _,p in pairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= LP then
+            local F = Instance.new("Frame", Tab)
+            F.Size = UDim2.new(1, 0, 0, 35)
+            F.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            Instance.new("UICorner", F)
+            local B = Instance.new("TextButton", F)
+            B.Size = UDim2.new(1, 0, 1, 0)
             B.Text = p.Name:upper()
             B.TextColor3 = Color3.fromRGB(200, 200, 200)
             B.BackgroundTransparency = 1
-            local TP = Instance.new("TextButton", C)
-            TP.Size = UDim2.new(0, 50, 0, 22)
-            TP.Position = UDim2.new(1, -55, 0.5, -11)
-            TP.BackgroundColor3 = UI.AccentColor
-            TP.Text = "TWEEN"
-            TP.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Instance.new("UICorner", TP)
-            
-            TP.MouseButton1Click:Connect(function()
-                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    TweenTP(p.Character.HumanoidRootPart.CFrame)
-                end
-            end)
+            B.MouseButton1Click:Connect(function() if p.Character then TP(p.Character.PrimaryPart.CFrame) end end)
         end
     end
 end
 
-Players.PlayerAdded:Connect(Refresh)
+game:GetService("Players").PlayerAdded:Connect(Refresh)
 Refresh()
