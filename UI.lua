@@ -1,4 +1,4 @@
--- CatHUB FREEMIUM: Master UI (Bug Fix & Resize Edition)
+-- CatHUB FREEMIUM: UI Module (Extended Tabs Edition)
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -22,11 +22,10 @@ ScreenGui.Name = "CatHUB_Freemium"
 ScreenGui.Parent = CoreGui
 UI_Lib.MainGui = ScreenGui
 
--- Main Frame (Compact Default)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 450, 0, 280)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -140)
+MainFrame.Size = UDim2.new(0, 460, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -230, 0.5, -150)
 MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -34,7 +33,7 @@ MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 6)
 
--- Resize Handle (Bottom Right)
+-- Resize Engine
 local ResizeBtn = Instance.new("TextButton")
 ResizeBtn.Size = UDim2.new(0, 15, 0, 15)
 ResizeBtn.Position = UDim2.new(1, -15, 1, -15)
@@ -52,15 +51,14 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
         local mousePos = UserInputService:GetMouseLocation()
-        local newWidth = math.max(400, mousePos.X - MainFrame.AbsolutePosition.X)
-        local newHeight = math.max(250, (mousePos.Y - 36) - MainFrame.AbsolutePosition.Y)
-        MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+        local nW = math.max(400, mousePos.X - MainFrame.AbsolutePosition.X)
+        local nH = math.max(250, (mousePos.Y - 36) - MainFrame.AbsolutePosition.Y)
+        MainFrame.Size = UDim2.new(0, nW, 0, nH)
     end
 end)
 
--- Top Bar
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.Size = UDim2.new(1, 0, 0, 32)
 TopBar.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 TopBar.Parent = MainFrame
 Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 6)
@@ -72,14 +70,13 @@ Title.BackgroundTransparency = 1
 Title.Text = "CATHUB FREEMIUM"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 13
+Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
--- Close Button (FIXED: Toggle Visibility instead of Destroy)
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -30, 0, 0)
+CloseBtn.Size = UDim2.new(0, 32, 0, 32)
+CloseBtn.Position = UDim2.new(1, -32, 0, 0)
 CloseBtn.BackgroundTransparency = 1
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -91,10 +88,9 @@ CloseBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
 end)
 
--- Tab Sidebar
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 120, 1, -40)
-Sidebar.Position = UDim2.new(0, 5, 0, 35)
+Sidebar.Size = UDim2.new(0, 130, 1, -42)
+Sidebar.Position = UDim2.new(0, 5, 0, 37)
 Sidebar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 Sidebar.Parent = MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 4)
@@ -105,12 +101,11 @@ TabList.Position = UDim2.new(0, 3, 0, 3)
 TabList.BackgroundTransparency = 1
 TabList.ScrollBarThickness = 0
 TabList.Parent = Sidebar
-Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 4)
+Instance.new("UIListLayout", TabList).Padding = UDim.new(0, 5)
 
--- Content Area
 local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -135, 1, -40)
-ContentArea.Position = UDim2.new(0, 130, 0, 35)
+ContentArea.Size = UDim2.new(1, -145, 1, -42)
+ContentArea.Position = UDim2.new(0, 140, 0, 37)
 ContentArea.BackgroundTransparency = 1
 ContentArea.Parent = MainFrame
 
@@ -122,15 +117,15 @@ function UI_Lib:CreateTab(name)
     Container.Visible = false
     Container.ScrollBarThickness = 2
     Container.Parent = ContentArea
-    Instance.new("UIListLayout", Container).Padding = UDim.new(0, 5)
+    Instance.new("UIListLayout", Container).Padding = UDim.new(0, 6)
 
     local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(1, 0, 0, 28)
+    Btn.Size = UDim2.new(1, 0, 0, 38) -- FIXED: Taller/Longer Tabs as requested
     Btn.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     Btn.Text = name:upper()
     Btn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    Btn.Font = Enum.Font.SourceSans
-    Btn.TextSize = 11
+    Btn.Font = Enum.Font.SourceSansBold
+    Btn.TextSize = 12
     Btn.Parent = TabList
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
 
@@ -139,17 +134,18 @@ function UI_Lib:CreateTab(name)
         Container.Visible = true
         self.CurrentTab = Container
         for _, v in pairs(TabList:GetChildren()) do
-            if v:IsA("TextButton") then v.TextColor3 = Color3.fromRGB(150, 150, 150) v.BackgroundColor3 = Color3.fromRGB(20, 20, 20) end
+            if v:IsA("TextButton") then 
+                TweenService:Create(v, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150), BackgroundColor3 = Color3.fromRGB(20, 20, 20)}):Play()
+            end
         end
-        Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        TweenService:Create(Btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255), BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
     end)
     return Container
 end
 
 function UI_Lib:CreateSwitch(parent, title, callback)
     local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, 0, 0, 40)
+    Card.Size = UDim2.new(1, 0, 0, 42)
     Card.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
     Card.Parent = parent
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
@@ -159,23 +155,23 @@ function UI_Lib:CreateSwitch(parent, title, callback)
     Label.Position = UDim2.new(0, 12, 0, 0)
     Label.BackgroundTransparency = 1
     Label.Text = title
-    Label.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
     Label.Font = Enum.Font.SourceSansBold
     Label.TextSize = 12
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = Card
 
     local Bg = Instance.new("TextButton")
-    Bg.Size = UDim2.new(0, 34, 0, 18)
-    Bg.Position = UDim2.new(1, -44, 0.5, -9)
+    Bg.Size = UDim2.new(0, 36, 0, 20)
+    Bg.Position = UDim2.new(1, -48, 0.5, -10)
     Bg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     Bg.Text = ""
     Bg.Parent = Card
     Instance.new("UICorner", Bg).CornerRadius = UDim.new(1, 0)
 
     local Knob = Instance.new("Frame")
-    Knob.Size = UDim2.new(0, 12, 0, 12)
-    Knob.Position = UDim2.new(0, 3, 0.5, -6)
+    Knob.Size = UDim2.new(0, 14, 0, 14)
+    Knob.Position = UDim2.new(0, 3, 0.5, -7)
     Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Knob.Parent = Bg
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
@@ -183,7 +179,7 @@ function UI_Lib:CreateSwitch(parent, title, callback)
     local active = false
     Bg.MouseButton1Click:Connect(function()
         active = not active
-        TweenService:Create(Knob, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6)}):Play()
+        TweenService:Create(Knob, TweenInfo.new(0.2), {Position = active and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}):Play()
         TweenService:Create(Bg, TweenInfo.new(0.2), {BackgroundColor3 = active and Color3.fromRGB(0, 180, 100) or Color3.fromRGB(40, 40, 40)}):Play()
         callback(active)
     end)
@@ -191,7 +187,7 @@ end
 
 function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
     local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, 0, 0, 50)
+    Card.Size = UDim2.new(1, 0, 0, 55)
     Card.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
     Card.Parent = parent
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
@@ -209,7 +205,7 @@ function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
 
     local Bar = Instance.new("Frame")
     Bar.Size = UDim2.new(1, -24, 0, 4)
-    Bar.Position = UDim2.new(0, 12, 0, 32)
+    Bar.Position = UDim2.new(0, 12, 0, 35)
     Bar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     Bar.Parent = Card
     Instance.new("UICorner", Bar)
@@ -223,8 +219,8 @@ function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
     local dragging = false
     local function move()
         local mouseX = UserInputService:GetMouseLocation().X
-        local relativeX = mouseX - Bar.AbsolutePosition.X
-        local perc = math.clamp(relativeX / Bar.AbsoluteSize.X, 0, 1)
+        local relX = mouseX - Bar.AbsolutePosition.X
+        local perc = math.clamp(relX / Bar.AbsoluteSize.X, 0, 1)
         local val = math.floor(min + (max - min) * perc)
         Fill.Size = UDim2.new(perc, 0, 1, 0)
         T.Text = title .. ": " .. val
@@ -237,17 +233,17 @@ function UI_Lib:CreateSlider(parent, title, min, max, default, callback)
 end
 
 -- === TABS ===
-local FinderTab = UI_Lib:CreateTab("Fruits Finder")
-local SettingTab = UI_Lib:CreateTab("Setting")
-local StatusTab = UI_Lib:CreateTab("Status")
+local TabFinder = UI_Lib:CreateTab("Fruits Finder")
+local TabSetting = UI_Lib:CreateTab("Setting")
+local TabStatus = UI_Lib:CreateTab("Status")
 
-UI_Lib:CreateSwitch(FinderTab, "Fruit ESP", function(v) UI_Lib.Settings.ESP_Enabled = v end)
-UI_Lib:CreateSwitch(FinderTab, "Auto Tween", function(v) UI_Lib.Settings.Tween_Enabled = v end)
-UI_Lib:CreateSwitch(FinderTab, "Auto Store Fruit", function(v) UI_Lib.Settings.AutoStore = v end)
-UI_Lib:CreateSlider(SettingTab, "Tween Speed", 100, 500, 300, function(v) UI_Lib.Settings.Tween_Speed = v end)
+UI_Lib:CreateSwitch(TabFinder, "Fruit ESP", function(v) UI_Lib.Settings.ESP_Enabled = v end)
+UI_Lib:CreateSwitch(TabFinder, "Auto Tween", function(v) UI_Lib.Settings.Tween_Enabled = v end)
+UI_Lib:CreateSwitch(TabFinder, "Auto Store", function(v) UI_Lib.Settings.AutoStore = v end)
+UI_Lib:CreateSlider(TabSetting, "Tween Speed", 100, 500, 300, function(v) UI_Lib.Settings.Tween_Speed = v end)
 
-FinderTab.Visible = true
-UI_Lib.CurrentTab = FinderTab
+TabFinder.Visible = true
+UI_Lib.CurrentTab = TabFinder
 
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and input.KeyCode == Enum.KeyCode.G and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
