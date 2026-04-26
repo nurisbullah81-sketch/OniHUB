@@ -15,11 +15,10 @@ local function FormatNum(num)
     return formatted
 end
 
--- FUNGSI PINTER: Baca stat berdasarkan keyword, ga peduli nama aslinya apa
 local function GetStat(ls, keywords)
     if not ls then return 0, "Unknown" end
     for _, child in pairs(ls:GetChildren()) do
-        if child:IsA("IntValue") or child:IsA("NumberValue") then
+        if child:IsA("IntValue") or child:IsA("NumberValue") or child:IsA("IntConstrainedValue") then
             local nameLower = string.lower(child.Name)
             for _, keyword in pairs(keywords) do
                 if string.find(nameLower, string.lower(keyword)) then
@@ -31,38 +30,25 @@ local function GetStat(ls, keywords)
     return 0, "Unknown"
 end
 
-local hasPrinted = false
-
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
             local ls = LocalPlayer:FindFirstChild("leaderstats")
             
-            -- DEBUG: Print isi leaderstats 1 kali aja biar lu tau isinya apa
-            if ls and not hasPrinted then
-                hasPrinted = true
-                print("[CatHUB DEBUG] Leaderstats ditemukan:")
-                for _, child in pairs(ls:GetChildren()) do
-                    print(" -> " .. child.Name .. " (Tipe: " .. child.ClassName .. ") = " .. tostring(child.Value))
-                end
-            end
+            -- Scan Level (Cari kata level, lvl, atau exp)
+            local lvl, lvlName = GetStat(ls, {"Level", "Lvl", "Exp", "Xp"})
             
-            -- Scan Level (Cari kata "level" atau "lvl")
-            local lvl, lvlName = GetStat(ls, {"Level", "Lvl"})
-            
-            -- Scan Uang (Cari kata "$", "money", "belly", "cash")
+            -- Scan Uang 
             local money, moneyName = GetStat(ls, {"$", "Money", "Belly", "Cash"})
             
-            -- Scan Fragment (Cari kata "fragment" atau "frag")
+            -- Scan Fragment 
             local frag, fragName = GetStat(ls, {"Fragment", "Frag"})
             
-            -- Scan Bounty/Honor (Cari kata "bounty" atau "honor")
+            -- Scan Bounty/Honor 
             local bounty, bountyName = GetStat(ls, {"Bounty", "Honor"})
             
-            -- Update UI Labels
             Labels.Level.Text = "Level: " .. FormatNum(lvl)
             
-            -- Rapihin nama uang kalau ketemu simbol aneh
             local displayMoneyName = (moneyName == "$" or string.lower(moneyName) == "money") and "Money" or moneyName
             Labels.Money.Text = displayMoneyName .. ": $" .. FormatNum(money)
             
@@ -74,7 +60,6 @@ task.spawn(function()
             
             Labels.Players.Text = "Players: " .. #Players:GetPlayers()
             
-            -- Logic Waktu & Cuaca
             local clockTime = Lighting.ClockTime
             local h = math.floor(clockTime)
             local m = math.floor((clockTime % 1) * 60)
@@ -89,14 +74,17 @@ task.spawn(function()
                 Labels.Moon.Text = isFull and "Moon: Full Moon" or "Moon: Normal"
             end
             
-            -- Logic Hitung Buah
-            local count = 0
-            for _, v in pairs(Workspace:GetChildren()) do
-                if v:IsA("Tool") and v.Name:lower():find("fruit") then
-                    count = count + 1
+            -- LOGIC NAMA BUAH
+            local fruitList = _G.Cat.GetFruitsList and _G.Cat.GetFruitsList() or {}
+            if #fruitList > 0 then
+                local fruitText = table.concat(fruitList, ", ")
+                if string.len(fruitText) > 35 then
+                    fruitText = string.sub(fruitText, 1, 35) .. "..."
                 end
+                Labels.Fruits.Text = "Fruits: " .. fruitText
+            else
+                Labels.Fruits.Text = "Fruits: None"
             end
-            Labels.Fruits.Text = "Spawned Fruits: " .. count
         end)
     end
 end)
