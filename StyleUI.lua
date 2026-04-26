@@ -1,111 +1,89 @@
---]
+-- StyleUI.lua
+-- Desain Modern & Elegan terinspirasi dari Redz Hub (Darker Theme)
 
 local StyleUI = {}
 
 --// Services
 local TweenService = game:GetService("TweenService")
 
---// Theme Configuration (Derived from Redz Hub Research )
+--// Konfigurasi Tema (Berdasarkan parameter Redz Hub)
 StyleUI.Theme = {
-    -- Background Colors
-    MainBG = Color3.fromRGB(25, 25, 25),      -- Darker Theme Background
-    SecondaryBG = Color3.fromRGB(30, 30, 30), -- Panel/Section Background
-    TopBarBG = Color3.fromRGB(32, 32, 32),    -- Subtle Top Gradient
+    MainBG = Color3.fromRGB(25, 25, 25),      -- Latar belakang utama (Darker)
+    SecondaryBG = Color3.fromRGB(30, 30, 30), -- Latar belakang sidebar/panel
+    Accent = Color3.fromRGB(88, 101, 242),    -- Warna Blurple khas Redz Hub
+    Stroke = Color3.fromRGB(40, 40, 40),      -- Warna garis tepi (stroke)
+    TextPrimary = Color3.fromRGB(243, 243, 243), -- Teks utama cerah
+    TextSecondary = Color3.fromRGB(180, 180, 180), -- Teks sekunder redup
     
-    -- Accent & Interactive
-    Accent = Color3.fromRGB(88, 101, 242),    -- Classic Blurple Accent
-    AccentSoft = Color3.fromRGB(65, 150, 255),-- Secondary Blue Accent
-    Stroke = Color3.fromRGB(40, 40, 40),      -- Standard Border Color
-    StrokeHighlight = Color3.fromRGB(88, 101, 242), -- Active Border
+    -- Geometri [1, 2]
+    CornerRadius = UDim.new(0, 8),            -- Radius sudut standar
+    ButtonCorner = UDim.new(0, 6),            -- Radius sudut tombol
+    CircleCorner = UDim.new(0, 35),          -- Radius tombol minimalisasi
     
-    -- Text Colors
-    TextPrimary = Color3.fromRGB(243, 243, 243),
-    TextSecondary = Color3.fromRGB(180, 180, 180),
-    TextDim = Color3.fromRGB(120, 120, 120),
-    
-    -- Geometry & Physics
-    CornerRadius = UDim.new(0, 8),            -- Consistent Modern Curve
-    ButtonCorner = UDim.new(0, 6),            -- Tighter Curvature for Buttons
-    TransitionSpeed = 0.25,                   -- Smooth Response Time
+    -- Animasi 
+    TweenTime = 0.25,
     EasingStyle = Enum.EasingStyle.Quad,
     EasingDirection = Enum.EasingDirection.Out
 }
 
---// Animation Helper
+--// Helper: Animasi Transisi
 local function PlayTween(instance, properties)
-    local tweenInfo = TweenInfo.new(
-        StyleUI.Theme.TransitionSpeed, 
-        StyleUI.Theme.EasingStyle, 
-        StyleUI.Theme.EasingDirection
-    )
-    TweenService:Create(instance, tweenInfo, properties):Play()
+    local info = TweenInfo.new(StyleUI.Theme.TweenTime, StyleUI.Theme.EasingStyle, StyleUI.Theme.EasingDirection)
+    TweenService:Create(instance, info, properties):Play()
 end
 
---// Styling Functions
-function StyleUI.StyleMainFrame(frame)
+--// Penerapan Gaya pada Main Frame
+function StyleUI.ApplyMainStyle(frame)
     frame.BackgroundColor3 = StyleUI.Theme.MainBG
     frame.BorderSizePixel = 0
     
-    -- Apply UICorner 
-    local corner = Instance.new("UICorner")
+    local corner = Instance.new("UICorner", frame)
     corner.CornerRadius = StyleUI.Theme.CornerRadius
-    corner.Parent = frame
     
-    -- Apply UIStroke for Depth 
-    local stroke = Instance.new("UIStroke")
+    local stroke = Instance.new("UIStroke", frame)
     stroke.Color = StyleUI.Theme.Stroke
     stroke.Thickness = 1.2
-    stroke.Transparency = 0.5
     stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    stroke.Parent = frame
-
-    -- Subtle Gradient for Elegance 
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, StyleUI.Theme.TopBarBG),
-        ColorSequenceKeypoint.new(1, StyleUI.Theme.MainBG)
-    })
-    gradient.Rotation = 90
-    gradient.Parent = frame
 end
 
-function StyleUI.StyleSidebar(sidebar)
+--// Penerapan Gaya pada Sidebar [3]
+function StyleUI.ApplySidebarStyle(sidebar)
     sidebar.BackgroundColor3 = StyleUI.Theme.SecondaryBG
     sidebar.BorderSizePixel = 0
     
-    local corner = Instance.new("UICorner")
+    local corner = Instance.new("UICorner", sidebar)
     corner.CornerRadius = StyleUI.Theme.CornerRadius
-    corner.Parent = sidebar
 end
 
-function StyleUI.StyleTabButton(button, isSelected)
-    button.BackgroundColor3 = isSelected and StyleUI.Theme.Accent or Color3.fromRGB(35, 35, 35)
-    button.TextColor3 = isSelected and StyleUI.Theme.TextPrimary or StyleUI.Theme.TextSecondary
+--// Gaya Tab Button (Sidebar Item)
+function StyleUI.ApplyTabButtonStyle(button, active)
+    button.BackgroundColor3 = active and StyleUI.Theme.Accent or Color3.fromRGB(35, 35, 35)
+    button.TextColor3 = active and StyleUI.Theme.TextPrimary or StyleUI.Theme.TextSecondary
     button.Font = Enum.Font.GothamMedium
     button.TextSize = 13
     
-    local corner = Instance.new("UICorner")
+    local corner = Instance.new("UICorner", button)
     corner.CornerRadius = StyleUI.Theme.ButtonCorner
-    corner.Parent = button
 
-    -- Interaction 
+    -- Hover Interaction [3]
     button.MouseEnter:Connect(function()
-        if not isSelected then
+        if not active then
             PlayTween(button, {BackgroundColor3 = Color3.fromRGB(45, 45, 45)})
         end
     end)
     button.MouseLeave:Connect(function()
-        if not isSelected then
+        if not active then
             PlayTween(button, {BackgroundColor3 = Color3.fromRGB(35, 35, 35)})
         end
     end)
 end
 
-function StyleUI.StyleToggle(toggleContainer, state)
-    local track = toggleContainer:FindFirstChild("Track") or toggleContainer
+--// Gaya Toggle Switch (Kapsul Modern) [1, 4]
+function StyleUI.ApplyToggleStyle(toggleFrame, active)
+    local track = toggleFrame:FindFirstChild("Track") or toggleFrame
     local dot = track:FindFirstChild("Dot")
     
-    if state then
+    if active then
         PlayTween(track, {BackgroundColor3 = StyleUI.Theme.Accent})
         if dot then PlayTween(dot, {Position = UDim2.new(1, -18, 0.5, 0)}) end
     else
@@ -114,38 +92,27 @@ function StyleUI.StyleToggle(toggleContainer, state)
     end
 end
 
-function StyleUI.StyleButton(button)
+--// Gaya Section Header 
+function StyleUI.ApplySectionStyle(label)
+    label.TextColor3 = StyleUI.Theme.TextSecondary
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+end
+
+--// Gaya Tombol Interaktif (Standard Button)
+function StyleUI.ApplyButtonStyle(button)
     button.BackgroundColor3 = StyleUI.Theme.SecondaryBG
     button.TextColor3 = StyleUI.Theme.TextPrimary
     button.Font = Enum.Font.GothamBold
     button.TextSize = 13
     
-    local corner = Instance.new("UICorner")
+    local corner = Instance.new("UICorner", button)
     corner.CornerRadius = StyleUI.Theme.ButtonCorner
-    corner.Parent = button
     
-    local stroke = Instance.new("UIStroke")
+    local stroke = Instance.new("UIStroke", button)
     stroke.Color = StyleUI.Theme.Stroke
     stroke.Thickness = 1
-    stroke.Parent = button
-
-    button.MouseEnter:Connect(function()
-        PlayTween(button, {BackgroundColor3 = Color3.fromRGB(40, 40, 40)})
-        PlayTween(stroke, {Color = StyleUI.Theme.Accent})
-    end)
-    button.MouseLeave:Connect(function()
-        PlayTween(button, {BackgroundColor3 = StyleUI.Theme.SecondaryBG})
-        PlayTween(stroke, {Color = StyleUI.Theme.Stroke})
-    end)
-end
-
-function StyleUI.StyleSlider(sliderFrame, percentage)
-    local bar = sliderFrame:FindFirstChild("Bar")
-    local fill = bar and bar:FindFirstChild("Fill")
-    
-    if fill then
-        PlayTween(fill, {Size = UDim2.new(percentage, 0, 1, 0)})
-    end
 end
 
 return StyleUI
