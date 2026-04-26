@@ -1,24 +1,36 @@
--- CatHUB FREEMIUM: ESP Module (v5.0 Fix)
+-- CatHUB FREEMIUM: ESP Module (v6.0 Fix)
 local UI = _G.CatHUB_UI
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
 local function CreatePlayerESP(char)
-    if not char:FindFirstChild("Cat_Hl") then
-        local hl = Instance.new("Highlight", char)
-        hl.Name = "Cat_Hl"
-        hl.FillTransparency = 0.5
-        hl.OutlineTransparency = 0
+    if not char:FindFirstChild("Cat_Plr_ESP") then
+        local b = Instance.new("BillboardGui", char)
+        b.Name = "Cat_Plr_ESP"
+        b.AlwaysOnTop = true
+        b.Size = UDim2.new(0, 200, 0, 50)
+        b.Adornee = char:WaitForChild("HumanoidRootPart", 5)
+        
+        local t = Instance.new("TextLabel", b)
+        t.Size = UDim2.new(1, 0, 1, 0)
+        t.BackgroundTransparency = 1
+        t.TextColor3 = Color3.fromRGB(255, 255, 255)
+        t.TextSize = 14
+        t.Font = Enum.Font.SourceSansBold
+        t.TextStrokeTransparency = 0
+        t.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         
         task.spawn(function()
             while char:IsDescendantOf(Workspace) do
+                b.Enabled = UI.Settings.PlayerESP_Enabled
                 local p = Players:GetPlayerFromCharacter(char)
-                if p then
-                    hl.Enabled = UI.Settings.PlayerESP_Enabled
-                    hl.FillColor = (p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines") and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(255, 0, 0)
+                if p and b.Enabled then
+                    local dist = math.floor((char.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                    t.Text = string.format("%s\n[%dM]", p.Name, dist)
+                    t.TextColor3 = (p.Team == LocalPlayer.Team and tostring(p.Team) == "Marines") and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(255, 0, 0)
                 end
-                task.wait(0.5)
+                task.wait(0.2)
             end
         end)
     end
@@ -35,7 +47,7 @@ local function CreateFruitESP(v)
         t.BackgroundTransparency = 1
         t.TextColor3 = Color3.fromRGB(255, 255, 255)
         t.TextStrokeTransparency = 0
-        t.TextSize = 16
+        t.TextSize = 18
         t.Font = Enum.Font.SourceSansBold
         
         task.spawn(function()
