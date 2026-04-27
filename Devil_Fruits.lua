@@ -206,7 +206,7 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - TARGET 2-10 PEMAIN + ANTI 773]
+-- [HOP SERVER - TELEPORTASYNC (ANTI TOKEN ERROR SEA 2/3)]
 local isHopping = false
 
 local Proxies = {
@@ -239,7 +239,6 @@ function _G.Cat.HopServer()
         local PlaceID = game.PlaceId
         local JobID = tostring(game.JobId)
         
-        -- ANTI 773: Jangan hop kalau karakter lagi mati / belum ke-load
         local char = Me.Character
         local hum = char and char:FindFirstChild("Humanoid")
         if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
@@ -301,19 +300,24 @@ function _G.Cat.HopServer()
         end
         
         if chosen then
-            -- ANTI 773: Paksakan JobId jadi String KETAT
             local targetJobId = tostring(chosen.id)
             warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
             task.wait(2)
             
+            -- METODE BARU: TeleportAsync (Auto Handle Teleport Token buat Sea 2/3)
             local tpSuccess, tpErr = pcall(function()
-                TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
+                local TeleportOptions = Instance.new("TeleportOptions")
+                TeleportOptions.ServerInstanceId = targetJobId
+                
+                TeleportService:TeleportAsync(PlaceID, {Me}, TeleportOptions)
             end)
             
+            -- FALLBACK: Kalau executor ga support TeleportOptions, pake cara lama
             if not tpSuccess then
-                warn("[CatHUB] [HOP] Teleport gagal: " .. tostring(tpErr) .. ". Fallback ke random...")
-                task.wait(1)
-                TeleportService:Teleport(PlaceID, Me)
+                warn("[CatHUB] [HOP] TeleportAsync gagal (" .. tostring(tpErr) .. "). Nyoba cara lama...")
+                pcall(function()
+                    TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
+                end)
             end
         else
             warn("[CatHUB] [HOP] Semua proxy gagal / Ga ada server dengan 2+ pemain. Fallback ke random...")
