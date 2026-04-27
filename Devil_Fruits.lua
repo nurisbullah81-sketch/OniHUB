@@ -206,7 +206,7 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - TARGET 2-10 PEMAIN, DITOLAK 0-1 PEMAIN]
+-- [HOP SERVER - TARGET 2-10 PEMAIN + ANTI 773]
 local isHopping = false
 
 local Proxies = {
@@ -239,6 +239,15 @@ function _G.Cat.HopServer()
         local PlaceID = game.PlaceId
         local JobID = tostring(game.JobId)
         
+        -- ANTI 773: Jangan hop kalau karakter lagi mati / belum ke-load
+        local char = Me.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
+            warn("[CatHUB] [HOP] Karakter belum siap / mati. Batal hop.")
+            isHopping = false
+            return
+        end
+        
         local targetServers = {}
         local fallbackServers = {}
         
@@ -260,14 +269,11 @@ function _G.Cat.HopServer()
             for i, v in pairs(result.data) do
                 if type(v) == "table" and v.playing and v.maxPlayers and v.id then
                     if tostring(v.id) ~= JobID then
-                        -- PRIORITAS 1: 2 sampai 10 pemain (Sweet spot)
                         if v.playing >= 2 and v.playing <= 10 then
                             table.insert(targetServers, v)
-                        -- PRIORITAS 2 (FALLBACK): 11 sampai maxPlayers (biar ga kesepi)
                         elseif v.playing >= 11 and v.playing < v.maxPlayers then
                             table.insert(fallbackServers, v)
                         end
-                        -- 0 ATAU 1 PEMAIN DITOLAK KERAS, GA USAH MASUK LIST
                     end
                 end
             end
@@ -295,9 +301,20 @@ function _G.Cat.HopServer()
         end
         
         if chosen then
-            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. tostring(chosen.id) .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
+            -- ANTI 773: Paksakan JobId jadi String KETAT
+            local targetJobId = tostring(chosen.id)
+            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
             task.wait(2)
-            TeleportService:TeleportToPlaceInstance(PlaceID, chosen.id, Me)
+            
+            local tpSuccess, tpErr = pcall(function()
+                TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
+            end)
+            
+            if not tpSuccess then
+                warn("[CatHUB] [HOP] Teleport gagal: " .. tostring(tpErr) .. ". Fallback ke random...")
+                task.wait(1)
+                TeleportService:Teleport(PlaceID, Me)
+            end
         else
             warn("[CatHUB] [HOP] Semua proxy gagal / Ga ada server dengan 2+ pemain. Fallback ke random...")
             task.wait(2)
@@ -314,12 +331,10 @@ task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
             pcall(function()
-                -- PENANGKAL HOP DINI: Jangan hop kalau game/map belum ke-load
                 if not game:IsLoaded() then return end
                 
                 local char = Me.Character
                 if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-                -- Kalau karakter mati lagi, jangan hop, nunggu respawn
                 local hum = char:FindFirstChild("Humanoid")
                 if hum and hum.Health <= 0 then return end
                 
