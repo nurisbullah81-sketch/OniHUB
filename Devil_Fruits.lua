@@ -31,7 +31,7 @@ end
 local function IsF(o) 
     if not o or not o.Parent then return false end 
     local ok,r=pcall(function() 
-        -- Blox Fruits buah bisa bertipe Tool atau Model, dan pasti punya child "Fruit" (StringValue)
+        -- Blox Fruits buah bisa bertipe Tool atau Model
         if (o:IsA("Tool") or o:IsA("Model")) and o:FindFirstChild("Fruit") then 
             return true 
         end 
@@ -157,7 +157,7 @@ task.spawn(function()
     end 
 end)
 
--- [AUTO STORE]
+-- [AUTO STORE + INVENTORY PENUH = HOP]
 local StoreBlacklist={}
 local function GetFruitRealName(tool) 
     if not tool then return nil end 
@@ -175,12 +175,25 @@ task.spawn(function()
                 local function TryStore(tool) 
                     if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then 
                         if not table.find(StoreBlacklist,tool.Name) then 
+                            -- BF Sering musti di equip dulu biar ke store
+                            if tool.Parent == Me.Backpack and Me.Character and Me.Character:FindFirstChild("Humanoid") then
+                                Me.Character.Humanoid:EquipTool(tool)
+                                task.wait(0.3)
+                            end
+                            
                             local realName=GetFruitRealName(tool) 
-                            local success=remote:InvokeServer("StoreFruit",realName,tool) 
-                            if success~=true then 
+                            local success=remote:InvokeServer("StoreFruit",realName) 
+                            if success == true then
+                                warn("[CatHUB] [STORE] Berhasil simpan: " .. realName)
+                            else
+                                -- KALO GAGAL (INVENTORY PENUH / DUPLICATE)
+                                warn("[CatHUB] [STORE] Gagal simpan (Inventory Penuh/Duplikat?): " .. realName)
                                 table.insert(StoreBlacklist,tool.Name) 
-                                if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end 
-                            end 
+                                if Settings.AutoHop then 
+                                    task.wait(1) 
+                                    _G.Cat.HopServer() 
+                                end 
+                            end
                         end 
                     end 
                 end 
@@ -193,7 +206,7 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - TARGET 3-8 PEMAIN]
+-- [HOP SERVER - TARGET 2-10 PEMAIN, DITOLAK 0-1 PEMAIN]
 local isHopping = false
 
 local Proxies = {
@@ -224,13 +237,12 @@ function _G.Cat.HopServer()
     
     pcall(function()
         local PlaceID = game.PlaceId
-        local JobID = tostring(game.JobId) -- PAKE TOSTRING BIAR TIPE DATANYA SAMA
+        local JobID = tostring(game.JobId)
         
         local targetServers = {}
         local fallbackServers = {}
         
-        warn("[CatHUB] [HOP] Mulai cari server...")
-        warn("[CatHUB] [HOP] Server saat ini (JobID): " .. JobID)
+        warn("[CatHUB] [HOP] Mulai cari server (Target: 2-10 pemain)...")
         
         for _, proxy in pairs(Proxies) do
             local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -247,42 +259,39 @@ function _G.Cat.HopServer()
             
             for i, v in pairs(result.data) do
                 if type(v) == "table" and v.playing and v.maxPlayers and v.id then
-                    -- PRIORITAS UTAMA: JANGAN MASUK KE SERVER YANG SAMA LAGI (PAKE TOSTRING)
                     if tostring(v.id) ~= JobID then
-                        -- TARGET: 3-8 pemain (Sweet spot buat cari buah)
-                        if v.playing >= 3 and v.playing <= 8 then
+                        -- PRIORITAS 1: 2 sampai 10 pemain (Sweet spot)
+                        if v.playing >= 2 and v.playing <= 10 then
                             table.insert(targetServers, v)
-                        -- FALLBACK: 1-12 pemain (Kalau gaada yang 3-8)
-                        elseif v.playing > 0 and v.playing < v.maxPlayers then
+                        -- PRIORITAS 2 (FALLBACK): 11 sampai maxPlayers (biar ga kesepi)
+                        elseif v.playing >= 11 and v.playing < v.maxPlayers then
                             table.insert(fallbackServers, v)
                         end
+                        -- 0 ATAU 1 PEMAIN DITOLAK KERAS, GA USAH MASUK LIST
                     end
                 end
-            end -- INI YANG TADI ILANG DI CODE LU, PENYEBAB SCRIPT CRASH!
+            end
             
             if #targetServers > 0 then break end
         end
         
-        -- Pilih server
         local chosen = nil
         local chosenType = ""
         
         if #targetServers > 0 then
-            -- Acak urutan target biar ga kemana-mana aja
             for i = #targetServers, 2, -1 do
                 local j = math.random(1, i)
                 targetServers[i], targetServers[j] = targetServers[j], targetServers[i]
             end
             chosen = targetServers[1]
-            chosenType = "TARGET (3-8 pemain)"
+            chosenType = "TARGET (2-10 pemain)"
         elseif #fallbackServers > 0 then
-            -- Acak urutan fallback
             for i = #fallbackServers, 2, -1 do
                 local j = math.random(1, i)
                 fallbackServers[i], fallbackServers[j] = fallbackServers[j], fallbackServers[i]
             end
             chosen = fallbackServers[1]
-            chosenType = "FALLBACK (>8 pemain)"
+            chosenType = "FALLBACK (>10 pemain)"
         end
         
         if chosen then
@@ -290,7 +299,7 @@ function _G.Cat.HopServer()
             task.wait(2)
             TeleportService:TeleportToPlaceInstance(PlaceID, chosen.id, Me)
         else
-            warn("[CatHUB] [HOP] Semua proxy gagal / ga ada server lain. Fallback ke random server...")
+            warn("[CatHUB] [HOP] Semua proxy gagal / Ga ada server dengan 2+ pemain. Fallback ke random...")
             task.wait(2)
             TeleportService:Teleport(PlaceID, Me)
         end
@@ -300,7 +309,7 @@ function _G.Cat.HopServer()
     isHopping = false
 end
 
--- Cek buah di map untuk hop
+-- CEK BUAH DI MAP: Kalau ada buah, DILARANG HOP. Kalau gaada baru hop.
 task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
@@ -315,7 +324,10 @@ task.spawn(function()
                 end
                 
                 if fruitCount == 0 then
+                    warn("[CatHUB] [HOP] Ga ada buah di map. Auto Hop nyala...")
                     _G.Cat.HopServer()
+                else
+                    warn("[CatHUB] [HOP] Masih ada " .. fruitCount .. " buah di map. Tetap disini.")
                 end
             end)
         end
