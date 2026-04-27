@@ -206,30 +206,8 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - RAW TELEPORT (NIRU UI DELTA)]
+-- [HOP SERVER - DELTA BYPASS (RANDOM SMART HOP SEA 2/3)]
 local isHopping = false
-
-local Proxies = {
-    "https://games.roblox.com",
-    "https://games.api.hyra.io",
-    "https://roproxy.com"
-}
-
-local Headers = {
-    ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    ["Content-Type"] = "application/json",
-    ["Accept"] = "application/json"
-}
-
-local function FetchUrl(url)
-    local s, r = pcall(function() return http_request({Url = url, Method = "GET", Headers = Headers}).Body end)
-    if s and type(r) == "string" and #r > 0 then return r end
-    s, r = pcall(function() return request({Url = url, Method = "GET", Headers = Headers}).Body end)
-    if s and type(r) == "string" and #r > 0 then return r end
-    s, r = pcall(function() return game:HttpGet(url, true) end)
-    if s and type(r) == "string" and #r > 0 then return r end
-    return nil
-end
 
 function _G.Cat.HopServer()
     if isHopping then return end
@@ -243,71 +221,26 @@ function _G.Cat.HopServer()
     end
     
     local PlaceID = game.PlaceId
-    local JobID = tostring(game.JobId)
-    local targetServers = {}
-    local fallbackServers = {}
     
-    warn("[CatHUB] [HOP] Mulai cari server...")
-    
-    for _, proxy in pairs(Proxies) do
-        local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
-        local body = FetchUrl(ApiUrl)
-        
-        if not body then continue end
-        if body:find("<!DOCTYPE") or body:find("<html") or body:find("cloudflare") then continue end
-        
-        local success, result = pcall(function() return HttpService:JSONDecode(body) end)
-        if not success or type(result) ~= "table" or not result.data then continue end
-        
-        for i, v in pairs(result.data) do
-            if type(v) == "table" and v.playing and v.maxPlayers and v.id then
-                if tostring(v.id) ~= JobID then
-                    if v.playing >= 2 and v.playing <= 10 then
-                        table.insert(targetServers, v)
-                    elseif v.playing >= 11 and v.playing < v.maxPlayers then
-                        table.insert(fallbackServers, v)
-                    end
-                end
-            end
-        end
-        
-        if #targetServers > 0 then break end
+    -- CEK: Kalau di server ini ada 2-10 pemain, TETEP DISINI (Jangan hop)
+    local playerCount = #game:GetService("Players"):GetPlayers()
+    if playerCount >= 2 and playerCount <= 10 then
+        warn("[CatHUB] [HOP] Server ini udah bagus (" .. playerCount .. " pemain). Batal hop.")
+        isHopping = false
+        return
     end
     
-    local chosen = nil
+    warn("[CatHUB] [HOP] Server kurang bagus atau kosong. Gas Random Teleport (Delta Style)...")
+    task.wait(1)
     
-    if #targetServers > 0 then
-        for i = #targetServers, 2, -1 do
-            local j = math.random(1, i)
-            targetServers[i], targetServers[j] = targetServers[j], targetServers[i]
-        end
-        chosen = targetServers[1]
-    elseif #fallbackServers > 0 then
-        for i = #fallbackServers, 2, -1 do
-            local j = math.random(1, i)
-            fallbackServers[i], fallbackServers[j] = fallbackServers[j], fallbackServers[i]
-        end
-        chosen = fallbackServers[1]
-    end
-    
-    if chosen then
-        local targetJobId = tostring(chosen.id)
-        warn("[CatHUB] [HOP] GAS! Teleport mentah ke server " .. targetJobId .. " (" .. chosen.playing .. " pemain)")
-        task.wait(1)
-        
-        --INI RAHASIANYA: TEMBAK MENTAH TANPA PCALL, BIAR DELTA BISA NYUNTIK TOKENNYA!
-        TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
-    else
-        warn("[CatHUB] [HOP] API gagal. Random Teleport mentah...")
-        task.wait(1)
-        TeleportService:Teleport(PlaceID, Me)
-    end
+    -- TEMBAK RANDOM MENTAH (SAMA KAYAK UI DELTA)
+    game:GetService("TeleportService"):Teleport(PlaceID, Me)
     
     task.wait(15)
     isHopping = false
 end
 
--- CEK BUAH DI MAP
+-- CEK BUAH DI MAP & CEK SERVER KOSONG
 task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
@@ -328,8 +261,14 @@ task.spawn(function()
                     end
                 end
                 
+                -- HOP KALAU GA ADA BUAH, ATAU KALAU SERVER KOSONG (0-1 PEMAIN)
+                local playerCount = #game:GetService("Players"):GetPlayers()
+                
                 if fruitCount == 0 then
                     warn("[CatHUB] [HOP] Ga ada buah di map. Auto Hop nyala...")
+                    _G.Cat.HopServer()
+                elseif playerCount < 2 then
+                    warn("[CatHUB] [HOP] Server sepi (" .. playerCount .. " pemain). Auto Hop nyala...")
                     _G.Cat.HopServer()
                 end
             end)
