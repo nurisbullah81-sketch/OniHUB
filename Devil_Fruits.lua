@@ -196,28 +196,11 @@ task.spawn(function()
     end 
 end)
 
--- [VIM APEX HOPPER - PREMIUM EDITION (XENO/DELTA BYPASS)]
+-- [VIM APEX HOPPER - HYBRID PREMIUM (XENO/DELTA BYPASS)]
 local isHopping = false
 local VIM = game:GetService("VirtualInputManager")
 local GuiService = game:GetService("GuiService")
-local TopBarOffset = GuiService:GetGuiInset().Y -- Hitung offset layar dinamis (Pengganti +58)
-
-local function vimClick(element)
-    if not element or not element.Visible then return false end
-    local pos = element.AbsolutePosition
-    local size = element.AbsoluteSize
-    -- Rahasia fix off-screen: Tambahin offset TopBar biar VIM ngeklik di area yang valid
-    local x = pos.X + (size.X / 2)
-    local y = pos.Y + (size.Y / 2) + TopBarOffset 
-    
-    VIM:SendMouseMoveEvent(x, y, game)
-    task.wait(0.1)
-    VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-    task.wait(0.1)
-    VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-    task.wait(0.5)
-    return true
-end
+local TopBarOffset = GuiService:GetGuiInset().Y -- Offset dinamis biar ngeklik layar yg bener
 
 function _G.Cat.HopServer()
     if isHopping then return end
@@ -231,7 +214,7 @@ function _G.Cat.HopServer()
             return
         end
 
-        warn("[CatHUB] [HOP] Mencari server via UI (VIM Bypass)...")
+        warn("[CatHUB] [HOP] Mencari server via VIM Bruteforce...")
         
         -- LANGKAH 1: Buka UI Server
         local openBtn = nil
@@ -243,28 +226,70 @@ function _G.Cat.HopServer()
         end
 
         if openBtn then
-            vimClick(openBtn)
-            task.wait(2.5) -- Nunggu UI load
+            -- Paksa klik buka (Pake offset + TopBarOffset biar ga kena Topbar Roblox)
+            local op, os = openBtn.AbsolutePosition, openBtn.AbsoluteSize
+            VIM:SendMouseButtonEvent(op.X + (os.X/2), op.Y + (os.Y/2) + TopBarOffset, 0, true, game, 0)
+            task.wait(0.1)
+            VIM:SendMouseButtonEvent(op.X + (os.X/2), op.Y + (os.Y/2) + TopBarOffset, 0, false, game, 0)
+            task.wait(2) -- Nunggu UI loading
             
-            -- LANGKAH 2: Cari tombol Join paling atas (Biar masuk server rame, bukan server mati)
-            local joinBtn = nil
-            for _, obj in ipairs(Me.PlayerGui:GetDescendants()) do
-                if obj:IsA("TextButton") and obj.Name == "Join" and obj.Visible and obj.AbsolutePosition.Y > 0 then
-                    joinBtn = obj
-                    break -- Ambil tombol Join pertama yang muncul (Server paling atas)
-                end
-            end
+            -- LANGKAH 2: Cari Scroll Frame dan wake up UI
+            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            local scrollFrame = browser and browser:FindFirstChild("FakeScroll", true)
             
-            if joinBtn then
-                warn("[CatHUB] [HOP] Menembak tombol Join via VIM...")
-                -- Spam klik dikit biar kebaca
-                for i = 1, 3 do
-                    vimClick(joinBtn)
-                    task.wait(0.2)
+            if scrollFrame then
+                local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + TopBarOffset
+                
+                -- Klik tengah dulu biar UI focus
+                VIM:SendMouseMoveEvent(cX, cY, game)
+                VIM:SendMouseButtonEvent(cX, cY, 0, true, game, 0)
+                task.wait(0.05)
+                VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
+                
+                -- MINI DRILL: Cukup 15x scroll buat nge-render tombol di server rame (atas)
+                -- Jangan 200x ntar masuk server mati (0 pemain)
+                for i = 1, 15 do
+                    VIM:SendMouseWheelEvent(cX, cY, false, game)
+                    if i % 5 == 0 then task.wait() end
                 end
-                warn("[CatHUB] [HOP] Ditembak! Menunggu teleport...")
+                task.wait(1) -- Nunggu list ter-render
+                
+                -- LANGKAH 3: Cari tombol Join yang udah ke-render
+                local insideFrame = browser:FindFirstChild("Inside", true)
+                if insideFrame then
+                    local joinTarget = nil
+                    for _, v in pairs(insideFrame:GetDescendants()) do
+                        if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
+                            -- Pastikan tombolnya ada di area layar yang valid
+                            if v.AbsolutePosition.Y > sP.Y and v.AbsolutePosition.Y < (sP.Y + sS.Y) then
+                                joinTarget = v
+                                break -- Ambil tombol paling atas (server rame)
+                            end
+                        end
+                    end
+                    
+                    if joinTarget then
+                        warn("[CatHUB] [HOP] Target Join ketemu! Spam klik...")
+                        local bp, bs = joinTarget.AbsolutePosition, joinTarget.AbsoluteSize
+                        local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + TopBarOffset
+                        
+                        -- Spam klik dan Enter biar mantep nembus
+                        for i = 1, 4 do
+                            VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                            VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                            task.wait(0.01)
+                            VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                            VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                            task.wait(0.2)
+                        end
+                        warn("[CatHUB] [HOP] Ditembak! Menunggu teleport...")
+                    else
+                        warn("[CatHUB] [HOP] Tombol Join ga ke-render di layar.")
+                    end
+                end
             else
-                warn("[CatHUB] [HOP] Tombol Join ga keliatan.")
+                warn("[CatHUB] [HOP] UI Server Browser ga ke-load dengan benar.")
             end
         else
             warn("[CatHUB] [HOP] Tombol ServerBrowserButton ga ketemu.")
@@ -281,7 +306,6 @@ task.spawn(function()
         pcall(function()
             local errPrompt = game.CoreGui:FindFirstChild("ErrorPrompt", true) 
             if errPrompt and errPrompt.Visible then
-                -- Klik OK / Enter buat nutup popup 773
                 VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
                 task.wait(0.05)
                 VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
