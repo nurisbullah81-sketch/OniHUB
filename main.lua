@@ -1,18 +1,17 @@
--- CatHUB: Main Loader (Anti-Mati Saat Hop)
+-- CatHUB Loader + Auto Re-execute
 local _ENV = (getgenv or getrenv or getfenv)()
 
--- Debounce biar ga double execute
+-- Debounce
 local last_exec = _ENV.cat_exec_debounce
 if last_exec and (tick() - last_exec) <= 5 then return end
 _ENV.cat_exec_debounce = tick()
 
--- LOGIC REDZHUB: Auto Re-execute di server baru
+-- queue_on_teleport (kunci biar script auto jalan lagi di server baru)
 local executor = syn or fluxus
 local queueteleport = queue_on_teleport or (executor and executor.queue_on_teleport)
 
 if not _ENV.cat_queued and type(queueteleport) == "function" then
     _ENV.cat_queued = true
-    -- Ganti URL ini kalo repo lu berubah
     local scriptUrl = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/Main.lua"))()'
     pcall(queueteleport, scriptUrl)
 end
