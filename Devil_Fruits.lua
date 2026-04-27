@@ -180,7 +180,7 @@ task.spawn(function()
                 local fruit = nil
                 if Me.Backpack then
                     for _, v in pairs(Me.Backpack:GetChildren()) do
-                        if v:IsA("Tool") and string.find(v.Name, "Fruit") then
+                        if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
                             fruit = v
                             break
                         end
@@ -189,14 +189,14 @@ task.spawn(function()
                 
                 if not fruit then
                     for _, v in pairs(character:GetChildren()) do
-                        if v:IsA("Tool") and string.find(v.Name, "Fruit") then
+                        if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
                             fruit = v
                             break
                         end
                     end
                 end
 
-                if fruit and not table.find(StoreBlacklist, fruit.Name) then
+                if fruit then
                     if fruit.Parent ~= character then
                         local hum = character:FindFirstChild("Humanoid")
                         if hum then
@@ -212,9 +212,8 @@ task.spawn(function()
                     if success and result == true then
                         warn("[CatHUB] " .. fruit.Name .. " berhasil disimpan!")
                     else
-                        warn("[CatHUB] Gagal simpan (Penuh/Duplikat?). Respon: " .. tostring(result) .. ". Blacklist & HOP!")
+                        warn("[CatHUB] Gagal simpan (Inventory Penuh?). Auto Hop!")
                         table.insert(StoreBlacklist, fruit.Name) 
-                        _G.NomexyHopper = true -- Paksa langsung hop kalau inventory penuh
                     end
                 end
             end) 
@@ -232,7 +231,6 @@ task.spawn(function()
     while _G.NomexyHopper do
         task.wait(1)
         
-        -- CEGAH HOP KALO AUTOHOP MATI ATAU MASIH ADA BUAH
         if Settings.AutoHop then
             local fruitCount = 0
             
@@ -240,18 +238,28 @@ task.spawn(function()
             for f, _ in pairs(Data) do
                 if f and f.Parent and f.Parent == Workspace then fruitCount = fruitCount + 1 end
             end
-            -- 2. Cek Tangan & Backpack
-            if Me.Backpack then for _, tool in pairs(Me.Backpack:GetChildren()) do if tool:IsA("Tool") and string.find(tool.Name, "Fruit") then fruitCount = fruitCount + 1 end end end
-            if Me.Character then for _, tool in pairs(Me.Character:GetChildren()) do if tool:IsA("Tool") and string.find(tool.Name, "Fruit") then fruitCount = fruitCount + 1 end end end
-            
-            if fruitCount > 0 then
-                _G.NomexyHopper = false -- Matikan engine kalau ada buah
-                continue
+            -- 2. Cek Tangan & Backpack (TAPI ABISIN YANG UDAH DI BLACKLIST / INVENTORY PENUH)
+            if Me.Backpack then 
+                for _, tool in pairs(Me.Backpack:GetChildren()) do 
+                    if tool:IsA("Tool") and string.find(tool.Name, "Fruit") and not table.find(StoreBlacklist, tool.Name) then 
+                        fruitCount = fruitCount + 1 
+                    end 
+                end 
+            end
+            if Me.Character then 
+                for _, tool in pairs(Me.Character:GetChildren()) do 
+                    if tool:IsA("Tool") and string.find(tool.Name, "Fruit") and not table.find(StoreBlacklist, tool.Name) then 
+                        fruitCount = fruitCount + 1 
+                    end 
+                end 
             end
             
-            -- KALO GA ADA BUAH, GAS ENGINE GEMINI!
-            _G.NomexyHopper = true
-            warn("Nomexy Engine: Menyiapkan amunisi...")
+            if fruitCount > 0 then
+                continue -- Kalau masih ada buah yang valid, SKIP / Nunggu
+            end
+
+            -- KALO GAADA BUAH, GAS ENGINE GEMINI!
+            warn("Nomexy Engine: Ga ada buah! Menyiapkan amunisi...")
 
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             if not (browser and browser.Enabled) then
@@ -266,7 +274,6 @@ task.spawn(function()
 
             local listArea
             local loadTimeout = 0
-            warn("Menunggu sinkronisasi list (Min: " .. _G.MinServerLoad .. ")...")
             
             repeat 
                 task.wait(0.5)
@@ -292,7 +299,6 @@ task.spawn(function()
                 task.wait(0.05)
                 VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
 
-                warn("Drilling Deep: Mencari server ujung dunia...")
                 for i = 1, _G.DeepDiveDepth do
                     if not _G.NomexyHopper then break end
                     VIM:SendMouseWheelEvent(cX, cY, false, game)
@@ -327,15 +333,13 @@ task.spawn(function()
                     end
                 end
             end
-        else
-            _G.NomexyHopper = false -- Matikan engine kalau setting AutoHop = false
         end
     end
 end)
 
--- [[ 1. THE SENTINEL: POP-UP OBLITERATOR (ANTI-772/773) ]] --
+-- [[ THE SENTINEL: POP-UP OBLITERATOR (ANTI-772/773) ]] --
 task.spawn(function()
-    while true do -- Jalan terus terangga walau hopper mati
+    while true do
         task.wait(0.1)
         pcall(function()
             local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
@@ -356,7 +360,6 @@ task.spawn(function()
 end)
 
 function _G.Cat.HopServer()
-    -- Fungsi ini sekarang cuma jadi trigger switch
     _G.NomexyHopper = true
 end
 
