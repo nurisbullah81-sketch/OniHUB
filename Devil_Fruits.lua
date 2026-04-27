@@ -25,7 +25,6 @@ Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 RunService.RenderStepped:Connect(function() FC=FC+1 if FC%SKIP~=0 then return end pcall(function() if not Settings.FruitESP then for _,d in pairs(Data) do if d and d.bb then d.bb.Enabled=false end end return end local c=Me.Character if not c then return end local r=c:FindFirstChild("HumanoidRootPart") if not r then return end local mp=r.Position for f,d in pairs(Data) do if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end local p=Pos(f) if not p then d.bb.Enabled=false continue end local dx,dy,dz=p.X-mp.X,p.Y-mp.Y,p.Z-mp.Z local m=math.floor(math.sqrt(dx*dx+dy*dy+dz*dz)) if math.abs(m-(Mem[f]or-1))>5 then Mem[f]=m d.txt.Text=f.Name.." ["..m.."m]" end d.bb.Enabled=true end end) end)
 
 local fruitTween=nil
--- BENERIN TYPO DI SINI (spasi setelah koma)
 local function GetNearestFruit() local closest, minDist=nil,math.huge local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") if not hrp then return nil end for f,_ in pairs(Data) do if f and f.Parent then local p=Pos(f) if p then local dist=(p-hrp.Position).Magnitude if dist<minDist then closest, minDist = f, dist end end end end return closest end
 
 task.spawn(function() while task.wait(0.3) do pcall(function() if Settings.TweenFruit then local nearest=GetNearestFruit() local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") if nearest and hrp then local pos=Pos(nearest) if pos then local dist=(pos-hrp.Position).Magnitude if dist>5 then if fruitTween then fruitTween:Cancel() end local speed=250 local timeToTween=dist/speed local targetCFrame=CFrame.new(pos+Vector3.new(0,1.5,0)) fruitTween=TweenService:Create(hrp,TweenInfo.new(timeToTween,Enum.EasingStyle.Linear),{CFrame=targetCFrame}) fruitTween:Play() else if fruitTween then fruitTween:Cancel() fruitTween=nil end end end else if fruitTween then fruitTween:Cancel() fruitTween=nil end end else if fruitTween then fruitTween:Cancel() fruitTween=nil end end end) end end)
@@ -38,15 +37,14 @@ local function GetFruitRealName(tool) if not tool then return nil end local frui
 task.spawn(function() while task.wait(0.5) do if Settings.AutoStoreFruit then pcall(function() local remote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") if not remote then return end local function TryStore(tool) if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then if not table.find(StoreBlacklist,tool.Name) then local realName=GetFruitRealName(tool) local success=remote:InvokeServer("StoreFruit",realName,tool) if success~=true then table.insert(StoreBlacklist,tool.Name) if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end end end end end local backpack=Me.Backpack local char=Me.Character if backpack then for _,tool in pairs(backpack:GetChildren()) do TryStore(tool) end end if char then for _,tool in pairs(char:GetChildren()) do TryStore(tool) end end end) end end end)
 
 -- ==========================================
--- DIRECT API + MULTI PROXY HOPPER
+-- MULTI PROXY HOPPER (FIX ERROR 773)
 -- ==========================================
 local isHopping = false
 
 local Proxies = {
     "https://games.roblox.com",
     "https://games.api.hyra.io",
-    "https://roproxy.com",
-    "https://roblox.apis.liara.run"
+    "https://roproxy.com"
 }
 
 local Headers = {
@@ -77,38 +75,18 @@ function _G.Cat.HopServer()
         
         for _, proxy in pairs(Proxies) do
             local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
-            warn("[CatHOP] [1] Nembak: " .. proxy)
+            warn("[CatHOP] Nembak: " .. proxy)
             local body = FetchUrl(ApiUrl)
             
-            if not body then
-                warn("[CatHOP] [2] GAGAL: Executor block / Network error.")
-                continue
-            end
+            if not body then continue end
             
-            warn("[CatHOP] [3] RAW BODY (200 chars): " .. string.sub(tostring(body), 1, 200))
-            
-            if body:find("<!DOCTYPE") or body:find("<html") or body:find("cloudflare") then
-                warn("[CatHOP] [4] GAGAL: Dapet HTML (Cloudflare Block).")
-                continue
-            end
-            
-            if not body:find('^{') then
-                warn("[CatHOP] [4] GAGAL: Bukan format JSON awal {.")
-                continue
-            end
+            if body:find("<!DOCTYPE") or body:find("<html") or body:find("cloudflare") then continue end
+            if not body:find('^{') then continue end
             
             local success, result = pcall(function() return HttpService:JSONDecode(body) end)
-            if not success then
-                warn("[CatHOP] [5] GAGAL: JSON Decode Error.")
-                continue
-            end
+            if not success or type(result) ~= "table" or not result.data then continue end
             
-            if type(result) ~= "table" or not result.data then
-                warn("[CatHOP] [5] GAGAL: Data table nil. Isi: " .. tostring(result))
-                continue
-            end
-            
-            warn("[CatHOP] [6] SUCCESS: Dapet data server!")
+            warn("[CatHOP] Dapet data server!")
             for i, v in pairs(result.data) do
                 if type(v) == "table" and v.playing and v.maxPlayers and v.id then
                     if v.playing >= 2 and v.playing <= 10 and v.playing < v.maxPlayers and v.id ~= JobID then
@@ -122,11 +100,17 @@ function _G.Cat.HopServer()
         if #validServers > 0 then
             local chosen = validServers[math.random(1, #validServers)]
             warn("[CatHUB] [HOP] Gas Teleport! -> " .. chosen.id)
-            TeleportService:TeleportToPlaceInstance(PlaceID, chosen.id, Me)
+            
+            -- FIX ERROR 773: Kasih delay dulu sebelum teleport
+            task.wait(2)
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(PlaceID, chosen.id, Me)
+            end)
         else
             warn("[CatHUB] [HOP] GAGAL TOTAL: Semua proxy gagal / Ga ada server.")
         end
     end)
+    
     task.wait(15)
     isHopping = false
 end
