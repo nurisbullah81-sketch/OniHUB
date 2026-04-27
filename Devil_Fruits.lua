@@ -232,27 +232,40 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - NOMEXY SOVEREIGN V11 (GEMINI LOGIC 100%)]
+-- [[ NOMEXY SOVEREIGN V11 - CATHUB INTEGRATION ]] --
 local isHopping = false
+local LP = game:GetService("Players").LocalPlayer
+local VIM = game:GetService("VirtualInputManager")
+local GuiService = game:GetService("GuiService")
 
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
-    pcall(function()
-        local char = Me.Character
-        local hum = char and char:FindFirstChild("Humanoid")
-        if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
-            isHopping = false
-            return
+    -- [[ 1. THE SENTINEL: ANTI-BENGONG (AUTO-TABRAK ERROR 772/773) ]] --
+    local sentinelActive = true
+    task.spawn(function()
+        while sentinelActive do
+            task.wait(0.1)
+            local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
+            local playerGui = LP.PlayerGui:FindFirstChild("ErrorPrompt", true) or LP.PlayerGui:FindFirstChild("MessagePrompt", true)
+            
+            if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
+                -- Sikat pake Enter + Klik tengah
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                task.wait(0.05)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+            end
         end
+    end)
 
-        warn("[CatHUB] [HOP] Menjalankan Nomexy Sovereign Hopper...")
+    pcall(function()
+        warn("[CatHUB] [HOP] Menjalankan Nomexy Sovereign v11 (True Logic)...")
 
         -- 1. BUKA UI (Pake offset +58 persis dari Gemini)
-        local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+        local browser = LP.PlayerGui:FindFirstChild("ServerBrowser", true)
         if not (browser and browser.Enabled) then
-            local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
+            local openBtn = LP.PlayerGui:FindFirstChild("ServerBrowserButton", true)
             if openBtn then
                 local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
                 VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
@@ -261,36 +274,44 @@ function _G.Cat.HopServer()
             end
         end
 
-        -- 2. SMART-SYNC: Nunggu list server bener-bener ke-load
+        -- 2. SMART-SYNC: Nunggu list server bener-bener "Mateng" (Min 25 Server)
         local listArea
         local loadTimeout = 0
         repeat 
             task.wait(0.5)
             loadTimeout = loadTimeout + 1
-            browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            browser = LP.PlayerGui:FindFirstChild("ServerBrowser", true)
             listArea = browser and browser:FindFirstChild("Inside", true)
-        until (listArea and #listArea:GetChildren() > 2) or loadTimeout > 15
+            
+            local currentLoad = 0
+            if listArea then
+                for _, v in pairs(listArea:GetChildren()) do
+                    if v:FindFirstChild("Join") then currentLoad = currentLoad + 1 end
+                end
+            end
+            warn("[CatHUB] [HOP] Menunggu Sinkronisasi: " .. currentLoad .. "/25")
+        until (currentLoad >= 25) or loadTimeout > 20
 
         if listArea then
             local scrollFrame = browser:FindFirstChild("FakeScroll", true)
             local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
             local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + 58
 
-            -- 3. FORCE FOCUS: Lock mouse di UI biar scroll ga kemana-mana (No Zoom)
+            -- 3. FORCE FOCUS: Lock mouse di UI (Anti Camera Shake)
             VIM:SendMouseMoveEvent(cX, cY, game)
             VIM:SendMouseButtonEvent(cX, cY, 0, true, game, 0)
             task.wait(0.05)
             VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
 
-            -- 4. DEEP DRILLING: Scroll 150x ke bawah
-            warn("[CatHUB] [HOP] Deep drilling scroll...")
-            for i = 1, 150 do
+            -- 4. HYPER DRILLING: Terjun 250x ke bawah (Lantai Server Sepi)
+            warn("[CatHUB] [HOP] Deep drilling (250x)...")
+            for i = 1, 250 do
                 VIM:SendMouseWheelEvent(cX, cY, false, game)
-                if i % 40 == 0 then task.wait() end 
+                if i % 50 == 0 then task.wait() end 
             end
-            task.wait(1.5) -- Sinkronisasi UI
+            task.wait(1.5)
 
-            -- 5. SNIPE: Cari tombol Join yang ada di area layar
+            -- 5. SNIPE: Cari tombol Join di area pandang
             local targets = {}
             for _, v in pairs(listArea:GetDescendants()) do
                 if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
@@ -301,12 +322,12 @@ function _G.Cat.HopServer()
             end
 
             if #targets > 0 then
-                warn("[CatHUB] [HOP] Target Join ketemu! Tembak brutal...")
+                warn("[CatHUB] [HOP] Target sepi ketemu! Memulai serangan...")
                 for _, target in pairs(targets) do
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
                     local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
                     
-                    -- Ghost Turbo Tap (5x)
+                    -- Ghost Turbo Tap (5x) - NO SELECTION BOX
                     for i = 1, 5 do
                         VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
@@ -314,14 +335,15 @@ function _G.Cat.HopServer()
                         VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
                         VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
                     end
-                    task.wait(0.3)
+                    task.wait(0.5) -- Jeda biar gak kick
                 end
             else
-                warn("[CatHUB] [HOP] Ga ada tombol Join yang keliatan.")
+                warn("[CatHUB] [HOP] Gagal nemu server di kedalaman. Coba lagi.")
             end
         end
     end)
     
-    task.wait(15)
+    sentinelActive = false
+    task.wait(5) -- Cooldown hop
     isHopping = false
 end
