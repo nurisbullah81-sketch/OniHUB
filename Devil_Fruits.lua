@@ -206,7 +206,7 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - DELTA/REDFINGER OPTIMIZED (NO SEA 1 LOOP)]
+-- [HOP SERVER - RAW TELEPORT (NIRU UI DELTA)]
 local isHopping = false
 
 local Proxies = {
@@ -235,7 +235,6 @@ function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
-    -- Cek karakter dulu
     local char = Me.Character
     local hum = char and char:FindFirstChild("Humanoid")
     if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
@@ -248,9 +247,8 @@ function _G.Cat.HopServer()
     local targetServers = {}
     local fallbackServers = {}
     
-    warn("[CatHUB] [HOP] Mulai cari server di Place ID: " .. PlaceID)
+    warn("[CatHUB] [HOP] Mulai cari server...")
     
-    -- Cari server
     for _, proxy in pairs(Proxies) do
         local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
         local body = FetchUrl(ApiUrl)
@@ -294,27 +292,13 @@ function _G.Cat.HopServer()
     
     if chosen then
         local targetJobId = tostring(chosen.id)
-        warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. " pemain)")
+        warn("[CatHUB] [HOP] GAS! Teleport mentah ke server " .. targetJobId .. " (" .. chosen.playing .. " pemain)")
         task.wait(1)
         
-        -- METODE 1: RAW Teleport (Kayak Redz Hub, biar Delta bisa nyuntik token)
-        local success1, err1 = pcall(function()
-            TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
-        end)
-        
-        -- METODE 2: Kalau Metode 1 kena error Token, pakai TeleportOptions (Celah Sub-Place)
-        if not success1 or (err1 and string.find(string.lower(tostring(err1)), "token")) then
-            warn("[CatHUB] [HOP] Metode 1 kena blokir. Pakai Metode 2 (TeleportOptions)...")
-            task.wait(1)
-            pcall(function()
-                local options = Instance.new("TeleportOptions")
-                options.ServerInstanceId = targetJobId
-                TeleportService:Teleport(PlaceID, Me, nil, options)
-            end)
-        end
+        --INI RAHASIANYA: TEMBAK MENTAH TANPA PCALL, BIAR DELTA BISA NYUNTIK TOKENNYA!
+        TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
     else
-        -- Kalau API gagal total, pakai Random Matchmaking di Sea yang SAMA
-        warn("[CatHUB] [HOP] API gagal. Random Teleport di Sea yang sama...")
+        warn("[CatHUB] [HOP] API gagal. Random Teleport mentah...")
         task.wait(1)
         TeleportService:Teleport(PlaceID, Me)
     end
@@ -347,9 +331,6 @@ task.spawn(function()
                 if fruitCount == 0 then
                     warn("[CatHUB] [HOP] Ga ada buah di map. Auto Hop nyala...")
                     _G.Cat.HopServer()
-                else
-                    -- Biar ga spam log, cetak cuma tiap 30 detik aja kalau ada buah
-                    -- warn("[CatHUB] [HOP] Masih ada " .. fruitCount .. " buah di map.")
                 end
             end)
         end
