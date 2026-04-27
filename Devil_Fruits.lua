@@ -1,9 +1,9 @@
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local Me = _G.Cat.Player
 local Settings = _G.Cat.Settings
 
@@ -155,91 +155,37 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- PHYSICAL UI SERVER HOPPER (REDZHUB STYLE)
+-- THUNDER HUB STYLE SERVER HOPPER
 -- ==========================================
 local isHopping = false
-
-local function ClickButton(btn)
-    if not btn or not btn.Visible then return false end
-    local pos = btn.AbsolutePosition
-    local size = btn.AbsoluteSize
-    local clickPos = pos + (size / 2)
-    
-    -- Simulasi klik mouse asli (Anti Token Block)
-    VirtualInputManager:SendMouseButtonEvent(clickPos.X, clickPos.Y, 0, true, game, 0)
-    task.wait(0.05)
-    VirtualInputManager:SendMouseButtonEvent(clickPos.X, clickPos.Y, 0, false, game, 0)
-    task.wait(0.05)
-    return true
-end
 
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
     pcall(function()
-        local pGui = Me:FindFirstChild("PlayerGui")
-        if not pGui then isHopping = false return end
+        local PlaceID = game.PlaceId
+        local found = false
         
-        -- 1. Buka Menu Utama Game
-        local menuBtn = pGui:FindFirstChild("Main") and pGui.Main:FindFirstChild("MenuButton") or pGui.Main:FindFirstChild("Menu")
-        if menuBtn then ClickButton(menuBtn) task.wait(0.5) end
+        -- Cara yang sama persis dengan Thunder Hub / Redz Hub
+        local Site = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
         
-        -- 2. Cari dan klik tombol Server
-        local serverBtn = nil
-        for _, btn in pairs(pGui.Main:GetDescendants()) do
-            if btn:IsA("TextButton") and string.find(string.lower(btn.Text), "server") then
-                serverBtn = btn
+        for _, server in pairs(Site.data) do
+            -- Cari server yang belum penuh dan bukan server kita sekarang
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(PlaceID, server.id, Me)
+                found = true
                 break
             end
         end
         
-        if not serverBtn then isHopping = false return end
-        ClickButton(serverBtn)
-        task.wait(1.5) -- Nunggu UI Server Browser muncul
-        
-        -- 3. Cari dan Scroll sampai nemu server yang valid
-        local joined = false
-        for scrollAttempt = 1, 20 do
-            for _, btn in pairs(pGui.Main:GetDescendants()) do
-                if btn:IsA("TextButton") and btn.Visible and string.find(string.lower(btn.Text), "join") then
-                    local parent = btn.Parent
-                    if parent then
-                        for _, label in pairs(parent:GetDescendants()) do
-                            if label:IsA("TextLabel") then
-                                local current, max = string.match(label.Text, "(%d+)/(%d+)")
-                                if current and max then
-                                    current = tonumber(current)
-                                    max = tonumber(max)
-                                    -- Cari server yang ada orangnya (>2 pemain, biar bukan bot) dan belum penuh
-                                    if current and max and current > 2 and current < max then
-                                        ClickButton(btn)
-                                        joined = true
-                                        break
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    if joined then break end
-                end
-            end
-            
-            if joined then break end
-            
-            -- Scroll ke bawah kalau server di atas penuh
-            VirtualInputManager:SendMouseWheelEvent(0, -3, false, game)
-            task.wait(0.5)
-        end
-        
-        -- 4. Tutup UI kalau udah selesai
-        if not joined then
-            local closeBtn = pGui.Main:FindFirstChild("Close") or pGui.Main:FindFirstChild("X")
-            if closeBtn then ClickButton(closeBtn) end
+        -- Fallback kalau API ga nemu server (sangat jarang)
+        if not found then
+            TeleportService:Teleport(PlaceID, Me)
         end
     end)
     
-    task.wait(15) -- Cooldown abis klik Join biar ga spam
+    task.wait(15) -- Cooldown biar ga spam
     isHopping = false
 end
 
@@ -253,10 +199,11 @@ task.spawn(function()
                     if f and f.Parent and f.Parent == Workspace then 
                         fruitCount = fruitCount + 1 
                     else
-                        Rem(f)
+                        Rem(f) -- Hapus data buah palsu yang udah ga di map
                     end
                 end
                 
+                -- Kalau ga ada buah di map, langsung gas hop
                 if fruitCount == 0 then
                     _G.Cat.HopServer()
                 end
