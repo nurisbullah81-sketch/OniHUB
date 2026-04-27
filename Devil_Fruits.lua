@@ -232,7 +232,7 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - FOCUS UI FIX NO ZOOM]
+-- [HOP SERVER - NOMEXY SOVEREIGN V11 (GEMINI LOGIC 100%)]
 local isHopping = false
 
 function _G.Cat.HopServer()
@@ -247,159 +247,81 @@ function _G.Cat.HopServer()
             return
         end
 
-        warn("[CatHUB] [HOP] Mencari server via VIM...")
-        
-        -- 1. Buka UI
-        local openBtn = nil
-        for _, obj in ipairs(Me.PlayerGui:GetDescendants()) do
-            if obj.Name == "ServerBrowserButton" and (obj:IsA("TextButton") or obj:IsA("ImageButton")) then
-                openBtn = obj
-                break
+        warn("[CatHUB] [HOP] Menjalankan Nomexy Sovereign Hopper...")
+
+        -- 1. BUKA UI (Pake offset +58 persis dari Gemini)
+        local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+        if not (browser and browser.Enabled) then
+            local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
+            if openBtn then
+                local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
+                VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
+                task.wait(0.1)
+                VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
             end
         end
 
-        if openBtn then
-            local clickY = math.max(openBtn.AbsolutePosition.Y + (openBtn.AbsoluteSize.Y/2), 50) + TopBarOffset
-            local clickX = openBtn.AbsolutePosition.X + (openBtn.AbsoluteSize.X/2)
-            
-            VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0)
-            task.wait(0.1)
-            VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
-            task.wait(2.5) 
-            
-            -- 2. Cari Scroll Frame & Lock Mouse
-            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            local scrollFrame = browser and browser:FindFirstChild("FakeScroll", true)
-            
-            if scrollFrame then
-                local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
-                -- RAHASIA NO-ZOOM: Lock mouse di tengah UI scroll sebelum nge-scroll
-                local cX = sP.X + (sS.X / 2)
-                local cY = sP.Y + (sS.Y / 2) 
-                
-                -- Hover & Klik tengah biar UI fokus menangkap scroll
-                VIM:SendMouseMoveEvent(cX, cY, game)
-                task.wait(0.2)
-                VIM:SendMouseButtonEvent(cX, cY, 0, true, game, 0)
-                task.wait(0.1)
-                VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
-                task.wait(0.5)
+        -- 2. SMART-SYNC: Nunggu list server bener-bener ke-load
+        local listArea
+        local loadTimeout = 0
+        repeat 
+            task.wait(0.5)
+            loadTimeout = loadTimeout + 1
+            browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            listArea = browser and browser:FindFirstChild("Inside", true)
+        until (listArea and #listArea:GetChildren() > 2) or loadTimeout > 15
 
-                -- Deep Drilling
-                for i = 1, 100 do
-                    VIM:SendMouseWheelEvent(cX, cY, false, game)
-                    if i % 30 == 0 then task.wait() end 
-                end
-                task.wait(1.5)
+        if listArea then
+            local scrollFrame = browser:FindFirstChild("FakeScroll", true)
+            local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+            local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + 58
 
-                -- 3. Snipe Join
-                local insideFrame = browser:FindFirstChild("Inside", true)
-                if insideFrame then
-                    local targets = {}
-                    for _, v in pairs(insideFrame:GetDescendants()) do
-                        if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
-                            if v.AbsolutePosition.Y > sP.Y and v.AbsolutePosition.Y < (sP.Y + sS.Y) then
-                                table.insert(targets, v)
-                            end
-                        end
-                    end
+            -- 3. FORCE FOCUS: Lock mouse di UI biar scroll ga kemana-mana (No Zoom)
+            VIM:SendMouseMoveEvent(cX, cY, game)
+            VIM:SendMouseButtonEvent(cX, cY, 0, true, game, 0)
+            task.wait(0.05)
+            VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
 
-                    if #targets > 0 then
-                        warn("[CatHUB] [HOP] Target Join ketemu! Tembak brutal...")
-                        for _, target in pairs(targets) do
-                            local bp, bs = target.AbsolutePosition, target.AbsoluteSize
-                            local tx = bp.X + (bs.X/2)
-                            local ty = bp.Y + (bs.Y/2)
-                            
-                            for i = 1, 5 do
-                                VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                                task.wait(0.01)
-                                VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                            end
-                            task.wait(0.3)
-                        end
+            -- 4. DEEP DRILLING: Scroll 150x ke bawah
+            warn("[CatHUB] [HOP] Deep drilling scroll...")
+            for i = 1, 150 do
+                VIM:SendMouseWheelEvent(cX, cY, false, game)
+                if i % 40 == 0 then task.wait() end 
+            end
+            task.wait(1.5) -- Sinkronisasi UI
+
+            -- 5. SNIPE: Cari tombol Join yang ada di area layar
+            local targets = {}
+            for _, v in pairs(listArea:GetDescendants()) do
+                if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
+                    if v.AbsolutePosition.Y > sP.Y + 45 and v.AbsolutePosition.Y < (sP.Y + sS.Y - 45) then
+                        table.insert(targets, v)
                     end
                 end
+            end
+
+            if #targets > 0 then
+                warn("[CatHUB] [HOP] Target Join ketemu! Tembak brutal...")
+                for _, target in pairs(targets) do
+                    local bp, bs = target.AbsolutePosition, target.AbsoluteSize
+                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
+                    
+                    -- Ghost Turbo Tap (5x)
+                    for i = 1, 5 do
+                        VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                        VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                        task.wait(0.01)
+                        VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                        VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                    end
+                    task.wait(0.3)
+                end
+            else
+                warn("[CatHUB] [HOP] Ga ada tombol Join yang keliatan.")
             end
         end
     end)
     
     task.wait(15)
     isHopping = false
-end
-
--- [[ SENTINEL: POP-UP OBLITERATOR (ANTI-772/773) ]] --
-task.spawn(function()
-    while task.wait(0.1) do 
-        pcall(function()
-            local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
-            local playerGui = Me.PlayerGui:FindFirstChild("ErrorPrompt", true) or Me.PlayerGui:FindFirstChild("MessagePrompt", true)
-            
-            if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
-                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                task.wait(0.02)
-                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                -- Failsafe klik tengah
-                local vp = workspace.CurrentCamera.ViewportSize
-                VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, true, game, 0)
-                task.wait(0.02)
-                VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, false, game, 0)
-            end
-        end)
-    end
-end)
-
--- [CEK BUAH: MAP + BACKPACK + TANGAN]
-task.spawn(function()
-    while task.wait(10) do
-        if Settings.AutoHop then
-            pcall(function()
-                if not game:IsLoaded() then return end
-                local char = Me.Character
-                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-                local hum = char:FindFirstChild("Humanoid")
-                if hum and hum.Health <= 0 then return end
-                
-                local fruitCount = 0
-                
-                -- Cek buah di Map
-                for f, _ in pairs(Data) do
-                    if f and f.Parent and f.Parent == Workspace then 
-                        fruitCount = fruitCount + 1 
-                    else
-                        Rem(f)
-                    end
-                end
-                
-                -- Cek buah di Tangan / Backpack
-                if Me.Backpack then 
-                    for _, tool in pairs(Me.Backpack:GetChildren()) do 
-                        if tool:IsA("Tool") and string.find(tool.Name, "Fruit") then 
-                            fruitCount = fruitCount + 1 
-                        end 
-                    end 
-                end
-                if char then 
-                    for _, tool in pairs(char:GetChildren()) do 
-                        if tool:IsA("Tool") and string.find(tool.Name, "Fruit") then 
-                            fruitCount = fruitCount + 1 
-                        end 
-                    end 
-                end
-                
-                if fruitCount == 0 then
-                    warn("[CatHUB] Ga ada buah dimanapun. Auto Hop...")
-                    _G.Cat.HopServer()
-                end
-            end)
-        end
-    end
-end)
-
-function _G.Cat.GetFruitsList()
-    local names = {}
-    for f, _ in pairs(Data) do if f and f.Parent then table.insert(names, f.Name) end end
-    return names
 end
