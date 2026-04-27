@@ -68,7 +68,6 @@ end)
 
 -- SMOOTH TWEEN LOGIC
 local fruitTween = nil
-
 local function GetNearestFruit()
     local closest, minDist = nil, math.huge
     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
@@ -114,7 +113,6 @@ end)
 -- AUTO STORE FRUITS
 -- ==========================================
 local StoreBlacklist = {}
-
 local function GetFruitRealName(tool)
     if not tool then return nil end
     local fruitVal = tool:FindFirstChild("Fruit")
@@ -128,7 +126,6 @@ task.spawn(function()
             pcall(function()
                 local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
                 if not remote then return end
-                
                 local function TryStore(tool)
                     if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then
                         if not table.find(StoreBlacklist, tool.Name) then
@@ -136,17 +133,12 @@ task.spawn(function()
                             local success = remote:InvokeServer("StoreFruit", realName, tool)
                             if success ~= true then
                                 table.insert(StoreBlacklist, tool.Name)
-                                if Settings.AutoHop then
-                                    task.wait(1)
-                                    _G.Cat.HopServer()
-                                end
+                                if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end
                             end
                         end
                     end
                 end
-
-                local backpack = Me.Backpack
-                local char = Me.Character
+                local backpack = Me.Backpack; local char = Me.Character
                 if backpack then for _, tool in pairs(backpack:GetChildren()) do TryStore(tool) end end
                 if char then for _, tool in pairs(char:GetChildren()) do TryStore(tool) end end
             end)
@@ -155,7 +147,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- THUNDER HUB EXACT SERVER HOPPER (773 FIX)
+-- FIXED SERVER HOPPER (PROXY + DEBUG)
 -- ==========================================
 local isHopping = false
 
@@ -164,29 +156,46 @@ function _G.Cat.HopServer()
     isHopping = true
     
     pcall(function()
+        warn("[CatHUB] [HOP] Mulai cari server...")
+        
         local PlaceID = game.PlaceId
         local JobID = game.JobId
         
-        -- 1. Cari list server dari API Roblox (Hanya di Sea yang sama)
-        local Site = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
+        -- Pakai roproxy biar ga kena block internal Roblox
+        local ApiUrl = "https://games.roproxy.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+        
+        -- FIX PCALL: Tangkep success sama resultnya
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(ApiUrl))
         end)
         
-        if Site then
-            local Data = Site
-            -- 2. Loop cari server yang belum penuh dan bukan bot
-            for i, v in pairs(Data.data) do
+        if not success or not result or not result.data then
+            warn("[CatHUB] [HOP] Gagal ambil data API. Executor block HttpService?")
+            isHopping = false
+            return
+        end
+        
+        warn("[CatHUB] [HOP] Data API dapet. Nyari server yang kosong...")
+        local foundServer = false
+        
+        for i, v in pairs(result.data) do
+            -- Cari server yang belum penuh, ada orang asli (>2 pemain), dan bukan server saat ini
+            if type(v) == "table" and v.playing and v.maxPlayers and v.id then
                 if v.playing < v.maxPlayers and v.playing > 2 and v.id ~= JobID then
-                    -- 3. Teleport ke server itu
+                    warn("[CatHUB] [HOP] Ketemu server! Pemain: " .. v.playing .. "/" .. v.maxPlayers .. ". Teleporting...")
                     TeleportService:TeleportToPlaceInstance(PlaceID, v.id, Me)
+                    foundServer = true
                     break
                 end
             end
         end
-        -- JANGAN ADA FALLBACK TeleportService:Teleport() -> Ini penyebab Error 773!
+        
+        if not foundServer then
+            warn("[CatHUB] [HOP] Ga nemu server yang cocok di halaman 1.")
+        end
     end)
     
-    task.wait(15) -- Cooldown biar ga spam
+    task.wait(15) -- Cooldown
     isHopping = false
 end
 
