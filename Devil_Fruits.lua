@@ -12,7 +12,7 @@ local Mem = {}
 local FC = 0
 local SKIP = 10 
 
--- [Fungsi Dasar ESP & Tween Tetap Sama, Gue Ringkas Biar Ga Kepotong]
+-- [Fungsi Dasar ESP & Tween Dikompact biar ga makan space]
 local function Pos(f) if not f or not f.Parent then return nil end local ok,r=pcall(function() if f:IsA("Tool") then local h=f:FindFirstChild("Handle") if h then return h.Position end elseif f:IsA("Model") then if f.PrimaryPart then return f.PrimaryPart.Position end local root=f:FindFirstChild("HumanoidRootPart") or f:FindFirstChildWhichIsA("BasePart") if root then return root.Position end end end) return ok and r or nil end
 local function IsF(o) if not o or not o.Parent then return false end local ok,r=pcall(function() if o:IsA("Tool") and o:FindFirstChild("Fruit") then return true end return false end) return ok and r end
 local function Add(f) if not f or not f.Parent or Data[f] then return end pcall(function() local bb=Instance.new("BillboardGui",f) bb.Name="CatESP" bb.Size=UDim2.new(0,150,0,20) bb.AlwaysOnTop=true bb.StudsOffset=Vector3.new(0,3,0) bb.Enabled=false local txt=Instance.new("TextLabel",bb) txt.Size=UDim2.new(1,0,1,0) txt.BackgroundTransparency=1 txt.Text=f.Name.." []" txt.TextColor3=Color3.fromRGB(255,255,255) txt.TextStrokeTransparency=0.3 txt.TextStrokeColor3=Color3.fromRGB(0,0,0) txt.Font=Enum.Font.GothamBold txt.TextSize=13 txt.TextXAlignment="Left" Data[f]={bb=bb,txt=txt} Mem[f]=-1 end) end
@@ -36,22 +36,24 @@ local function GetFruitRealName(tool) if not tool then return nil end local frui
 task.spawn(function() while task.wait(0.5) do if Settings.AutoStoreFruit then pcall(function() local remote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") if not remote then return end local function TryStore(tool) if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then if not table.find(StoreBlacklist,tool.Name) then local realName=GetFruitRealName(tool) local success=remote:InvokeServer("StoreFruit",realName,tool) if success~=true then table.insert(StoreBlacklist,tool.Name) if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end end end end end local backpack=Me.Backpack local char=Me.Character if backpack then for _,tool in pairs(backpack:GetChildren()) do TryStore(tool) end end if char then for _,tool in pairs(char:GetChildren()) do TryStore(tool) end end end) end end end)
 
 -- ==========================================
--- ROBUST SERVER HOPPER (PROXY + HTTP FALLBACK)
+-- ANTI-SAMPAH SERVER HOPPER (PROXY + DEBUG)
 -- ==========================================
 local isHopping = false
 
--- Fungsi HTTP yang kebal block
+-- Fungsi HTTP Fallback + Header
 local function FetchUrl(url)
-    -- Method 1: game:HttpGet (Bawaan Roblox, sering dihook executor)
+    local headers = {["Content-Type"] = "application/json"}
+    
+    -- Method 1: game:HttpGet (Bawaan)
     local s, r = pcall(function() return game:HttpGet(url) end)
     if s and type(r) == "string" and #r > 0 then return r end
 
-    -- Method 2: http_request (Synapse/Xeno style)
-    s, r = pcall(function() return http_request({Url = url, Method = "GET"}).Body end)
+    -- Method 2: http_request (Synapse/Xeno)
+    s, r = pcall(function() return http_request({Url = url, Method = "GET", Headers = headers}).Body end)
     if s and type(r) == "string" and #r > 0 then return r end
 
-    -- Method 3: request (Wave/Fluxus style)
-    s, r = pcall(function() return request({Url = url, Method = "GET"}).Body end)
+    -- Method 3: request (Wave/Fluxus)
+    s, r = pcall(function() return request({Url = url, Method = "GET", Headers = headers}).Body end)
     if s and type(r) == "string" and #r > 0 then return r end
 
     return nil
@@ -67,23 +69,31 @@ function _G.Cat.HopServer()
         local PlaceID = game.PlaceId
         local JobID = game.JobId
         
-        -- WAJIB PAKAI ROPROXY
+        -- Double check proxy URL
         local ApiUrl = "https://games.roproxy.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
         
-        -- Fetch data pakai fallback
         local body = FetchUrl(ApiUrl)
         
         if not body then
-            warn("[CatHUB] [HOP] GAGAL: Executor block semua HTTP method.")
+            warn("[CatHUB] [HOP] GAGAL TOTAL: Executor block semua HTTP method. Mati.")
             isHopping = false
             return
         end
         
-        -- FIX PCALL: Tangkep success sama result-nya, jangan cuma boolean
+        -- PRINT RAW BODY (First 100 chars biar ga spam console)
+        warn("[CatHUB] [HOP] Raw Body: " .. string.sub(body, 1, 100))
+        
+        -- CEK START STRING: Kalau ga ada { di depan, itu bukan JSON
+        if not body:find('^{') then
+            warn("[CatHUB] [HOP] GAGAL: Isi bukan JSON! Proxy lagi down atau ngasih halaman error.")
+            isHopping = false
+            return
+        end
+        
         local success, result = pcall(function() return HttpService:JSONDecode(body) end)
         
         if not success or not result or not result.data then
-            warn("[CatHUB] [HOP] GAGAL: JSON parse error.")
+            warn("[CatHUB] [HOP] GAGAL: JSON parse error internal.")
             isHopping = false
             return
         end
@@ -92,8 +102,8 @@ function _G.Cat.HopServer()
         local foundServer = false
         
         for i, v in pairs(result.data) do
-            -- Filter: Antara 2 samppe 10 pemain (hindari bot & server penuh)
             if type(v) == "table" and v.playing and v.maxPlayers and v.id then
+                -- Filter: Antara 2 samppe 10 pemain (hindari bot & server penuh)
                 if v.playing >= 2 and v.playing <= 10 and v.playing < v.maxPlayers and v.id ~= JobID then
                     warn("[CatHUB] [HOP] Ketemu server! Pemain: " .. v.playing .. "/" .. v.maxPlayers .. ". Teleporting...")
                     TeleportService:TeleportToPlaceInstance(PlaceID, v.id, Me)
@@ -108,7 +118,7 @@ function _G.Cat.HopServer()
         end
     end)
     
-    task.wait(15) -- Cooldown
+    task.wait(15)
     isHopping = false
 end
 
