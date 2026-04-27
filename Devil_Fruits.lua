@@ -31,7 +31,6 @@ end
 local function IsF(o) 
     if not o or not o.Parent then return false end 
     local ok,r=pcall(function() 
-        -- Blox Fruits buah bisa bertipe Tool atau Model
         if (o:IsA("Tool") or o:IsA("Model")) and o:FindFirstChild("Fruit") then 
             return true 
         end 
@@ -157,7 +156,7 @@ task.spawn(function()
     end 
 end)
 
--- [AUTO STORE + INVENTORY PENUH = HOP]
+-- [AUTO STORE]
 local StoreBlacklist={}
 local function GetFruitRealName(tool) 
     if not tool then return nil end 
@@ -175,25 +174,16 @@ task.spawn(function()
                 local function TryStore(tool) 
                     if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then 
                         if not table.find(StoreBlacklist,tool.Name) then 
-                            -- BF Sering musti di equip dulu biar ke store
                             if tool.Parent == Me.Backpack and Me.Character and Me.Character:FindFirstChild("Humanoid") then
                                 Me.Character.Humanoid:EquipTool(tool)
                                 task.wait(0.3)
                             end
-                            
                             local realName=GetFruitRealName(tool) 
                             local success=remote:InvokeServer("StoreFruit",realName) 
-                            if success == true then
-                                warn("[CatHUB] [STORE] Berhasil simpan: " .. realName)
-                            else
-                                -- KALO GAGAL (INVENTORY PENUH / DUPLICATE)
-                                warn("[CatHUB] [STORE] Gagal simpan (Inventory Penuh/Duplikat?): " .. realName)
+                            if success~=true then 
                                 table.insert(StoreBlacklist,tool.Name) 
-                                if Settings.AutoHop then 
-                                    task.wait(1) 
-                                    _G.Cat.HopServer() 
-                                end 
-                            end
+                                if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end 
+                            end 
                         end 
                     end 
                 end 
@@ -206,92 +196,97 @@ task.spawn(function()
     end 
 end)
 
--- [MACRO HOPPER - THUNDER STYLE (BYPASS DELTA SEA 2/3)]
+-- [HOP SERVER - SEA 1 ONLY (XENO/DELTA SEA 2/3 BLOCKED)]
 local isHopping = false
-local VIM = game:GetService("VirtualInputManager")
-local CoreGui = game:GetService("CoreGui")
+local Sea1PlaceId = 2753915549
 
-local function clickElement(element)
-    local pos = element.AbsolutePosition
-    local size = element.AbsoluteSize
-    local x = pos.X + size.X / 2
-    local y = pos.Y + size.Y / 2
-    VIM:SendMouseButtonEvent(x, y, 0, true, game, 1)
-    task.wait(0.1)
-    VIM:SendMouseButtonEvent(x, y, 0, false, game, 1)
-    task.wait(0.5)
-end
+local Proxies = {
+    "https://games.roblox.com",
+    "https://games.api.hyra.io",
+    "https://roproxy.com"
+}
 
-local function findAndClickText(textToFind)
-    local RobloxGui = CoreGui:FindFirstChild("RobloxGui")
-    if not RobloxGui then return false end
-    
-    for _, obj in ipairs(RobloxGui:GetDescendants()) do
-        if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Visible and obj.AbsoluteSize.X > 5 then
-            local txt = ""
-            pcall(function() txt = obj.Text or "" end)
-            if string.find(string.lower(txt), string.lower(textToFind)) then
-                clickElement(obj)
-                return true
-            end
-        end
-    end
-    return false
+local function FetchUrl(url)
+    local s, r = pcall(function() return game:HttpGet(url, true) end)
+    if s and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE") then return r end
+    return nil
 end
 
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
-    warn("[CatHUB] [MACRO] Mulai Macro Hop (Thunder Style)...")
-    
-    -- 1. Buka Menu ESC
-    VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game)
-    VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
-    task.wait(1.5)
-    
-    -- 2. Klik Tab "Servers" / "Server"
-    if findAndClickText("server") then
-        warn("[CatHUB] [MACRO] Tab Servers diklik.")
-        task.wait(1.5)
-        
-        -- 3. Cari daftar server dan klik server pertama (Tebalan frame)
-        local RobloxGui = CoreGui:FindFirstChild("RobloxGui")
-        local clickedServer = false
-        if RobloxGui then
-            for _, obj in ipairs(RobloxGui:GetDescendants()) do
-                if obj:IsA("ScrollingFrame") and string.find(string.lower(obj.Name), "server") then
-                    for _, child in ipairs(obj:GetChildren()) do
-                        if child:IsA("Frame") and child.Visible then
-                            warn("[CatHUB] [MACRO] Klik server pertama di list...")
-                            clickElement(child)
-                            clickedServer = true
-                            break
-                        end
-                    end
-                    if clickedServer then break end
-                end
-            end
-        end
-        
-        task.wait(1)
-        
-        -- 4. Klik Tombol "Join" / "Join Server"
-        if findAndClickText("join") then
-            warn("[CatHUB] [MACRO] Tombol Join diklik! Menunggu teleport...")
-            task.wait(5)
-        else
-            warn("[CatHUB] [MACRO] Gagal nemu tombol Join.")
-        end
-    else
-        warn("[CatHUB] [MACRO] Gagal nemu tab Server di menu.")
+    -- PERINGATAN JIKA DI SEA 2/3
+    if game.PlaceId ~= Sea1PlaceId then
+        warn("[CatHUB] Auto Hop di Sea 2/3 di-block executor (Error 773). Harap farm di Sea 1 atau ganti executor.")
+        isHopping = false
+        return
     end
     
-    -- 5. Tutup menu kalau masih kebuka
-    VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game)
-    VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
+    pcall(function()
+        local PlaceID = game.PlaceId
+        local JobID = tostring(game.JobId)
+        
+        local targetServers = {}
+        local fallbackServers = {}
+        
+        warn("[CatHUB] [HOP] Mulai cari server Sea 1...")
+        
+        for _, proxy in pairs(Proxies) do
+            local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+            local body = FetchUrl(ApiUrl)
+            if not body then continue end
+            
+            local success, result = pcall(function() return HttpService:JSONDecode(body) end)
+            if not success or type(result) ~= "table" or not result.data then continue end
+            
+            for i, v in pairs(result.data) do
+                if type(v) == "table" and v.playing and v.maxPlayers and v.id then
+                    if tostring(v.id) ~= JobID then
+                        if v.playing >= 2 and v.playing <= 10 then
+                            table.insert(targetServers, v)
+                        elseif v.playing >= 11 and v.playing < v.maxPlayers then
+                            table.insert(fallbackServers, v)
+                        end
+                    end
+                end
+            end
+            
+            if #targetServers > 0 then break end
+        end
+        
+        local chosen = nil
+        local chosenType = ""
+        
+        if #targetServers > 0 then
+            for i = #targetServers, 2, -1 do
+                local j = math.random(1, i)
+                targetServers[i], targetServers[j] = targetServers[j], targetServers[i]
+            end
+            chosen = targetServers[1]
+            chosenType = "TARGET (2-10 pemain)"
+        elseif #fallbackServers > 0 then
+            for i = #fallbackServers, 2, -1 do
+                local j = math.random(1, i)
+                fallbackServers[i], fallbackServers[j] = fallbackServers[j], fallbackServers[i]
+            end
+            chosen = fallbackServers[1]
+            chosenType = "FALLBACK (>10 pemain)"
+        end
+        
+        if chosen then
+            local targetJobId = tostring(chosen.id)
+            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
+            task.wait(2)
+            TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
+        else
+            warn("[CatHUB] [HOP] Proxy gagal. Random Teleport...")
+            task.wait(2)
+            TeleportService:Teleport(PlaceID, Me)
+        end
+    end)
     
-    task.wait(10)
+    task.wait(15)
     isHopping = false
 end
 
@@ -317,7 +312,7 @@ task.spawn(function()
                 end
                 
                 if fruitCount == 0 then
-                    warn("[CatHUB] [HOP] Ga ada buah di map. Auto Macro Hop nyala...")
+                    warn("[CatHUB] Ga ada buah. Auto Hop...")
                     _G.Cat.HopServer()
                 end
             end)
