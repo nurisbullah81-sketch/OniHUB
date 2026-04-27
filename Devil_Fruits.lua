@@ -34,7 +34,7 @@ local StoreBlacklist={}
 local function GetFruitRealName(tool) if not tool then return nil end local fruitVal=tool:FindFirstChild("Fruit") if fruitVal and fruitVal:IsA("StringValue") then return fruitVal.Value end return tool.Name end
 task.spawn(function() while task.wait(0.5) do if Settings.AutoStoreFruit then pcall(function() local remote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") if not remote then return end local function TryStore(tool) if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then if not table.find(StoreBlacklist,tool.Name) then local realName=GetFruitRealName(tool) local success=remote:InvokeServer("StoreFruit",realName,tool) if success~=true then table.insert(StoreBlacklist,tool.Name) if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end end end end end local backpack=Me.Backpack local char=Me.Character if backpack then for _,tool in pairs(backpack:GetChildren()) do TryStore(tool) end end if char then for _,tool in pairs(char:GetChildren()) do TryStore(tool) end end end) end end end)
 
--- [HOP SERVER - CONFIRMED DIFFERENT SERVER]
+-- [HOP SERVER - TARGET 3-8 PEMAIN]
 local isHopping = false
 
 local Proxies = {
@@ -66,7 +66,10 @@ function _G.Cat.HopServer()
     pcall(function()
         local PlaceID = game.PlaceId
         local JobID = game.JobId
-        local validServers = {}
+        
+        -- 2 list: Target (3-8 pemain) dan Fallback (1-12 pemain)
+        local targetServers = {}
+        local fallbackServers = {}
         
         warn("[CatHUB] [HOP] Mulai cari server...")
         warn("[CatHUB] [HOP] Server saat ini: " .. tostring(JobID))
@@ -86,30 +89,52 @@ function _G.Cat.HopServer()
             
             for i, v in pairs(result.data) do
                 if type(v) == "table" and v.playing and v.maxPlayers and v.id then
-                    -- PASTIKAN INI BUKAN SERVER YANG SAMA DAN BUKAN SERVER PENUH
-                    if v.id ~= JobID and v.playing < v.maxPlayers and v.playing > 0 then
-                        table.insert(validServers, v)
+                    -- PASTIKAN BUKAN SERVER YANG SAMA
+                    if v.id ~= JobID then
+                        -- PRIORITAS: 3-8 pemain (Sweet spot buat cari buah)
+                        if v.playing >= 3 and v.playing <= 8 then
+                            table.insert(targetServers, v)
+                        -- FALLBACK: 1-12 pemain (Kalau gaada yang 3-8)
+                        elseif v.playing > 0 and v.playing < v.maxPlayers then
+                            table.insert(fallbackServers, v)
+                        end
+                        -- 0 pemain = GA MASUK LIST SAMA SEKALI
                     end
-                end
+               
             end
             
-            if #validServers > 0 then break end
+            if #targetServers > 0 then break end
         end
         
-        if #validServers > 0 then
-            -- Acak urutan server biar ga selalu yang sama
-            for i = #validServers, 2, -1 do
+        -- Pilih server
+        local chosen = nil
+        local chosenType = ""
+        
+        if #targetServers > 0 then
+            -- Acak urutan target
+            for i = #targetServers, 2, -1 do
                 local j = math.random(1, i)
-                validServers[i], validServers[j] = validServers[j], validServers[i]
+                targetServers[i], targetServers[j] = targetServers[j], targetServers[i]
             end
-            
-            local chosen = validServers[1]
-            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. chosen.id .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ")")
-            warn("[CatHUB] [HOP] Pastikan ID server beda ya!")
+            chosen = targetServers[1]
+            chosenType = "TARGET (3-8 pemain)"
+        elseif #fallbackServers > 0 then
+            -- Acak urutan fallback
+            for i = #fallbackServers, 2, -1 do
+                local j = math.random(1, i)
+                fallbackServers[i], fallbackServers[j] = fallbackServers[j], fallbackServers[i]
+            end
+            chosen = fallbackServers[1]
+            chosenType = "FALLBACK (1-12 pemain)"
+        end
+        
+        if chosen then
+            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. chosen.id .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
+            warn("[CatHUB] [HOP] Cek JobID lama: " .. tostring(JobID) .. " -> JobID baru: " .. tostring(chosen.id))
             task.wait(2)
             TeleportService:TeleportToPlaceInstance(PlaceID, chosen.id, Me)
         else
-            -- Fallback: Random teleport kalau semua proxy gagal atau kena 773
+            -- Fallback terakhir: Random teleport
             warn("[CatHUB] [HOP] Semua proxy gagal. Fallback ke random server...")
             task.wait(2)
             TeleportService:Teleport(PlaceID, Me)
