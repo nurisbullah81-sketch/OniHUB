@@ -206,8 +206,9 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - PLAN B ANTI TOKEN BLOCK SEA 2/3]
+-- [HOP SERVER - ESCAPE POD SEA 2/3]
 local isHopping = false
+local BloxFruitsSea1 = 2753915549
 
 local Proxies = {
     "https://games.roblox.com",
@@ -231,15 +232,26 @@ local function FetchUrl(url)
     return nil
 end
 
--- Detektor Token Gagal (Auto switch ke random kalau kena blokir)
+-- Detektor Token Gagal
 local tokenBlocked = false
 TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
-    if player == Me and errorMessage and string.find(errorMessage, "teleport token") then
-        warn("[CatHUB] [HOP] KENA BLOKIR TOKEN! Menggunakan Plan B (Random Server)...")
+    if player == Me and errorMessage and string.find(string.lower(errorMessage), "token") then
+        warn("[CatHUB] [HOP] KENA BLOKIR TOKEN!")
         tokenBlocked = true
-        pcall(function()
-            TeleportService:Teleport(game.PlaceId, Me)
-        end)
+        
+        -- PLAN C: Kalau di Sea 2/3 kena blokir, balik ke Sea 1 dulu!
+        if game.PlaceId ~= BloxFruitsSea1 then
+            warn("[CatHUB] [HOP] Executor ga bisa hop di Sea 2/3. Balik ke Sea 1 dulu...")
+            task.wait(2)
+            pcall(function()
+                TeleportService:Teleport(BloxFruitsSea1, Me)
+            end)
+        else
+            -- Kalau di Sea 1 aja kena blokir, coba random teleport biasa
+            pcall(function()
+                TeleportService:Teleport(game.PlaceId, Me)
+            end)
+        end
     end
 end)
 
@@ -260,10 +272,14 @@ function _G.Cat.HopServer()
             return
         end
         
-        -- Kalau sebelumnya udah kena blokir token, langsung random aja biar ga waste waktu
+        -- Kalau executor ga bisa bypass token, langsung plan C
         if tokenBlocked then
-            warn("[CatHUB] [HOP] Mode Token Block aktif. Langsung Random Teleport...")
-            TeleportService:Teleport(PlaceID, Me)
+            if PlaceID ~= BloxFruitsSea1 then
+                warn("[CatHUB] [HOP] Mode Escape! Balik ke Sea 1...")
+                TeleportService:Teleport(BloxFruitsSea1, Me)
+            else
+                TeleportService:Teleport(PlaceID, Me)
+            end
             return
         end
         
