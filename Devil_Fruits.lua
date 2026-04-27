@@ -196,93 +196,78 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - SEA 1 ONLY (XENO/DELTA SEA 2/3 BLOCKED)]
+-- [VIM APEX HOPPER - PREMIUM EDITION (XENO/DELTA BYPASS)]
 local isHopping = false
-local Sea1PlaceId = 2753915549
+local VIM = game:GetService("VirtualInputManager")
+local GuiService = game:GetService("GuiService")
+local TopBarOffset = GuiService:GetGuiInset().Y -- Hitung offset layar dinamis (Pengganti +58)
 
-local Proxies = {
-    "https://games.roblox.com",
-    "https://games.api.hyra.io",
-    "https://roproxy.com"
-}
-
-local function FetchUrl(url)
-    local s, r = pcall(function() return game:HttpGet(url, true) end)
-    if s and type(r) == "string" and #r > 0 and not r:find("<!DOCTYPE") then return r end
-    return nil
+local function vimClick(element)
+    if not element or not element.Visible then return false end
+    local pos = element.AbsolutePosition
+    local size = element.AbsoluteSize
+    -- Rahasia fix off-screen: Tambahin offset TopBar biar VIM ngeklik di area yang valid
+    local x = pos.X + (size.X / 2)
+    local y = pos.Y + (size.Y / 2) + TopBarOffset 
+    
+    VIM:SendMouseMoveEvent(x, y, game)
+    task.wait(0.1)
+    VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+    task.wait(0.1)
+    VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    task.wait(0.5)
+    return true
 end
 
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
-    -- PERINGATAN JIKA DI SEA 2/3
-    if game.PlaceId ~= Sea1PlaceId then
-        warn("[CatHUB] Auto Hop di Sea 2/3 di-block executor (Error 773). Harap farm di Sea 1 atau ganti executor.")
-        isHopping = false
-        return
-    end
-    
     pcall(function()
-        local PlaceID = game.PlaceId
-        local JobID = tostring(game.JobId)
+        local char = Me.Character
+        local hum = char and char:FindFirstChild("Humanoid")
+        if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
+            isHopping = false
+            return
+        end
+
+        warn("[CatHUB] [HOP] Mencari server via UI (VIM Bypass)...")
         
-        local targetServers = {}
-        local fallbackServers = {}
-        
-        warn("[CatHUB] [HOP] Mulai cari server Sea 1...")
-        
-        for _, proxy in pairs(Proxies) do
-            local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
-            local body = FetchUrl(ApiUrl)
-            if not body then continue end
+        -- LANGKAH 1: Buka UI Server
+        local openBtn = nil
+        for _, obj in ipairs(Me.PlayerGui:GetDescendants()) do
+            if obj.Name == "ServerBrowserButton" and (obj:IsA("TextButton") or obj:IsA("ImageButton")) then
+                openBtn = obj
+                break
+            end
+        end
+
+        if openBtn then
+            vimClick(openBtn)
+            task.wait(2.5) -- Nunggu UI load
             
-            local success, result = pcall(function() return HttpService:JSONDecode(body) end)
-            if not success or type(result) ~= "table" or not result.data then continue end
-            
-            for i, v in pairs(result.data) do
-                if type(v) == "table" and v.playing and v.maxPlayers and v.id then
-                    if tostring(v.id) ~= JobID then
-                        if v.playing >= 2 and v.playing <= 10 then
-                            table.insert(targetServers, v)
-                        elseif v.playing >= 11 and v.playing < v.maxPlayers then
-                            table.insert(fallbackServers, v)
-                        end
-                    end
+            -- LANGKAH 2: Cari tombol Join paling atas (Biar masuk server rame, bukan server mati)
+            local joinBtn = nil
+            for _, obj in ipairs(Me.PlayerGui:GetDescendants()) do
+                if obj:IsA("TextButton") and obj.Name == "Join" and obj.Visible and obj.AbsolutePosition.Y > 0 then
+                    joinBtn = obj
+                    break -- Ambil tombol Join pertama yang muncul (Server paling atas)
                 end
             end
             
-            if #targetServers > 0 then break end
-        end
-        
-        local chosen = nil
-        local chosenType = ""
-        
-        if #targetServers > 0 then
-            for i = #targetServers, 2, -1 do
-                local j = math.random(1, i)
-                targetServers[i], targetServers[j] = targetServers[j], targetServers[i]
+            if joinBtn then
+                warn("[CatHUB] [HOP] Menembak tombol Join via VIM...")
+                -- Spam klik dikit biar kebaca
+                for i = 1, 3 do
+                    vimClick(joinBtn)
+                    task.wait(0.2)
+                end
+                warn("[CatHUB] [HOP] Ditembak! Menunggu teleport...")
+            else
+                warn("[CatHUB] [HOP] Tombol Join ga keliatan.")
             end
-            chosen = targetServers[1]
-            chosenType = "TARGET (2-10 pemain)"
-        elseif #fallbackServers > 0 then
-            for i = #fallbackServers, 2, -1 do
-                local j = math.random(1, i)
-                fallbackServers[i], fallbackServers[j] = fallbackServers[j], fallbackServers[i]
-            end
-            chosen = fallbackServers[1]
-            chosenType = "FALLBACK (>10 pemain)"
-        end
-        
-        if chosen then
-            local targetJobId = tostring(chosen.id)
-            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
-            task.wait(2)
-            TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
         else
-            warn("[CatHUB] [HOP] Proxy gagal. Random Teleport...")
-            task.wait(2)
-            TeleportService:Teleport(PlaceID, Me)
+            warn("[CatHUB] [HOP] Tombol ServerBrowserButton ga ketemu.")
         end
     end)
     
@@ -290,13 +275,27 @@ function _G.Cat.HopServer()
     isHopping = false
 end
 
--- CEK BUAH DI MAP
+-- SENTINEL: Auto close Error 773 biar ngga nyangkut
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local errPrompt = game.CoreGui:FindFirstChild("ErrorPrompt", true) 
+            if errPrompt and errPrompt.Visible then
+                -- Klik OK / Enter buat nutup popup 773
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                task.wait(0.05)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+            end
+        end)
+    end
+end)
+
+-- CEK BUAH DI MAP: Kalau ada buah, DILARANG HOP
 task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
             pcall(function()
                 if not game:IsLoaded() then return end
-                
                 local char = Me.Character
                 if not char or not char:FindFirstChild("HumanoidRootPart") then return end
                 local hum = char:FindFirstChild("Humanoid")
@@ -312,7 +311,7 @@ task.spawn(function()
                 end
                 
                 if fruitCount == 0 then
-                    warn("[CatHUB] Ga ada buah. Auto Hop...")
+                    warn("[CatHUB] Ga ada buah. Auto Hop VIM...")
                     _G.Cat.HopServer()
                 end
             end)
