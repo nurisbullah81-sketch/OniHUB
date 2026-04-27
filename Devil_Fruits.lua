@@ -34,7 +34,7 @@ local StoreBlacklist={}
 local function GetFruitRealName(tool) if not tool then return nil end local fruitVal=tool:FindFirstChild("Fruit") if fruitVal and fruitVal:IsA("StringValue") then return fruitVal.Value end return tool.Name end
 task.spawn(function() while task.wait(0.5) do if Settings.AutoStoreFruit then pcall(function() local remote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") if not remote then return end local function TryStore(tool) if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then if not table.find(StoreBlacklist,tool.Name) then local realName=GetFruitRealName(tool) local success=remote:InvokeServer("StoreFruit",realName,tool) if success~=true then table.insert(StoreBlacklist,tool.Name) if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end end end end end local backpack=Me.Backpack local char=Me.Character if backpack then for _,tool in pairs(backpack:GetChildren()) do TryStore(tool) end end if char then for _,tool in pairs(char:GetChildren()) do TryStore(tool) end end end) end end end)
 
--- [HOP SERVER - FIX 773]
+-- [HOP SERVER - CONFIRMED DIFFERENT SERVER]
 local isHopping = false
 
 local Proxies = {
@@ -64,11 +64,12 @@ function _G.Cat.HopServer()
     isHopping = true
     
     pcall(function()
-        warn("[CatHUB] [HOP] Mulai cari server...")
-        
         local PlaceID = game.PlaceId
         local JobID = game.JobId
         local validServers = {}
+        
+        warn("[CatHUB] [HOP] Mulai cari server...")
+        warn("[CatHUB] [HOP] Server saat ini: " .. tostring(JobID))
         
         for _, proxy in pairs(Proxies) do
             local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
@@ -85,7 +86,8 @@ function _G.Cat.HopServer()
             
             for i, v in pairs(result.data) do
                 if type(v) == "table" and v.playing and v.maxPlayers and v.id then
-                    if v.playing >= 2 and v.playing <= 10 and v.playing < v.maxPlayers and v.id ~= JobID then
+                    -- PASTIKAN INI BUKAN SERVER YANG SAMA DAN BUKAN SERVER PENUH
+                    if v.id ~= JobID and v.playing < v.maxPlayers and v.playing > 0 then
                         table.insert(validServers, v)
                     end
                 end
@@ -95,8 +97,15 @@ function _G.Cat.HopServer()
         end
         
         if #validServers > 0 then
-            local chosen = validServers[math.random(1, #validServers)]
+            -- Acak urutan server biar ga selalu yang sama
+            for i = #validServers, 2, -1 do
+                local j = math.random(1, i)
+                validServers[i], validServers[j] = validServers[j], validServers[i]
+            end
+            
+            local chosen = validServers[1]
             warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. chosen.id .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ")")
+            warn("[CatHUB] [HOP] Pastikan ID server beda ya!")
             task.wait(2)
             TeleportService:TeleportToPlaceInstance(PlaceID, chosen.id, Me)
         else
