@@ -206,41 +206,96 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - DELTA BYPASS (RANDOM SMART HOP SEA 2/3)]
+-- [MACRO HOPPER - THUNDER STYLE (BYPASS DELTA SEA 2/3)]
 local isHopping = false
+local VIM = game:GetService("VirtualInputManager")
+local CoreGui = game:GetService("CoreGui")
+
+local function clickElement(element)
+    local pos = element.AbsolutePosition
+    local size = element.AbsoluteSize
+    local x = pos.X + size.X / 2
+    local y = pos.Y + size.Y / 2
+    VIM:SendMouseButtonEvent(x, y, 0, true, game, 1)
+    task.wait(0.1)
+    VIM:SendMouseButtonEvent(x, y, 0, false, game, 1)
+    task.wait(0.5)
+end
+
+local function findAndClickText(textToFind)
+    local RobloxGui = CoreGui:FindFirstChild("RobloxGui")
+    if not RobloxGui then return false end
+    
+    for _, obj in ipairs(RobloxGui:GetDescendants()) do
+        if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Visible and obj.AbsoluteSize.X > 5 then
+            local txt = ""
+            pcall(function() txt = obj.Text or "" end)
+            if string.find(string.lower(txt), string.lower(textToFind)) then
+                clickElement(obj)
+                return true
+            end
+        end
+    end
+    return false
+end
 
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
-    local char = Me.Character
-    local hum = char and char:FindFirstChild("Humanoid")
-    if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
-        isHopping = false
-        return
+    warn("[CatHUB] [MACRO] Mulai Macro Hop (Thunder Style)...")
+    
+    -- 1. Buka Menu ESC
+    VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game)
+    VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
+    task.wait(1.5)
+    
+    -- 2. Klik Tab "Servers" / "Server"
+    if findAndClickText("server") then
+        warn("[CatHUB] [MACRO] Tab Servers diklik.")
+        task.wait(1.5)
+        
+        -- 3. Cari daftar server dan klik server pertama (Tebalan frame)
+        local RobloxGui = CoreGui:FindFirstChild("RobloxGui")
+        local clickedServer = false
+        if RobloxGui then
+            for _, obj in ipairs(RobloxGui:GetDescendants()) do
+                if obj:IsA("ScrollingFrame") and string.find(string.lower(obj.Name), "server") then
+                    for _, child in ipairs(obj:GetChildren()) do
+                        if child:IsA("Frame") and child.Visible then
+                            warn("[CatHUB] [MACRO] Klik server pertama di list...")
+                            clickElement(child)
+                            clickedServer = true
+                            break
+                        end
+                    end
+                    if clickedServer then break end
+                end
+            end
+        end
+        
+        task.wait(1)
+        
+        -- 4. Klik Tombol "Join" / "Join Server"
+        if findAndClickText("join") then
+            warn("[CatHUB] [MACRO] Tombol Join diklik! Menunggu teleport...")
+            task.wait(5)
+        else
+            warn("[CatHUB] [MACRO] Gagal nemu tombol Join.")
+        end
+    else
+        warn("[CatHUB] [MACRO] Gagal nemu tab Server di menu.")
     end
     
-    local PlaceID = game.PlaceId
+    -- 5. Tutup menu kalau masih kebuka
+    VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game)
+    VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
     
-    -- CEK: Kalau di server ini ada 2-10 pemain, TETEP DISINI (Jangan hop)
-    local playerCount = #game:GetService("Players"):GetPlayers()
-    if playerCount >= 2 and playerCount <= 10 then
-        warn("[CatHUB] [HOP] Server ini udah bagus (" .. playerCount .. " pemain). Batal hop.")
-        isHopping = false
-        return
-    end
-    
-    warn("[CatHUB] [HOP] Server kurang bagus atau kosong. Gas Random Teleport (Delta Style)...")
-    task.wait(1)
-    
-    -- TEMBAK RANDOM MENTAH (SAMA KAYAK UI DELTA)
-    game:GetService("TeleportService"):Teleport(PlaceID, Me)
-    
-    task.wait(15)
+    task.wait(10)
     isHopping = false
 end
 
--- CEK BUAH DI MAP & CEK SERVER KOSONG
+-- CEK BUAH DI MAP
 task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
@@ -261,14 +316,8 @@ task.spawn(function()
                     end
                 end
                 
-                -- HOP KALAU GA ADA BUAH, ATAU KALAU SERVER KOSONG (0-1 PEMAIN)
-                local playerCount = #game:GetService("Players"):GetPlayers()
-                
                 if fruitCount == 0 then
-                    warn("[CatHUB] [HOP] Ga ada buah di map. Auto Hop nyala...")
-                    _G.Cat.HopServer()
-                elseif playerCount < 2 then
-                    warn("[CatHUB] [HOP] Server sepi (" .. playerCount .. " pemain). Auto Hop nyala...")
+                    warn("[CatHUB] [HOP] Ga ada buah di map. Auto Macro Hop nyala...")
                     _G.Cat.HopServer()
                 end
             end)
