@@ -206,7 +206,7 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - TELEPORTASYNC (ANTI TOKEN ERROR SEA 2/3)]
+-- [HOP SERVER - PLAN B ANTI TOKEN BLOCK SEA 2/3]
 local isHopping = false
 
 local Proxies = {
@@ -231,9 +231,22 @@ local function FetchUrl(url)
     return nil
 end
 
+-- Detektor Token Gagal (Auto switch ke random kalau kena blokir)
+local tokenBlocked = false
+TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
+    if player == Me and errorMessage and string.find(errorMessage, "teleport token") then
+        warn("[CatHUB] [HOP] KENA BLOKIR TOKEN! Menggunakan Plan B (Random Server)...")
+        tokenBlocked = true
+        pcall(function()
+            TeleportService:Teleport(game.PlaceId, Me)
+        end)
+    end
+end)
+
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
+    tokenBlocked = false
     
     pcall(function()
         local PlaceID = game.PlaceId
@@ -244,6 +257,13 @@ function _G.Cat.HopServer()
         if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
             warn("[CatHUB] [HOP] Karakter belum siap / mati. Batal hop.")
             isHopping = false
+            return
+        end
+        
+        -- Kalau sebelumnya udah kena blokir token, langsung random aja biar ga waste waktu
+        if tokenBlocked then
+            warn("[CatHUB] [HOP] Mode Token Block aktif. Langsung Random Teleport...")
+            TeleportService:Teleport(PlaceID, Me)
             return
         end
         
@@ -304,21 +324,9 @@ function _G.Cat.HopServer()
             warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
             task.wait(2)
             
-            -- METODE BARU: TeleportAsync (Auto Handle Teleport Token buat Sea 2/3)
-            local tpSuccess, tpErr = pcall(function()
-                local TeleportOptions = Instance.new("TeleportOptions")
-                TeleportOptions.ServerInstanceId = targetJobId
-                
-                TeleportService:TeleportAsync(PlaceID, {Me}, TeleportOptions)
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
             end)
-            
-            -- FALLBACK: Kalau executor ga support TeleportOptions, pake cara lama
-            if not tpSuccess then
-                warn("[CatHUB] [HOP] TeleportAsync gagal (" .. tostring(tpErr) .. "). Nyoba cara lama...")
-                pcall(function()
-                    TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
-                end)
-            end
         else
             warn("[CatHUB] [HOP] Semua proxy gagal / Ga ada server dengan 2+ pemain. Fallback ke random...")
             task.wait(2)
@@ -330,7 +338,7 @@ function _G.Cat.HopServer()
     isHopping = false
 end
 
--- CEK BUAH DI MAP: Kalau ada buah, DILARANG HOP. Kalau gaada baru hop.
+-- CEK BUAH DI MAP
 task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
