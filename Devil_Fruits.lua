@@ -314,6 +314,15 @@ task.spawn(function()
     while task.wait(10) do
         if Settings.AutoHop then
             pcall(function()
+                -- PENANGKAL HOP DINI: Jangan hop kalau game/map belum ke-load
+                if not game:IsLoaded() then return end
+                
+                local char = Me.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                -- Kalau karakter mati lagi, jangan hop, nunggu respawn
+                local hum = char:FindFirstChild("Humanoid")
+                if hum and hum.Health <= 0 then return end
+                
                 local fruitCount = 0
                 for f, _ in pairs(Data) do
                     if f and f.Parent and f.Parent == Workspace then 
