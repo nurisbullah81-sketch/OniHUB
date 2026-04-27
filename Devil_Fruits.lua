@@ -8,7 +8,7 @@ local VIM = game:GetService("VirtualInputManager")
 local GuiService = game:GetService("GuiService")
 local Me = _G.Cat.Player
 local Settings = _G.Cat.Settings
-local TopBarOffset = GuiService:GetGuiInset().Y 
+local TopBarOffset = GuiService:GetGuiInset().Y -- Hitung offset TopBar Roblox secara dinamis (Pengganti +58)
 
 local Data = {}
 local Mem = {}
@@ -131,7 +131,7 @@ local function GetNearestFruit()
 end
 
 task.spawn(function() 
-    while task.wait(1) do -- Cek tiap 1 detik biar ga beban CPU, tapi tetep mulus
+    while task.wait(1) do 
         pcall(function() 
             if Settings.TweenFruit then 
                 local nearest=GetNearestFruit() 
@@ -141,7 +141,6 @@ task.spawn(function()
                     if pos then 
                         local dist=(pos-hrp.Position).Magnitude 
                         if dist>5 then
-                            -- Hanya bikin tween baru kalau target berganti ATAU tween selesai
                             if nearest ~= lastTweenTarget or (fruitTween and fruitTween.PlaybackState ~= Enum.PlaybackState.Playing) then
                                 if fruitTween then fruitTween:Cancel() end 
                                 local speed=250 
@@ -178,7 +177,7 @@ local function GetFruitRealName(tool)
 end
 
 task.spawn(function() 
-    while task.wait(2) do -- Cek tiap 2 detik (ngga terlalu spam)
+    while task.wait(2) do 
         if Settings.AutoStoreFruit then 
             pcall(function() 
                 local remote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") 
@@ -186,21 +185,18 @@ task.spawn(function()
                 
                 local function TryStore(tool) 
                     if tool:IsA("Tool") and tool:FindFirstChild("Fruit") and not table.find(StoreBlacklist, tool) then 
-                        -- Equip dulu biar kebaca
                         if tool.Parent == Me.Backpack and Me.Character and Me.Character:FindFirstChild("Humanoid") then
                             Me.Character.Humanoid:EquipTool(tool)
                             task.wait(0.5)
                         end
                         
                         local realName=GetFruitRealName(tool) 
-                        -- Pake pcall biar kalo server nolak, script ga error
                         local ok, result = pcall(function()
                             return remote:InvokeServer("StoreFruit", realName, tool) 
                         end)
                         
-                        -- Kalau server nolak (return string / nil / false), langsung blacklist & hop!
                         if not ok or result ~= true then
-                            warn("[CatHUB] Store gagal (Penuh/Error). Blacklist & Hop!")
+                            warn("[CatHUB] Store gagal (Penuh/Duplikat). Blacklist & auto hop!")
                             table.insert(StoreBlacklist, tool) 
                             if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end 
                         else
@@ -209,16 +205,14 @@ task.spawn(function()
                     end 
                 end 
                 
-                local backpack=Me.Backpack 
-                local char=Me.Character 
-                if backpack then for _,tool in pairs(backpack:GetChildren()) do TryStore(tool) end end 
-                if char then for _,tool in pairs(char:GetChildren()) do TryStore(tool) end end 
+                if Me.Backpack then for _,tool in pairs(Me.Backpack:GetChildren()) do TryStore(tool) end end 
+                if Me.Character then for _,tool in pairs(Me.Character:GetChildren()) do TryStore(tool) end end 
             end) 
         end 
     end 
 end)
 
--- [HOP SERVER - NO SCROLL, NO CAMERA ZOOM]
+-- [HOP SERVER - SOVEREIGN V11 HYBRID (NO CAMERA ZOOM + DEEP SCROLL)]
 local isHopping = false
 
 function _G.Cat.HopServer()
@@ -233,9 +227,9 @@ function _G.Cat.HopServer()
             return
         end
 
-        warn("[CatHUB] [HOP] Mencari server via VIM (No Scroll)...")
+        warn("[CatHUB] [HOP] Mencari server via VIM Sovereign...")
         
-        -- 1. Buka UI
+        -- 1. Buka UI (Dinamis pakai TopBarOffset, bukan +58)
         local openBtn = nil
         for _, obj in ipairs(Me.PlayerGui:GetDescendants()) do
             if obj.Name == "ServerBrowserButton" and (obj:IsA("TextButton") or obj:IsA("ImageButton")) then
@@ -245,40 +239,78 @@ function _G.Cat.HopServer()
         end
 
         if openBtn then
-            local op, os = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-            VIM:SendMouseButtonEvent(op.X + (os.X/2), op.Y + (os.Y/2) + TopBarOffset, 0, true, game, 0)
+            -- Pastikan klik masuk ke layar walau tombol off-screen
+            local clickY = math.max(openBtn.AbsolutePosition.Y + (openBtn.AbsoluteSize.Y/2), 50) + TopBarOffset
+            local clickX = openBtn.AbsolutePosition.X + (openBtn.AbsoluteSize.X/2)
+            
+            VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0)
             task.wait(0.1)
-            VIM:SendMouseButtonEvent(op.X + (os.X/2), op.Y + (os.Y/2) + TopBarOffset, 0, false, game, 0)
-            task.wait(2) 
+            VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
+            task.wait(2.5) 
             
-            -- 2. Cari tombol Join di halaman pertama (Tanpa Scroll)
+            -- 2. SMART-SYNC: Nunggu list server bener-bener ke-load
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            local insideFrame = browser and browser:FindFirstChild("Inside", true)
+            local listArea = browser and browser:FindFirstChild("Inside", true)
+            local loadTimeout = 0
             
-            if insideFrame then
-                local joinTarget = nil
-                for _, v in pairs(insideFrame:GetDescendants()) do
-                    if v:IsA("TextButton") and v.Text == "Join" and v.Visible and v.AbsolutePosition.Y > 0 then
-                        joinTarget = v
-                        break -- Ambil server paling atas
-                    end
-                end
-                
-                if joinTarget then
-                    warn("[CatHUB] [HOP] Target Join ketemu! Tembak...")
-                    local bp, bs = joinTarget.AbsolutePosition, joinTarget.AbsoluteSize
-                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + TopBarOffset
+            repeat 
+                task.wait(0.5)
+                loadTimeout = loadTimeout + 1
+                browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                listArea = browser and browser:FindFirstChild("Inside", true)
+            until (listArea and #listArea:GetChildren() > 2) or loadTimeout > 10
+
+            if listArea then
+                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
+                if scrollFrame then
+                    local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                    -- Fokusin mouse ke tengah scroll frame biar scrollnya masuk ke UI, BUKAN zoom kamera
+                    local cX = sP.X + (sS.X / 2)
+                    local cY = sP.Y + (sS.Y / 2) 
                     
-                    -- Spam klik 3x
-                    for i = 1, 3 do
-                        VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                        task.wait(0.01)
-                        VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                        task.wait(0.2)
+                    VIM:SendMouseMoveEvent(cX, cY, game)
+                    task.wait(0.1)
+
+                    -- 3. DEEP DRILLING: Scroll 150x ke bawah buat nyari server sepi
+                    warn("[CatHUB] [HOP] Deep scrolling...")
+                    for i = 1, 150 do
+                        VIM:SendMouseWheelEvent(cX, cY, false, game)
+                        if i % 40 == 0 then task.wait() end 
                     end
-                    warn("[CatHUB] [HOP] Ditembak! Menunggu teleport...")
-                else
-                    warn("[CatHUB] [HOP] Ga ada Join di halaman 1.")
+                    task.wait(1.5) -- Nunggu UI render tombol di bawah
+
+                    -- 4. SNIPE: Tembak tombol Join yang ke-render
+                    local targets = {}
+                    for _, v in pairs(listArea:GetDescendants()) do
+                        if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
+                            -- Pastikan tombol ada di area scroll frame yang keliatan
+                            if v.AbsolutePosition.Y > sP.Y and v.AbsolutePosition.Y < (sP.Y + sS.Y) then
+                                table.insert(targets, v)
+                            end
+                        end
+                    end
+
+                    if #targets > 0 then
+                        warn("[CatHUB] [HOP] Target Join ketemu! Tembak brutal...")
+                        for _, target in pairs(targets) do
+                            local bp, bs = target.AbsolutePosition, target.AbsoluteSize
+                            local tx = bp.X + (bs.X/2)
+                            local ty = bp.Y + (bs.Y/2)
+                            
+                            -- Ghost Turbo Tap
+                            for i = 1, 4 do
+                                VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                                task.wait(0.01)
+                                VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                            end
+                            task.wait(0.3)
+                        end
+                        warn("[CatHUB] [HOP] Selesai ditembak! Menunggu teleport...")
+                    else
+                        warn("[CatHUB] [HOP] Ga ada tombol Join yang keliatan setelah scroll.")
+                    end
                 end
             end
         end
@@ -288,15 +320,24 @@ function _G.Cat.HopServer()
     isHopping = false
 end
 
--- SENTINEL: Auto close Error 773 biar ngga nyangkut
+-- [[ SENTINEL: POP-UP OBLITERATOR (ANTI-772/773) ]] --
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.1) do -- Cek super cepat biar ga nyangkut
         pcall(function()
-            local errPrompt = game.CoreGui:FindFirstChild("ErrorPrompt", true) 
-            if errPrompt and errPrompt.Visible then
+            local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
+            local playerGui = Me.PlayerGui:FindFirstChild("ErrorPrompt", true) or Me.PlayerGui:FindFirstChild("MessagePrompt", true)
+            
+            if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
+                -- Langsung sikat Enter buat tutup pop-up
                 VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                task.wait(0.05)
+                task.wait(0.02)
                 VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                
+                -- Failsafe: Klik tengah layar kalau Enter ga work
+                local vp = workspace.CurrentCamera.ViewportSize
+                VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, true, game, 0)
+                task.wait(0.02)
+                VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, false, game, 0)
             end
         end)
     end
