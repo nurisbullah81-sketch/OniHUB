@@ -206,9 +206,8 @@ task.spawn(function()
     end 
 end)
 
--- [HOP SERVER - ESCAPE POD SEA 2/3]
+-- [HOP SERVER - DELTA/REDFINGER OPTIMIZED (NO SEA 1 LOOP)]
 local isHopping = false
-local BloxFruitsSea1 = 2753915549
 
 local Proxies = {
     "https://games.roblox.com",
@@ -232,123 +231,93 @@ local function FetchUrl(url)
     return nil
 end
 
--- Detektor Token Gagal
-local tokenBlocked = false
-TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
-    if player == Me and errorMessage and string.find(string.lower(errorMessage), "token") then
-        warn("[CatHUB] [HOP] KENA BLOKIR TOKEN!")
-        tokenBlocked = true
-        
-        -- PLAN C: Kalau di Sea 2/3 kena blokir, balik ke Sea 1 dulu!
-        if game.PlaceId ~= BloxFruitsSea1 then
-            warn("[CatHUB] [HOP] Executor ga bisa hop di Sea 2/3. Balik ke Sea 1 dulu...")
-            task.wait(2)
-            pcall(function()
-                TeleportService:Teleport(BloxFruitsSea1, Me)
-            end)
-        else
-            -- Kalau di Sea 1 aja kena blokir, coba random teleport biasa
-            pcall(function()
-                TeleportService:Teleport(game.PlaceId, Me)
-            end)
-        end
-    end
-end)
-
 function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
-    tokenBlocked = false
     
-    pcall(function()
-        local PlaceID = game.PlaceId
-        local JobID = tostring(game.JobId)
+    -- Cek karakter dulu
+    local char = Me.Character
+    local hum = char and char:FindFirstChild("Humanoid")
+    if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
+        isHopping = false
+        return
+    end
+    
+    local PlaceID = game.PlaceId
+    local JobID = tostring(game.JobId)
+    local targetServers = {}
+    local fallbackServers = {}
+    
+    warn("[CatHUB] [HOP] Mulai cari server di Place ID: " .. PlaceID)
+    
+    -- Cari server
+    for _, proxy in pairs(Proxies) do
+        local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+        local body = FetchUrl(ApiUrl)
         
-        local char = Me.Character
-        local hum = char and char:FindFirstChild("Humanoid")
-        if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
-            warn("[CatHUB] [HOP] Karakter belum siap / mati. Batal hop.")
-            isHopping = false
-            return
-        end
+        if not body then continue end
+        if body:find("<!DOCTYPE") or body:find("<html") or body:find("cloudflare") then continue end
         
-        -- Kalau executor ga bisa bypass token, langsung plan C
-        if tokenBlocked then
-            if PlaceID ~= BloxFruitsSea1 then
-                warn("[CatHUB] [HOP] Mode Escape! Balik ke Sea 1...")
-                TeleportService:Teleport(BloxFruitsSea1, Me)
-            else
-                TeleportService:Teleport(PlaceID, Me)
-            end
-            return
-        end
+        local success, result = pcall(function() return HttpService:JSONDecode(body) end)
+        if not success or type(result) ~= "table" or not result.data then continue end
         
-        local targetServers = {}
-        local fallbackServers = {}
-        
-        warn("[CatHUB] [HOP] Mulai cari server (Target: 2-10 pemain)...")
-        
-        for _, proxy in pairs(Proxies) do
-            local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
-            
-            local body = FetchUrl(ApiUrl)
-            
-            if not body then continue end
-            if body:find("<!DOCTYPE") or body:find("<html") or body:find("cloudflare") then continue end
-            if not body:find('^{') then continue end
-            
-            local success, result = pcall(function() return HttpService:JSONDecode(body) end)
-            if not success then continue end
-            if type(result) ~= "table" or not result.data then continue end
-            
-            for i, v in pairs(result.data) do
-                if type(v) == "table" and v.playing and v.maxPlayers and v.id then
-                    if tostring(v.id) ~= JobID then
-                        if v.playing >= 2 and v.playing <= 10 then
-                            table.insert(targetServers, v)
-                        elseif v.playing >= 11 and v.playing < v.maxPlayers then
-                            table.insert(fallbackServers, v)
-                        end
+        for i, v in pairs(result.data) do
+            if type(v) == "table" and v.playing and v.maxPlayers and v.id then
+                if tostring(v.id) ~= JobID then
+                    if v.playing >= 2 and v.playing <= 10 then
+                        table.insert(targetServers, v)
+                    elseif v.playing >= 11 and v.playing < v.maxPlayers then
+                        table.insert(fallbackServers, v)
                     end
                 end
             end
-            
-            if #targetServers > 0 then break end
         end
         
-        local chosen = nil
-        local chosenType = ""
-        
-        if #targetServers > 0 then
-            for i = #targetServers, 2, -1 do
-                local j = math.random(1, i)
-                targetServers[i], targetServers[j] = targetServers[j], targetServers[i]
-            end
-            chosen = targetServers[1]
-            chosenType = "TARGET (2-10 pemain)"
-        elseif #fallbackServers > 0 then
-            for i = #fallbackServers, 2, -1 do
-                local j = math.random(1, i)
-                fallbackServers[i], fallbackServers[j] = fallbackServers[j], fallbackServers[i]
-            end
-            chosen = fallbackServers[1]
-            chosenType = "FALLBACK (>10 pemain)"
+        if #targetServers > 0 then break end
+    end
+    
+    local chosen = nil
+    
+    if #targetServers > 0 then
+        for i = #targetServers, 2, -1 do
+            local j = math.random(1, i)
+            targetServers[i], targetServers[j] = targetServers[j], targetServers[i]
         end
+        chosen = targetServers[1]
+    elseif #fallbackServers > 0 then
+        for i = #fallbackServers, 2, -1 do
+            local j = math.random(1, i)
+            fallbackServers[i], fallbackServers[j] = fallbackServers[j], fallbackServers[i]
+        end
+        chosen = fallbackServers[1]
+    end
+    
+    if chosen then
+        local targetJobId = tostring(chosen.id)
+        warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. " pemain)")
+        task.wait(1)
         
-        if chosen then
-            local targetJobId = tostring(chosen.id)
-            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. targetJobId .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ") [" .. chosenType .. "]")
-            task.wait(2)
-            
+        -- METODE 1: RAW Teleport (Kayak Redz Hub, biar Delta bisa nyuntik token)
+        local success1, err1 = pcall(function()
+            TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
+        end)
+        
+        -- METODE 2: Kalau Metode 1 kena error Token, pakai TeleportOptions (Celah Sub-Place)
+        if not success1 or (err1 and string.find(string.lower(tostring(err1)), "token")) then
+            warn("[CatHUB] [HOP] Metode 1 kena blokir. Pakai Metode 2 (TeleportOptions)...")
+            task.wait(1)
             pcall(function()
-                TeleportService:TeleportToPlaceInstance(PlaceID, targetJobId, Me)
+                local options = Instance.new("TeleportOptions")
+                options.ServerInstanceId = targetJobId
+                TeleportService:Teleport(PlaceID, Me, nil, options)
             end)
-        else
-            warn("[CatHUB] [HOP] Semua proxy gagal / Ga ada server dengan 2+ pemain. Fallback ke random...")
-            task.wait(2)
-            TeleportService:Teleport(PlaceID, Me)
         end
-    end)
+    else
+        -- Kalau API gagal total, pakai Random Matchmaking di Sea yang SAMA
+        warn("[CatHUB] [HOP] API gagal. Random Teleport di Sea yang sama...")
+        task.wait(1)
+        TeleportService:Teleport(PlaceID, Me)
+    end
     
     task.wait(15)
     isHopping = false
@@ -379,7 +348,8 @@ task.spawn(function()
                     warn("[CatHUB] [HOP] Ga ada buah di map. Auto Hop nyala...")
                     _G.Cat.HopServer()
                 else
-                    warn("[CatHUB] [HOP] Masih ada " .. fruitCount .. " buah di map. Tetap disini.")
+                    -- Biar ga spam log, cetak cuma tiap 30 detik aja kalau ada buah
+                    -- warn("[CatHUB] [HOP] Masih ada " .. fruitCount .. " buah di map.")
                 end
             end)
         end
