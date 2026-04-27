@@ -36,31 +36,33 @@ local function GetFruitRealName(tool) if not tool then return nil end local frui
 task.spawn(function() while task.wait(0.5) do if Settings.AutoStoreFruit then pcall(function() local remote=ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") if not remote then return end local function TryStore(tool) if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then if not table.find(StoreBlacklist,tool.Name) then local realName=GetFruitRealName(tool) local success=remote:InvokeServer("StoreFruit",realName,tool) if success~=true then table.insert(StoreBlacklist,tool.Name) if Settings.AutoHop then task.wait(1) _G.Cat.HopServer() end end end end end local backpack=Me.Backpack local char=Me.Character if backpack then for _,tool in pairs(backpack:GetChildren()) do TryStore(tool) end end if char then for _,tool in pairs(char:GetChildren()) do TryStore(tool) end end end) end end end)
 
 -- ==========================================
--- REDZHUB STYLE SERVER HOPPER (HYRA PROXY)
+-- DIRECT API + MULTI PROXY HOPPER (DEEP DEBUG)
 -- ==========================================
 local isHopping = false
 
 local Proxies = {
+    "https://games.roblox.com", -- Coba langsung dulu (Xeno/Synapse sering bisa)
     "https://games.api.hyra.io",
-    "https://roproxy.com"
+    "https://roproxy.com",
+    "https://roblox.apis.liara.run" -- Proxy baru, jarang kena limit
 }
 
 local Headers = {
-    ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
     ["Content-Type"] = "application/json",
     ["Accept"] = "application/json"
 }
 
 local function FetchUrl(url)
-    -- Method 1: http_request (Support Headers)
+    -- Method 1: http_request (Sering paling sukses di Xeno)
     local s, r = pcall(function() return http_request({Url = url, Method = "GET", Headers = Headers}).Body end)
     if s and type(r) == "string" and #r > 0 then return r end
 
-    -- Method 2: request (Wave/Fluxus style)
+    -- Method 2: request
     s, r = pcall(function() return request({Url = url, Method = "GET", Headers = Headers}).Body end)
     if s and type(r) == "string" and #r > 0 then return r end
 
-    -- Method 3: game:HttpGet (Fallback, tanpa header)
+    -- Method 3: game:HttpGet
     s, r = pcall(function() return game:HttpGet(url, true) end)
     if s and type(r) == "string" and #r > 0 then return r end
 
@@ -72,7 +74,7 @@ function _G.Cat.HopServer()
     isHopping = true
     
     pcall(function()
-        warn("[CatHUB] [HOP] Mulai cari server pake Multi-Proxy...")
+        warn("[CatHUB] [HOP] Mulai cari server...")
         
         local PlaceID = game.PlaceId
         local JobID = game.JobId
@@ -80,27 +82,42 @@ function _G.Cat.HopServer()
         
         for _, proxy in pairs(Proxies) do
             local ApiUrl = proxy .. "/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"
+            warn("[CatHOP] [1] Nembak: " .. proxy)
+            
             local body = FetchUrl(ApiUrl)
             
             if not body then
-                warn("[CatHUB] [HOP] Proxy " .. proxy .. " gagal fetch.")
+                warn("[CatHOP] [2] GAGAL: Executor block / Network error.")
                 continue
             end
             
-            -- VALIDASI KETAT: Cek HTML Cloudflare Block & Karakter Awal JSON
-            if body:find("<!DOCTYPE html>") or body:find("<html") or not body:find('^{') then
-                warn("[CatHUB] [HOP] Proxy " .. proxy .. " ngasih sampah HTML/Block!")
+            -- PRINT RAW BODY BIAR KITA LIAT APA YANG DIBALIKIN
+            warn("[CatHOP] [3] RAW BODY (200 chars): " .. string.sub(tostring(body), 1, 200))
+            
+            -- VALIDASI KETAT
+            if body:find("<!DOCTYPE") or body:find("<html") or body:find("cloudflare") then
+                warn("[CatHOP] [4] GAGAL: Dapet HTML (Cloudflare Block).")
+                continue
+            end
+            
+            if not body:find('^{') then
+                warn("[CatHOP] [4] GAGAL: Bukan format JSON awal {.")
                 continue
             end
             
             local success, result = pcall(function() return HttpService:JSONDecode(body) end)
             
-            if not success or not result or type(result) ~= "table" or not result.data then
-                warn("[CatHUB] [HOP] Proxy " .. proxy .. " JSON parse error atau data nil.")
+            if not success then
+                warn("[CatHOP] [5] GAGAL: JSON Decode Error.")
                 continue
             end
             
-            warn("[CatHUB] [HOP] Dapet data dari " .. proxy .. ". Nyari server...")
+            if type(result) ~= "table" or not result.data then
+                warn("[CatHOP] [5] GAGAL: Data table nil. Isi: " .. tostring(result))
+                continue
+            end
+            
+            warn("[CatHOP] [6] SUCCESS: Dapet data server!")
             
             for i, v in pairs(result.data) do
                 if type(v) == "table" and v.playing and v.maxPlayers and v.id then
@@ -115,10 +132,10 @@ function _G.Cat.HopServer()
         
         if #validServers > 0 then
             local chosen = validServers[math.random(1, #validServers)]
-            warn("[CatHUB] [HOP] Gas Teleport! Ke server " .. chosen.id .. " (" .. chosen.playing .. "/" .. chosen.maxPlayers .. ")")
+            warn("[CatHUB] [HOP] Gas Teleport! -> " .. chosen.id)
             TeleportService:TeleportToPlaceInstance(PlaceID, chosen.id, Me)
         else
-            warn("[CatHUB] [HOP] GAGAL TOTAL: Semua proxy down atau ga ada server cocok.")
+            warn("[CatHUB] [HOP] GAGAL TOTAL: Semua proxy gagal / Ga ada server.")
         end
     end)
     
