@@ -129,7 +129,7 @@ task.spawn(function()
     end 
 end)
 
--- [[ SENTINEL V9: KEYBOARD ONLY (NO MOUSE HIJACK) ]]
+-- [[ SENTINEL V10: KEYBOARD ONLY ]]
 TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
     if player == Me then
         task.spawn(function()
@@ -141,10 +141,20 @@ TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, erro
     end
 end)
 
--- [[ HOP SERVER - V9 HYBRID GHOST (MOUSE SNAP + FIRESIGNAL) ]]
+-- [[ HOP SERVER - V10 ABSOLUTE GHOST (ZERO MOUSE MOVEMENT) ]]
 _G.NomexyHopper = true 
-local UserInput = game:GetService("UserInputService")
-local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
+
+local function GhostClick(btn)
+    if not btn or not btn.Visible then return end
+    -- Tembak SEMUA sinyal klik yang ada di tombol biar kebaca game
+    pcall(function() for _, c in pairs(getconnections(btn.Activated)) do c:Fire() end end)
+    pcall(function() for _, c in pairs(getconnections(btn.MouseButton1Click)) do c:Fire() end end)
+    pcall(function() for _, c in pairs(getconnections(btn.MouseButton1Down)) do c:Fire() end end)
+    pcall(function() for _, c in pairs(getconnections(btn.MouseButton1Up)) do c:Fire() end end)
+    -- Tembak InputBegan/InputEnded tanpa argumen (Kadang UI butuh ini)
+    pcall(function() for _, c in pairs(getconnections(btn.InputBegan)) do c:Fire() end end)
+    pcall(function() for _, c in pairs(getconnections(btn.InputEnded)) do c:Fire() end end)
+end
 
 task.spawn(function()
     while _G.NomexyHopper do
@@ -161,7 +171,7 @@ task.spawn(function()
             local hopOk, hopErr = pcall(function()
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                 
-                -- STEP 1: BUKA UI PAKAI FIRESIGNAL + POSITION HACK
+                -- STEP 1: BUKA UI (Pindahin tombol ke layar -> Tembak -> Balikin)
                 if not (browser and browser.Enabled) then
                     local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                     if openBtn then
@@ -171,9 +181,7 @@ task.spawn(function()
                         openBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
                         task.wait(0.1)
                         
-                        -- Tembak semua sinyal klik
-                        for _, conn in pairs(getconnections(openBtn.Activated)) do conn:Fire() end
-                        for _, conn in pairs(getconnections(openBtn.MouseButton1Click)) do conn:Fire() end
+                        GhostClick(openBtn)
                         
                         openBtn.Position = origPos
                         openBtn.AnchorPoint = origAnchor
@@ -186,25 +194,13 @@ task.spawn(function()
                 local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
 
                 if fakeScroll and insideFrame then
-                    local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
-                    local scrollCenterX = fsP.X + (fsS.X / 2)
-                    local scrollCenterY = fsP.Y + (fsS.Y / 2) + TopBarOffset
-
-                    -- STEP 2: MOUSE SNAP (Simpen posisi mouse lu, lompat ke UI, scroll, balikin)
-                    local myMouseX, myMouseY = UserInput:GetMouseLocation().X, UserInput:GetMouseLocation().Y
-                    
-                    -- Lompatin mouse ke tengah scroll
-                    VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game) task.wait(0.05)
-                    
-                    -- Scroll 15x (Super cepat)
-                    for i = 1, 15 do
-                        VIM:SendMouseWheelEvent(scrollCenterX, scrollCenterY, false, game)
-                        if i % 5 == 0 then task.wait() end 
-                    end
-                    
-                    -- Balikin mouse ke posisi lu main (biar kamera ga nge-zoom)
-                    VIM:SendMouseMoveEvent(myMouseX, myMouseY, game)
-                    task.wait(1.5) -- Nunggu UI render
+                    -- STEP 2: POSITION HACK SCROLL (Anti UI Hilang)
+                    pcall(function()
+                        fakeScroll.ClipsDescendants = false -- Matiin pemotong UI
+                        local currentX = insideFrame.Position.X.Offset
+                        insideFrame.Position = UDim2.new(0, currentX, 0, math.random(-1800, -200)) -- Geser list
+                    end)
+                    task.wait(1.5) -- Nunggu render
 
                     -- STEP 3: SPAM KLIK JOIN PAKAI FIRESIGNAL
                     local clickedCount = 0
@@ -212,12 +208,9 @@ task.spawn(function()
                         if template.Name == "Template" then
                             local joinBtn = template:FindFirstChild("Join")
                             if joinBtn and joinBtn:IsA("TextButton") and joinBtn.Text == "Join" and joinBtn.Visible then
-                                local jP, jS = joinBtn.AbsolutePosition, joinBtn.AbsoluteSize
-                                
-                                if jP.Y > fsP.Y and (jP.Y + jS.Y) < (fsP.Y + fsS.Y) then
-                                    -- Tembak sinyal klik
-                                    for _, conn in pairs(getconnections(joinBtn.Activated)) do conn:Fire() end
-                                    for _, conn in pairs(getconnections(joinBtn.MouseButton1Click)) do conn:Fire() end
+                                -- Cek area kasar (karena clipping dimatiin, tombol bisa di mana aja)
+                                if joinBtn.AbsolutePosition.Y > 0 and joinBtn.AbsolutePosition.Y < workspace.CurrentCamera.ViewportSize.Y then
+                                    GhostClick(joinBtn)
                                     clickedCount = clickedCount + 1
                                     task.wait(0.2)
                                 end
@@ -225,8 +218,11 @@ task.spawn(function()
                         end
                     end
                     
+                    -- Balikin Clipping biar UI rapi lagi
+                    pcall(function() fakeScroll.ClipsDescendants = true end)
+                    
                     if clickedCount > 0 then
-                        warn("[HOP V9] Firesignal " .. clickedCount .. " server! (Mouse lu aman)")
+                        warn("[HOP V10] Ghost Firesignal " .. clickedCount .. " server!")
                     end
                 end
             end)
