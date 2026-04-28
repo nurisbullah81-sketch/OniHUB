@@ -245,7 +245,7 @@ task.spawn(function()
     end 
 end)
 
--- [[ HOP SERVER - PREMIUM V3 (INSPECTOR DATA DRIVEN) ]]
+-- [[ HOP SERVER - V4 FAST & PROFESSIONAL (FORCED UI BYPASS) ]]
 _G.NomexyHopper = true 
 local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
 
@@ -262,12 +262,11 @@ task.spawn(function()
             if fruitCount > 0 then continue end
 
             local hopOk, hopErr = pcall(function()
-                -- STEP 1: Bersihin popup sisa
-                local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
-                local playerGui = Me.PlayerGui:FindFirstChild("ErrorPrompt", true) or Me.PlayerGui:FindFirstChild("MessagePrompt", true)
-                if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                end
+                -- STEP 1: Clean state (Tutup semua menu sisa)
+                VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.05) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
+                task.wait(0.2)
+                VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.05) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
+                task.wait(0.5)
 
                 -- STEP 2: Buka UI
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
@@ -278,7 +277,7 @@ task.spawn(function()
                         VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + TopBarOffset, 0, true, game, 0)
                         task.wait(0.1)
                         VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + TopBarOffset, 0, false, game, 0)
-                        task.wait(2.5)
+                        task.wait(2) -- Nunggu load
                     end
                 end
 
@@ -287,68 +286,59 @@ task.spawn(function()
                 local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
 
                 if fakeScroll and insideFrame then
-                    -- STEP 3: Hitung pusat FakeScroll (Anti Zoom)
-                    -- Data inspector: FakeScroll X=389 Y=203 W=587 H=239
                     local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
                     local scrollCenterX = fsP.X + (fsS.X / 2)
                     local scrollCenterY = fsP.Y + (fsS.Y / 2) + TopBarOffset
 
-                    -- Lock focus ke tengah scroll
                     VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game)
                     task.wait(0.2)
 
-                    -- STEP 4: Deep Scroll
-                    warn("[HOP V3] Scrolling (Mouse Locked in FakeScroll)...")
+                    -- STEP 3: Scroll 100x (Mouse locked biar ga zoom)
                     for i = 1, 100 do
-                        VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game) -- Pertahankan posisi
+                        VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game)
                         VIM:SendMouseWheelEvent(scrollCenterX, scrollCenterY, false, game)
                         if i % 20 == 0 then task.wait() end 
                     end
-                    task.wait(1.5)
+                    task.wait(1)
 
-                    -- STEP 5: Snipe Hanya Tombol yang Text-nya "Join" (Bukan Your Server)
-                    local targets = {}
+                    -- STEP 4: Cari & Klik Join (Khusus yang textnya "Join", skip "Your Server")
+                    local clicked = false
                     for _, template in pairs(insideFrame:GetChildren()) do
-                        if template.Name == "Template" then
+                        if template.Name == "Template" and not clicked then
                             local joinBtn = template:FindFirstChild("Join")
-                            -- Filter penting: Harus Visible, Teksnya "Join", dan posisinya di dalem layar FakeScroll
                             if joinBtn and joinBtn:IsA("TextButton") and joinBtn.Text == "Join" and joinBtn.Visible then
                                 local jP, jS = joinBtn.AbsolutePosition, joinBtn.AbsoluteSize
                                 if jP.Y > fsP.Y and (jP.Y + jS.Y) < (fsP.Y + fsS.Y) then
-                                    table.insert(targets, joinBtn)
+                                    local clickX = jP.X + (jS.X / 2)
+                                    local clickY = jP.Y + (jS.Y / 2) + TopBarOffset
+                                    
+                                    VIM:SendMouseMoveEvent(clickX, clickY, game)
+                                    task.wait(0.05)
+                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0)
+                                    task.wait(0.05)
+                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
+                                    clicked = true -- Cumah klik 1x biar ga spam teleport
                                 end
                             end
                         end
                     end
 
-                    if #targets > 0 then
-                        warn("[HOP V3] Menemukan " .. #targets .. " server Join! Tembak presisi...")
-                        for _, target in pairs(targets) do
-                            local tP, tS = target.AbsolutePosition, target.AbsoluteSize
-                            -- Hitung persis tengah tombol (Plus TopBarOffset)
-                            local clickX = tP.X + (tS.X / 2)
-                            local clickY = tP.Y + (tS.Y / 2) + TopBarOffset
-                            
-                            -- Presisi Klik: Hover -> Down -> Tunggu 0.05s -> Up (Fix bug nahan)
-                            VIM:SendMouseMoveEvent(clickX, clickY, game)
-                            task.wait(0.05)
-                            VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0)
-                            task.wait(0.05) -- Jeda penting biar kebaca klik, bukan tahan
-                            VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
-                            task.wait(0.2)
-                        end
+                    -- STEP 5: LANGSUNG TUTUP UI! (Biar keliatan profesional & ga ngerepotin)
+                    if clicked then
+                        task.wait(0.5)
+                        VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
                     end
                 end
             end)
 
             if not hopOk then
-                warn("[HOP V3] Error tertangkap: " .. tostring(hopErr))
+                warn("[HOP V4] Error: " .. tostring(hopErr))
             end
         end
     end
 end)
 
--- [[ SENTINEL V2: HYPER AGGRESSIVE ]]
+-- [[ SENTINEL V4: ESCAPE PROTOCOL (INSTANT CLOSE) ]]
 task.spawn(function()
     while true do
         task.wait(0.1)
@@ -356,12 +346,10 @@ task.spawn(function()
             local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
             local playerGui = Me.PlayerGui:FindFirstChild("ErrorPrompt", true) or Me.PlayerGui:FindFirstChild("MessagePrompt", true)
             
+            -- Kalau ada Error 772/773, langsung Escape & Enter
             if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
-                for i = 1, 3 do
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.01) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                    local vp = workspace.CurrentCamera.ViewportSize
-                    VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, true, game, 0) task.wait(0.01) VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, false, game, 0)
-                end
+                VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
             end
         end)
     end
