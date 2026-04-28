@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VIM = game:GetService("VirtualInputManager")
 local Me = _G.Cat.Player
 local Settings = _G.Cat.Settings
+local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
 
 local Data = {}
 local Mem = {}
@@ -32,9 +33,7 @@ end
 local function IsF(o) 
     if not o or not o.Parent then return false end 
     local ok,r=pcall(function() 
-        if (o:IsA("Tool") or o:IsA("Model")) and o:FindFirstChild("Fruit") then 
-            return true 
-        end 
+        if (o:IsA("Tool") or obj:IsA("Model")) and o:FindFirstChild("Fruit") then return true end 
         return false 
     end) 
     return ok and r 
@@ -44,34 +43,16 @@ local function Add(f)
     if not f or not f.Parent or Data[f] then return end 
     pcall(function() 
         local bb=Instance.new("BillboardGui",f) 
-        bb.Name="CatESP" 
-        bb.Size=UDim2.new(0,150,0,20) 
-        bb.AlwaysOnTop=true 
-        bb.StudsOffset=Vector3.new(0,3,0) 
-        bb.Enabled=false 
+        bb.Name="CatESP" bb.Size=UDim2.new(0,150,0,20) bb.AlwaysOnTop=true bb.StudsOffset=Vector3.new(0,3,0) bb.Enabled=false 
         local txt=Instance.new("TextLabel",bb) 
-        txt.Size=UDim2.new(1,0,1,0) 
-        txt.BackgroundTransparency=1 
-        txt.Text=f.Name.." []" 
-        txt.TextColor3=Color3.fromRGB(255,255,255) 
-        txt.TextStrokeTransparency=0.3 
-        txt.TextStrokeColor3=Color3.fromRGB(0,0,0) 
-        txt.Font=Enum.Font.GothamBold 
-        txt.TextSize=13 
-        txt.TextXAlignment="Left" 
-        Data[f]={bb=bb,txt=txt} 
-        Mem[f]=-1 
+        txt.Size=UDim2.new(1,0,1,0) txt.BackgroundTransparency=1 txt.Text=f.Name.." []" txt.TextColor3=Color3.fromRGB(255,255,255) 
+        txt.TextStrokeTransparency=0.3 txt.TextStrokeColor3=Color3.fromRGB(0,0,0) txt.Font=Enum.Font.GothamBold txt.TextSize=13 txt.TextXAlignment="Left" 
+        Data[f]={bb=bb,txt=txt} Mem[f]=-1 
     end) 
 end
 
 local function Rem(f) 
-    if Data[f] then 
-        pcall(function() 
-            if Data[f].bb and Data[f].bb.Parent then Data[f].bb:Destroy() end 
-        end) 
-        Data[f]=nil 
-        Mem[f]=nil 
-    end 
+    if Data[f] then pcall(function() if Data[f].bb and Data[f].bb.Parent then Data[f].bb:Destroy() end end) Data[f]=nil Mem[f]=nil end 
 end
 
 for _, o in pairs(Workspace:GetChildren()) do if IsF(o) then Add(o) end end
@@ -79,179 +60,96 @@ Workspace.ChildAdded:Connect(function(o) task.wait(0.5) if IsF(o) then Add(o) en
 Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 
 RunService.RenderStepped:Connect(function() 
-    FC=FC+1 
-    if FC%SKIP~=0 then return end 
+    FC=FC+1 if FC%SKIP~=0 then return end 
     pcall(function() 
-        if not Settings.FruitESP then 
-            for _,d in pairs(Data) do if d and d.bb then d.bb.Enabled=false end end 
-            return 
-        end 
-        local c=Me.Character 
-        if not c then return end 
-        local r=c:FindFirstChild("HumanoidRootPart") 
-        if not r then return end 
-        local mp=r.Position 
+        if not Settings.FruitESP then for _,d in pairs(Data) do if d and d.bb then d.bb.Enabled=false end end return end 
+        local c=Me.Character if not c then return end local r=c:FindFirstChild("HumanoidRootPart") if not r then return end local mp=r.Position 
         for f,d in pairs(Data) do 
             if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end 
-            local p=Pos(f) 
-            if not p then d.bb.Enabled=false continue end 
-            local dx,dy,dz=p.X-mp.X,p.Y-mp.Y,p.Z-mp.Z 
-            local m=math.floor(math.sqrt(dx*dx+dy*dy+dz*dz)) 
-            if math.abs(m-(Mem[f]or-1))>5 then 
-                Mem[f]=m 
-                d.txt.Text=f.Name.." ["..m.."m]" 
-            end 
-            d.bb.Enabled=true 
+            local p=Pos(f) if not p then d.bb.Enabled=false continue end 
+            local dx,dy,dz=p.X-mp.X,p.Y-mp.Y,p.Z-mp.Z local m=math.floor(math.sqrt(dx*dx+dy*dy+dz*dz)) 
+            if math.abs(m-(Mem[f]or-1))>5 then Mem[f]=m d.txt.Text=f.Name.." ["..m.."m]" end d.bb.Enabled=true 
         end 
     end) 
 end)
 
 -- [TWEEN SMOOTH]
-local fruitTween=nil
-local lastTweenTarget=nil
-
+local fruitTween=nil local lastTweenTarget=nil
 local function GetNearestFruit() 
-    local closest,minDist=nil,math.huge 
-    local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-    if not hrp then return nil end 
-    for f,_ in pairs(Data) do 
-        if f and f.Parent then 
-            local p=Pos(f) 
-            if p then 
-                local dist=(p-hrp.Position).Magnitude 
-                if dist<minDist then 
-                    closest,minDist=f,dist 
-                end 
-            end 
-        end 
-    end 
-    return closest 
+    local closest,minDist=nil,math.huge local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") if not hrp then return nil end 
+    for f,_ in pairs(Data) do if f and f.Parent then local p=Pos(f) if p then local dist=(p-hrp.Position).Magnitude if dist<minDist then closest,minDist=f,dist end end end end return closest 
 end
 
 task.spawn(function() 
     while task.wait(1) do 
         pcall(function() 
             if Settings.TweenFruit then 
-                local nearest=GetNearestFruit() 
-                local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+                local nearest=GetNearestFruit() local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
                 if nearest and hrp then 
-                    local pos=Pos(nearest) 
-                    if pos then 
-                        local dist=(pos-hrp.Position).Magnitude 
+                    local pos=Pos(nearest) if pos then local dist=(pos-hrp.Position).Magnitude 
                         if dist>5 then
                             if nearest ~= lastTweenTarget or (fruitTween and fruitTween.PlaybackState ~= Enum.PlaybackState.Playing) then
-                                if fruitTween then fruitTween:Cancel() end 
-                                local speed=250 
-                                local timeToTween=dist/speed 
-                                local targetCFrame=CFrame.new(pos+Vector3.new(0,1.5,0)) 
-                                fruitTween=TweenService:Create(hrp,TweenInfo.new(timeToTween,Enum.EasingStyle.Linear),{CFrame=targetCFrame}) 
-                                fruitTween:Play()
-                                lastTweenTarget = nearest
-                            end
-                        else 
-                            if fruitTween then fruitTween:Cancel() fruitTween=nil end 
-                            lastTweenTarget = nil
-                        end 
+                                if fruitTween then fruitTween:Cancel() end local speed=250 local timeToTween=dist/speed local targetCFrame=CFrame.new(pos+Vector3.new(0,1.5,0)) fruitTween=TweenService:Create(hrp,TweenInfo.new(timeToTween,Enum.EasingStyle.Linear),{CFrame=targetCFrame}) fruitTween:Play() lastTweenTarget=nearest end
+                        else if fruitTween then fruitTween:Cancel() fruitTween=nil end lastTweenTarget=nil end 
                     end 
-                else 
-                    if fruitTween then fruitTween:Cancel() fruitTween=nil end 
-                    lastTweenTarget = nil
-                end 
-            else 
-                if fruitTween then fruitTween:Cancel() fruitTween=nil end 
-                lastTweenTarget = nil
-            end 
+                else if fruitTween then fruitTween:Cancel() fruitTween=nil end lastTweenTarget=nil end 
+            else if fruitTween then fruitTween:Cancel() fruitTween=nil end lastTweenTarget=nil end 
         end) 
     end 
 end)
 
--- [[ AUTO STORE - EXTORIUS LOGIC (EXACT SYNTAX + BRUTEFORCE) ]]
+-- [[ AUTO STORE - EXTORIUS LOGIC (BRUTEFORCE + UNEQUIP) ]]
 local StoreBlacklist={}
 local isStoring = false
-
 task.spawn(function() 
     while task.wait(1) do 
         if Settings.AutoStoreFruit and not isStoring then 
             isStoring = true
             pcall(function() 
-                local character = Me.Character
-                if not character then isStoring = false return end 
-                
+                local character = Me.Character if not character then isStoring = false return end 
                 local fruitTool = nil
-                if Me.Backpack then
-                    for _, v in pairs(Me.Backpack:GetChildren()) do
-                        if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
-                            fruitTool = v
-                            break
-                        end
-                    end
-                end
-                
-                if not fruitTool then
-                    for _, v in pairs(character:GetChildren()) do
-                        if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
-                            fruitTool = v
-                            break
-                        end
-                    end
-                end
+                if Me.Backpack then for _, v in pairs(Me.Backpack:GetChildren()) do if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then fruitTool = v break end end end
+                if not fruitTool then for _, v in pairs(character:GetChildren()) do if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then fruitTool = v break end end end
 
                 if fruitTool then
-                    -- 1. WAJIB PEGANG BUAH (Equip)
                     local hum = character:FindFirstChild("Humanoid")
-                    if hum and fruitTool.Parent ~= character then
-                        hum:EquipTool(fruitTool)
-                        task.wait(0.5)
-                    end
-                    
-                    -- 2. HITUNG NAMA ASLI BUAH (Extorius Trick)
+                    if hum and fruitTool.Parent ~= character then hum:EquipTool(fruitTool) task.wait(0.5) end
                     local fruitName = fruitTool.Name
                     local fruitVal = fruitTool:FindFirstChild("Fruit")
-                    if fruitVal and fruitVal:IsA("StringValue") and fruitVal.Value ~= "" then
-                        fruitName = fruitVal.Value -- Contoh: "Bomb-Bomb" (Nama asli dari StringValue)
-                    else
-                        -- Fallback Extorius kalau ga ada StringValue
-                        fruitName = string.gsub(fruitTool.Name, " Fruit", "")
-                        fruitName = fruitName.."-"..fruitName 
-                    end
-                    
-                    -- 3. BRUTEFORCE REMOTE (Spam 10x biar server kebaca)
-                    warn("[CatHUB] Menyimpan " .. fruitName .. "...")
+                    if fruitVal and fruitVal:IsA("StringValue") and fruitVal.Value ~= "" then fruitName = fruitVal.Value else fruitName = string.gsub(fruitTool.Name, " Fruit", "") fruitName = fruitName.."-"..fruitName end
                     local storeSuccess = false
-                    for _ = 1, 10 do
-                        if storeSuccess then break end
-                        local ok, result = pcall(function()
-                            -- INI SINTAKS RAHASIA DARI EXTORIUS: (Action, NamaAsli, ObjekTool)
-                            return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName, fruitTool)
-                        end)
-                        
-                        if ok and result == true then
-                            warn("[CatHUB] Berhasil disimpan!")
-                            storeSuccess = true
-                        end
-                        task.wait(0.1)
+                    for _ = 1, 10 do if storeSuccess then break end
+                        local ok, result = pcall(function() return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName, fruitTool) end)
+                        if ok and result == true then storeSuccess = true end task.wait(0.1)
                     end
-                    
-                    if not storeSuccess then
-                        warn("[CatHUB] Gagal simpan (Penuh?). Blacklist & Unequip!")
-                        table.insert(StoreBlacklist, fruitTool.Name)
-                        -- PENTING: Turunin buah biar Context Menu (Eat/Drop) ga muncul & ganggu Hopper!
-                        if hum then hum:EquipTool(nil) end
-                    end
+                    if not storeSuccess then table.insert(StoreBlacklist, fruitTool.Name) if hum then hum:EquipTool(nil) end end
                 end
-            end) 
-            isStoring = false
+            end) isStoring = false
         end 
     end 
 end)
 
--- [[ HOP SERVER - V4 FAST & PROFESSIONAL (FORCED UI BYPASS) ]]
+-- [[ SENTINEL V5: TEKAN ENTER SAJA (JANGAN ESCAPE) ]]
+-- Ini rahasia Thunderz Hub! Kalau kena 772/773, cuma klik Enter buat tutup popup Roblox. UI Server tetep kebuka!
+TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
+    if player == Me then
+        task.spawn(function()
+            for i = 1, 5 do
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                task.wait(0.02)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                task.wait(0.02)
+            end
+        end)
+    end
+end)
+
+-- [[ HOP SERVER - V5 CONTINUOUS LOOP (THUNDERZ STYLE) ]]
 _G.NomexyHopper = true 
-local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
 
 task.spawn(function()
     while _G.NomexyHopper do
-        task.wait(2)
+        task.wait(1)
         
         if Settings.AutoHop then
             local fruitCount = 0
@@ -262,49 +160,45 @@ task.spawn(function()
             if fruitCount > 0 then continue end
 
             local hopOk, hopErr = pcall(function()
-                -- STEP 1: Clean state (Tutup semua menu sisa)
-                VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.05) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
-                task.wait(0.2)
-                VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.05) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
-                task.wait(0.5)
-
-                -- STEP 2: Buka UI
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                local fakeScroll = browser and browser:FindFirstChild("FakeScroll", true)
+                local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
+
+                -- STEP 1: BUKA UI KALO BELUM KEBUKA
                 if not (browser and browser.Enabled) then
                     local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                     if openBtn then
                         local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + TopBarOffset, 0, true, game, 0)
-                        task.wait(0.1)
+                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + TopBarOffset, 0, true, game, 0) task.wait(0.1)
                         VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + TopBarOffset, 0, false, game, 0)
-                        task.wait(2) -- Nunggu load
+                        task.wait(2.5)
                     end
                 end
 
+                -- STEP 2: SCROLL & CLICK (Jika UI udah kebuka, loop ini nge-scroll dikit2 terus klik)
                 browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                local fakeScroll = browser and browser:FindFirstChild("FakeScroll", true)
-                local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
+                fakeScroll = browser and browser:FindFirstChild("FakeScroll", true)
+                insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
 
                 if fakeScroll and insideFrame then
                     local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
                     local scrollCenterX = fsP.X + (fsS.X / 2)
                     local scrollCenterY = fsP.Y + (fsS.Y / 2) + TopBarOffset
 
-                    VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game)
-                    task.wait(0.2)
+                    -- Lock Mouse
+                    VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game) task.wait(0.2)
 
-                    -- STEP 3: Scroll 100x (Mouse locked biar ga zoom)
-                    for i = 1, 100 do
+                    -- Scroll dikit tiap loop (15x)
+                    for i = 1, 15 do
                         VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game)
                         VIM:SendMouseWheelEvent(scrollCenterX, scrollCenterY, false, game)
-                        if i % 20 == 0 then task.wait() end 
+                        if i % 5 == 0 then task.wait() end 
                     end
                     task.wait(1)
 
-                    -- STEP 4: Cari & Klik Join (Khusus yang textnya "Join", skip "Your Server")
-                    local clicked = false
+                    -- Cari & Klik Join (1 aja per siklus biar ga spam mslah)
                     for _, template in pairs(insideFrame:GetChildren()) do
-                        if template.Name == "Template" and not clicked then
+                        if template.Name == "Template" then
                             local joinBtn = template:FindFirstChild("Join")
                             if joinBtn and joinBtn:IsA("TextButton") and joinBtn.Text == "Join" and joinBtn.Visible then
                                 local jP, jS = joinBtn.AbsolutePosition, joinBtn.AbsoluteSize
@@ -312,46 +206,17 @@ task.spawn(function()
                                     local clickX = jP.X + (jS.X / 2)
                                     local clickY = jP.Y + (jS.Y / 2) + TopBarOffset
                                     
-                                    VIM:SendMouseMoveEvent(clickX, clickY, game)
-                                    task.wait(0.05)
-                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0)
-                                    task.wait(0.05)
+                                    VIM:SendMouseMoveEvent(clickX, clickY, game) task.wait(0.05)
+                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0) task.wait(0.05)
                                     VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
-                                    clicked = true -- Cumah klik 1x biar ga spam teleport
+                                    break -- Klik 1 server, terus nunggu hasilnya (Kalau 772, Sentinel Enter bakal tutup, terus loop ini ngulang)
                                 end
                             end
                         end
                     end
-
-                    -- STEP 5: LANGSUNG TUTUP UI! (Biar keliatan profesional & ga ngerepotin)
-                    if clicked then
-                        task.wait(0.5)
-                        VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
-                    end
                 end
             end)
-
-            if not hopOk then
-                warn("[HOP V4] Error: " .. tostring(hopErr))
-            end
         end
-    end
-end)
-
--- [[ SENTINEL V4: ESCAPE PROTOCOL (INSTANT CLOSE) ]]
-task.spawn(function()
-    while true do
-        task.wait(0.1)
-        pcall(function()
-            local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
-            local playerGui = Me.PlayerGui:FindFirstChild("ErrorPrompt", true) or Me.PlayerGui:FindFirstChild("MessagePrompt", true)
-            
-            -- Kalau ada Error 772/773, langsung Escape & Enter
-            if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
-                VIM:SendKeyEvent(true, Enum.KeyCode.Escape, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Escape, false, game)
-                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-            end
-        end)
     end
 end)
 
