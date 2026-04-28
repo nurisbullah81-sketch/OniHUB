@@ -129,25 +129,21 @@ task.spawn(function()
     end 
 end)
 
--- [[ SENTINEL V7: EVENT TRACKER + AGGRESSIVE OK ]]
-local lastTeleportFail = 0
-
+-- [[ SENTINEL V8: KEYBOARD ONLY (NO MOUSE HIJACK) ]]
 TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
     if player == Me then
-        lastTeleportFail = tick()
-        -- Hajar Enter + Klik tengah (Failsafe buat 772 yang ngumpet)
+        -- Hanya pakai keyboard (Enter) buat tutup popup. Mouse lu diemin!
         task.spawn(function()
             for i = 1, 5 do
-                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.01) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                task.wait(0.01)
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                task.wait(0.02)
             end
         end)
     end
 end)
 
--- [[ HOP SERVER - V7 POSITION HACK (ZERO MOUSE WHEEL) ]]
+-- [[ HOP SERVER - V8 GHOST PROTOCOL (FIRESIGNAL + POSITION HACK) ]]
 _G.NomexyHopper = true 
-local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
 
 task.spawn(function()
     while _G.NomexyHopper do
@@ -163,33 +159,41 @@ task.spawn(function()
 
             local hopOk, hopErr = pcall(function()
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                local fakeScroll = browser and browser:FindFirstChild("FakeScroll", true)
-                local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
-
-                -- STEP 1: BUKA UI KALO BELUM KEBUKA
+                
+                -- STEP 1: BUKA UI PAKAI FIRESIGNAL (NO MOUSE!)
                 if not (browser and browser.Enabled) then
                     local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                     if openBtn then
-                        local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + TopBarOffset, 0, true, game, 0) task.wait(0.1)
-                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + TopBarOffset, 0, false, game, 0)
-                        task.wait(2.5)
+                        -- Position Hack: Pindahin tombol ke tengah layar biar firesignal diterima
+                        local origPos = openBtn.Position
+                        local origAnchor = openBtn.AnchorPoint
+                        openBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+                        openBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+                        task.wait(0.1)
+                        
+                        -- Tembak logika klik (Firesignal)
+                        for _, conn in pairs(getconnections(openBtn.Activated)) do conn:Fire() end
+                        
+                        -- Balikin posisi tombol biar ga merusak UI
+                        task.wait(0.1)
+                        openBtn.Position = origPos
+                        openBtn.AnchorPoint = origAnchor
+                        task.wait(2.5) -- Nunggu UI load
                     end
                 end
 
                 browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                fakeScroll = browser and browser:FindFirstChild("FakeScroll", true)
-                insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
+                local fakeScroll = browser and browser:FindFirstChild("FakeScroll", true)
+                local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
 
                 if fakeScroll and insideFrame then
-                    -- STEP 2: POSITION HACK (Pindah UI secara internal, tanpa scroll mouse!)
-                    -- Ini rahasianya biar kamera ga pernah zoom lagi!
+                    -- STEP 2: POSITION HACK (Geser list server tanpa scroll mouse)
                     pcall(function()
                         insideFrame.Position = UDim2.new(0, 0, 0, math.random(-1800, -800))
                     end)
-                    task.wait(1.5) -- Nunggu UI render tombol baru
+                    task.wait(1.5)
 
-                    -- STEP 3: SPAM KLIK SEMUA TOMBOL JOIN
+                    -- STEP 3: SPAM KLIK JOIN PAKAI FIRESIGNAL (NO MOUSE!)
                     local clickedCount = 0
                     for _, template in pairs(insideFrame:GetChildren()) do
                         if template.Name == "Template" then
@@ -198,22 +202,18 @@ task.spawn(function()
                                 local jP, jS = joinBtn.AbsolutePosition, joinBtn.AbsoluteSize
                                 local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
                                 
-                                -- Pastikan tombol ada di area yang keliatan (ga kepotong clip)
                                 if jP.Y > fsP.Y and (jP.Y + jS.Y) < (fsP.Y + fsS.Y) then
-                                    local clickX = jP.X + (jS.X / 2)
-                                    local clickY = jP.Y + (jS.Y / 2) + TopBarOffset
-                                    
-                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0) task.wait(0.05)
-                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
+                                    -- Tembak logika klik (Firesignal)
+                                    for _, conn in pairs(getconnections(joinBtn.Activated)) do conn:Fire() end
                                     clickedCount = clickedCount + 1
-                                    task.wait(0.2) -- Jeda super cepat antar klik
+                                    task.wait(0.2)
                                 end
                             end
                         end
                     end
                     
                     if clickedCount > 0 then
-                        warn("[HOP V7] Spam klik " .. clickedCount .. " server! Menunggu hasil...")
+                        warn("[HOP V8] Firesignal dikirim ke " .. clickedCount .. " server! (Mouse lu aman)")
                     end
                 end
             end)
