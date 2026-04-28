@@ -1,4 +1,4 @@
--- CatHUB Loader + Auto Re-execute
+-- CatHUB Loader + Auto Re-execute + AUTO SAVE
 local _ENV = (getgenv or getrenv or getfenv)()
 
 -- Debounce
@@ -6,7 +6,7 @@ local last_exec = _ENV.cat_exec_debounce
 if last_exec and (tick() - last_exec) <= 5 then return end
 _ENV.cat_exec_debounce = tick()
 
--- queue_on_teleport (kunci biar script auto jalan lagi di server baru)
+-- queue_on_teleport
 local executor = syn or fluxus
 local queueteleport = queue_on_teleport or (executor and executor.queue_on_teleport)
 
@@ -24,16 +24,40 @@ local function Load(file)
     return r
 end
 
+-- [[ AUTO-SAVE SYSTEM ]]
+local HttpService = game:GetService("HttpService")
+local defaultSettings = { 
+    FruitESP = true, 
+    TweenFruit = true,
+    AutoStoreFruit = true,
+    AutoHop = true,
+    AntiAFK = true
+}
+
+local function loadSettings()
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(readfile("CatHUB_Settings.json"))
+    end)
+    if ok and type(data) == "table" then
+        for k, v in pairs(defaultSettings) do
+            if data[k] == nil then data[k] = v end
+        end
+        return data
+    end
+    return defaultSettings
+end
+
+local function saveSettings()
+    pcall(function()
+        writefile("CatHUB_Settings.json", HttpService:JSONEncode(_G.Cat.Settings))
+    end)
+end
+
 _G.Cat = {
     Player = game:GetService("Players").LocalPlayer,
-    Settings = { 
-        FruitESP = false, 
-        TweenFruit = false,
-        AutoStoreFruit = false,
-        AutoHop = false,
-        AntiAFK = true
-    },
-    Labels = {}
+    Settings = loadSettings(), -- LANGSUNG LOAD DARI FILE!
+    Labels = {},
+    SaveSettings = saveSettings
 }
 
 Load("StyleUI.lua")
