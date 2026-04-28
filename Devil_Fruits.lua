@@ -150,13 +150,29 @@ TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, erro
     end
 end)
 
--- [[ HOP SERVER - V6 CONTINUOUS (ANTI-ZOOM RE-FOCUS) ]]
+-- [[ SENTINEL V7: EVENT TRACKER + AGGRESSIVE OK ]]
+local lastTeleportFail = 0
+
+TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
+    if player == Me then
+        lastTeleportFail = tick()
+        -- Hajar Enter + Klik tengah (Failsafe buat 772 yang ngumpet)
+        task.spawn(function()
+            for i = 1, 5 do
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.01) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                task.wait(0.01)
+            end
+        end)
+    end
+end)
+
+-- [[ HOP SERVER - V7 POSITION HACK (ZERO MOUSE WHEEL) ]]
 _G.NomexyHopper = true 
 local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
 
 task.spawn(function()
     while _G.NomexyHopper do
-        task.wait(1)
+        task.wait(2)
         
         if Settings.AutoHop then
             local fruitCount = 0
@@ -187,48 +203,39 @@ task.spawn(function()
                 insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
 
                 if fakeScroll and insideFrame then
-                    local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
-                    local scrollCenterX = fsP.X + (fsS.X / 2)
-                    local scrollCenterY = fsP.Y + (fsS.Y / 2) + TopBarOffset
+                    -- STEP 2: POSITION HACK (Pindah UI secara internal, tanpa scroll mouse!)
+                    -- Ini rahasianya biar kamera ga pernah zoom lagi!
+                    pcall(function()
+                        insideFrame.Position = UDim2.new(0, 0, 0, math.random(-1800, -800))
+                    end)
+                    task.wait(1.5) -- Nunggu UI render tombol baru
 
-                    -- STEP 2: RE-FOCUS! Klik area scroll dulu biar fokus ga nyasar ke kamera
-                    VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game) task.wait(0.1)
-                    VIM:SendMouseButtonEvent(scrollCenterX, scrollCenterY, 0, true, game, 0) task.wait(0.05)
-                    VIM:SendMouseButtonEvent(scrollCenterX, scrollCenterY, 0, false, game, 0) task.wait(0.2)
-
-                    -- STEP 3: SCROLL DIKIT
-                    for i = 1, 15 do
-                        -- Setiap scroll, pastiin mouse di tengah scroll frame
-                        VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game)
-                        VIM:SendMouseWheelEvent(scrollCenterX, scrollCenterY, false, game)
-                        if i % 5 == 0 then task.wait() end 
-                    end
-                    task.wait(1)
-
-                    -- STEP 4: CARI & KLIK JOIN
+                    -- STEP 3: SPAM KLIK SEMUA TOMBOL JOIN
+                    local clickedCount = 0
                     for _, template in pairs(insideFrame:GetChildren()) do
                         if template.Name == "Template" then
                             local joinBtn = template:FindFirstChild("Join")
                             if joinBtn and joinBtn:IsA("TextButton") and joinBtn.Text == "Join" and joinBtn.Visible then
                                 local jP, jS = joinBtn.AbsolutePosition, joinBtn.AbsoluteSize
+                                local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
+                                
+                                -- Pastikan tombol ada di area yang keliatan (ga kepotong clip)
                                 if jP.Y > fsP.Y and (jP.Y + jS.Y) < (fsP.Y + fsS.Y) then
                                     local clickX = jP.X + (jS.X / 2)
                                     local clickY = jP.Y + (jS.Y / 2) + TopBarOffset
                                     
-                                    VIM:SendMouseMoveEvent(clickX, clickY, game) task.wait(0.05)
                                     VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0) task.wait(0.05)
                                     VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0)
-                                    break -- Klik 1 server, terus nunggu hasilnya
+                                    clickedCount = clickedCount + 1
+                                    task.wait(0.2) -- Jeda super cepat antar klik
                                 end
                             end
                         end
                     end
                     
-                    -- STEP 5: RE-FOCUS LAGI SETELAH KLIK (PENTING BIAR KAMERA GA ZOOM PAS 772 MUNCUL)
-                    task.wait(0.5)
-                    VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game)
-                    VIM:SendMouseButtonEvent(scrollCenterX, scrollCenterY, 0, true, game, 0) task.wait(0.05)
-                    VIM:SendMouseButtonEvent(scrollCenterX, scrollCenterY, 0, false, game, 0)
+                    if clickedCount > 0 then
+                        warn("[HOP V7] Spam klik " .. clickedCount .. " server! Menunggu hasil...")
+                    end
                 end
             end)
         end
