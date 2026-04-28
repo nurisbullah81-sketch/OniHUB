@@ -223,14 +223,13 @@ task.spawn(function()
     end 
 end)
 
--- [[ HOP SERVER - NOMEXY SOVEREIGN V11 (CRASH-PROOF) ]]
+-- [[ HOP SERVER - PREMIUM STABLE V2 (NO ZOOM, NO STUCK) ]]
 _G.NomexyHopper = true 
-_G.DeepDiveDepth = 250 
-_G.MinServerLoad = 25  
+_G.DeepDiveDepth = 150 -- Cukup 150, ntar kebanyakan malah masuk server mati 0 pemain
 
 task.spawn(function()
     while _G.NomexyHopper do
-        task.wait(1)
+        task.wait(2) -- Jeda antar siklus biar ga makan CPU
         
         if Settings.AutoHop then
             local fruitCount = 0
@@ -239,7 +238,7 @@ task.spawn(function()
             for f, _ in pairs(Data) do
                 if f and f.Parent and f.Parent == Workspace then fruitCount = fruitCount + 1 end
             end
-            -- 2. Cek Tangan & Backpack (Abaikan yang udah di Blacklist / Inventory Penuh)
+            -- 2. Cek Tangan & Backpack (Abaikan yang di Blacklist / Penuh)
             if Me.Backpack then 
                 for _, tool in pairs(Me.Backpack:GetChildren()) do 
                     if tool:IsA("Tool") and string.find(tool.Name, "Fruit") and not table.find(StoreBlacklist, tool.Name) then 
@@ -256,14 +255,23 @@ task.spawn(function()
             end
             
             if fruitCount > 0 then
-                continue -- Masih ada buah, nunggu
+                continue -- Masih ada buah, diam
             end
 
-            -- KALO GAADA BUAH, GAS ENGINE GEMINI!
-            -- Dibungkus pcall biar kalau UI error, loop ngga mati diam-diam
-            local hopSuccess, hopError = pcall(function()
-                warn("[Nomexy] Engine: Ga ada buah! Menyiapkan amunisi...")
+            -- KALO GAADA BUAH, GAS!
+            local hopOk, hopErr = pcall(function()
+                -- STEP 1: Tutup popup sisa siklus sebelumnya biar bersih
+                local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
+                local playerGui = Me.PlayerGui:FindFirstChild("ErrorPrompt", true) or Me.PlayerGui:FindFirstChild("MessagePrompt", true)
+                if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    task.wait(0.02)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                end
 
+                warn("[HOP V2] Engine Nyala! Mencari server...")
+                
+                -- STEP 2: Buka UI
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                 if not (browser and browser.Enabled) then
                     local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
@@ -272,102 +280,100 @@ task.spawn(function()
                         VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
                         task.wait(0.1)
                         VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
-                        task.wait(2) -- Nunggu UI kebuka
-                    else
-                        return -- Tombol ga ketemu, skip siklus
+                        task.wait(2.5) -- Kasih waktu UI loading
                     end
                 end
 
-                local listArea
-                local loadTimeout = 0
+                -- STEP 3: Cari Area Scroll & Lock Focus (RAHASIA ANTI ZOOM)
+                browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                local scrollFrame = browser and browser:FindFirstChild("FakeScroll", true)
                 
-                repeat 
-                    task.wait(0.5)
-                    loadTimeout = loadTimeout + 1
-                    browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                    listArea = browser and browser:FindFirstChild("Inside", true)
-                    
-                    local currentLoad = 0
-                    if listArea then
-                        for _, v in pairs(listArea:GetChildren()) do
-                            if v:FindFirstChild("Join") then currentLoad = currentLoad + 1 end
-                        end
+                if scrollFrame then
+                    local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                    -- Hitung tengah Scroll Frame
+                    local cX = sP.X + (sS.X / 2)
+                    local cY = sP.Y + (sS.Y / 2) + 58
+
+                    -- PAKSA FOCUS: Hover, Klik Tahan, Lepas. Ini lock mouse ke UI.
+                    VIM:SendMouseMoveEvent(cX, cY, game)
+                    task.wait(0.2)
+                    VIM:SendMouseButtonEvent(cX, cY, 0, true, game, 0)
+                    task.wait(0.1)
+                    VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
+                    task.wait(0.5) -- Kasih waktu Roblox ngeresepi fokus
+
+                    -- STEP 4: Deep Scroll (Mouse dikunci di area UI)
+                    warn("[HOP V2] Scrolling... (Mouse Locked)")
+                    for i = 1, _G.DeepDiveDepth do
+                        -- Setiap scroll, pastiin mouse tetep di area UI
+                        VIM:SendMouseMoveEvent(cX, cY, game)
+                        VIM:SendMouseWheelEvent(cX, cY, false, game)
+                        if i % 30 == 0 then task.wait() end 
                     end
-                until (currentLoad >= _G.MinServerLoad) or loadTimeout > 20 or not _G.NomexyHopper
+                    task.wait(1.5) -- Nunggu list render tombol Join
 
-                if not browser or not listArea then return end -- Safety check biar ga crash
-
-                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
-                if not scrollFrame then return end -- Safety check biar ga crash
-
-                local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
-                local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + 58
-
-                VIM:SendMouseMoveEvent(cX, cY, game)
-                VIM:SendMouseButtonEvent(cX, cY, 0, true, game, 0)
-                task.wait(0.05)
-                VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
-
-                warn("[Nomexy] Drilling Deep...")
-                for i = 1, _G.DeepDiveDepth do
-                    if not _G.NomexyHopper then break end
-                    VIM:SendMouseWheelEvent(cX, cY, false, game)
-                    if i % 40 == 0 then task.wait() end 
-                end
-                task.wait(1.5)
-
-                local targets = {}
-                for _, v in pairs(listArea:GetDescendants()) do
-                    if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
-                        if v.AbsolutePosition.Y > sP.Y + 45 and v.AbsolutePosition.Y < (sP.Y + sS.Y - 45) then
-                            table.insert(targets, v)
+                    -- STEP 5: Snipe SEMUA tombol Join yang keliatan
+                    local insideFrame = browser:FindFirstChild("Inside", true)
+                    if insideFrame then
+                        local targets = {}
+                        for _, v in pairs(insideFrame:GetDescendants()) do
+                            if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
+                                -- Pastikan tombol ada di area scroll yang keliatan
+                                if v.AbsolutePosition.Y > sP.Y and v.AbsolutePosition.Y < (sP.Y + sS.Y) then
+                                    table.insert(targets, v)
+                                end
+                            end
                         end
-                    end
-                end
 
-                if #targets > 0 then
-                    warn("[Nomexy] Target ditemukan! Silent Join...")
-                    for _, target in pairs(targets) do
-                        if not _G.NomexyHopper then break end
-                        local bp, bs = target.AbsolutePosition, target.AbsoluteSize
-                        local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
-                        
-                        for i = 1, 5 do
-                            VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                            VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                            task.wait(0.01)
-                            VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                            VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                        if #targets > 0 then
+                            warn("[HOP V2] Menemukan " .. #targets .. " server! Spam klik semua...")
+                            for _, target in pairs(targets) do
+                                local bp, bs = target.AbsolutePosition, target.AbsoluteSize
+                                local tx = bp.X + (bs.X/2)
+                                local ty = bp.Y + (bs.Y/2) + 58
+                                
+                                -- Klik 3x + Enter
+                                for i = 1, 3 do
+                                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                                    task.wait(0.02)
+                                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                                end
+                                task.wait(0.2)
+                            end
                         end
-                        task.wait(0.5)
                     end
                 end
             end)
 
-            if not hopSuccess then
-                warn("[Nomexy] Hopper Error: " .. tostring(hopError))
+            if not hopOk then
+                warn("[HOP V2] Error tertangkap: " .. tostring(hopErr))
             end
         end
     end
 end)
 
--- [[ THE SENTINEL: POP-UP OBLITERATOR (ANTI-772/773) ]] --
+-- [[ SENTINEL V2: HYPER AGGRESSIVE POPUP KILLER (ANTI-STUCK) ]]
 task.spawn(function()
     while true do
-        task.wait(0.1)
+        task.wait(0.1) -- Cek super cepat
         pcall(function()
             local coreGui = game:GetService("CoreGui"):FindFirstChild("ErrorPrompt", true)
             local playerGui = Me.PlayerGui:FindFirstChild("ErrorPrompt", true) or Me.PlayerGui:FindFirstChild("MessagePrompt", true)
             
             if (coreGui and coreGui.Visible) or (playerGui and playerGui.Visible) then
-                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                task.wait(0.02)
-                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                
-                local vp = workspace.CurrentCamera.ViewportSize
-                VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, true, game, 0)
-                task.wait(0.02)
-                VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, false, game, 0)
+                -- Hajar Enter & Klik tengah layar berkali-kali
+                for i = 1, 3 do
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    task.wait(0.01)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                    
+                    local vp = workspace.CurrentCamera.ViewportSize
+                    VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, true, game, 0)
+                    task.wait(0.01)
+                    VIM:SendMouseButtonEvent(vp.X/2, vp.Y/2, 0, false, game, 0)
+                end
             end
         end)
     end
