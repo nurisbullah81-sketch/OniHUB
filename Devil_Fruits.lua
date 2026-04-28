@@ -165,7 +165,7 @@ task.spawn(function()
     end 
 end)
 
--- [[ AUTO STORE - NOMEXY LOGIC ]]
+-- [[ AUTO STORE - NOMEXY LOGIC (DETAILED LOG) ]]
 local StoreBlacklist={}
 local isStoring = false
 
@@ -212,7 +212,8 @@ task.spawn(function()
                     if success and result == true then
                         warn("[CatHUB] " .. fruit.Name .. " berhasil disimpan!")
                     else
-                        warn("[CatHUB] Gagal simpan (Inventory Penuh?). Auto Hop!")
+                        -- Print persis apa yang server jawab biar kita tau kenapa gagal
+                        warn("[CatHUB] Gagal simpan " .. fruit.Name .. ". Respon Server: " .. tostring(result) .. ". Auto Blacklist & Hop!")
                         table.insert(StoreBlacklist, fruit.Name) 
                     end
                 end
@@ -222,7 +223,7 @@ task.spawn(function()
     end 
 end)
 
--- [[ HOP SERVER - NOMEXY SOVEREIGN V11 (GEMINI EXACT LOGIC) ]]
+-- [[ HOP SERVER - NOMEXY SOVEREIGN V11 (CRASH-PROOF) ]]
 _G.NomexyHopper = true 
 _G.DeepDiveDepth = 250 
 _G.MinServerLoad = 25  
@@ -238,7 +239,7 @@ task.spawn(function()
             for f, _ in pairs(Data) do
                 if f and f.Parent and f.Parent == Workspace then fruitCount = fruitCount + 1 end
             end
-            -- 2. Cek Tangan & Backpack (TAPI ABISIN YANG UDAH DI BLACKLIST / INVENTORY PENUH)
+            -- 2. Cek Tangan & Backpack (Abaikan yang udah di Blacklist / Inventory Penuh)
             if Me.Backpack then 
                 for _, tool in pairs(Me.Backpack:GetChildren()) do 
                     if tool:IsA("Tool") and string.find(tool.Name, "Fruit") and not table.find(StoreBlacklist, tool.Name) then 
@@ -255,42 +256,50 @@ task.spawn(function()
             end
             
             if fruitCount > 0 then
-                continue -- Kalau masih ada buah yang valid, SKIP / Nunggu
+                continue -- Masih ada buah, nunggu
             end
 
             -- KALO GAADA BUAH, GAS ENGINE GEMINI!
-            warn("Nomexy Engine: Ga ada buah! Menyiapkan amunisi...")
+            -- Dibungkus pcall biar kalau UI error, loop ngga mati diam-diam
+            local hopSuccess, hopError = pcall(function()
+                warn("[Nomexy] Engine: Ga ada buah! Menyiapkan amunisi...")
 
-            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            if not (browser and browser.Enabled) then
-                local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
-                if openBtn then
-                    local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
-                    task.wait(0.1)
-                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
-                end
-            end
-
-            local listArea
-            local loadTimeout = 0
-            
-            repeat 
-                task.wait(0.5)
-                loadTimeout = loadTimeout + 1
-                browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                listArea = browser and browser:FindFirstChild("Inside", true)
-                
-                local currentLoad = 0
-                if listArea then
-                    for _, v in pairs(listArea:GetChildren()) do
-                        if v:FindFirstChild("Join") then currentLoad = currentLoad + 1 end
+                local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                if not (browser and browser.Enabled) then
+                    local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
+                    if openBtn then
+                        local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
+                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
+                        task.wait(0.1)
+                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
+                        task.wait(2) -- Nunggu UI kebuka
+                    else
+                        return -- Tombol ga ketemu, skip siklus
                     end
                 end
-            until (currentLoad >= _G.MinServerLoad) or loadTimeout > 20 or not _G.NomexyHopper
 
-            if listArea then
+                local listArea
+                local loadTimeout = 0
+                
+                repeat 
+                    task.wait(0.5)
+                    loadTimeout = loadTimeout + 1
+                    browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                    listArea = browser and browser:FindFirstChild("Inside", true)
+                    
+                    local currentLoad = 0
+                    if listArea then
+                        for _, v in pairs(listArea:GetChildren()) do
+                            if v:FindFirstChild("Join") then currentLoad = currentLoad + 1 end
+                        end
+                    end
+                until (currentLoad >= _G.MinServerLoad) or loadTimeout > 20 or not _G.NomexyHopper
+
+                if not browser or not listArea then return end -- Safety check biar ga crash
+
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
+                if not scrollFrame then return end -- Safety check biar ga crash
+
                 local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                 local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + 58
 
@@ -299,6 +308,7 @@ task.spawn(function()
                 task.wait(0.05)
                 VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
 
+                warn("[Nomexy] Drilling Deep...")
                 for i = 1, _G.DeepDiveDepth do
                     if not _G.NomexyHopper then break end
                     VIM:SendMouseWheelEvent(cX, cY, false, game)
@@ -316,7 +326,7 @@ task.spawn(function()
                 end
 
                 if #targets > 0 then
-                    warn("Target ditemukan! Memulai Silent Join...")
+                    warn("[Nomexy] Target ditemukan! Silent Join...")
                     for _, target in pairs(targets) do
                         if not _G.NomexyHopper then break end
                         local bp, bs = target.AbsolutePosition, target.AbsoluteSize
@@ -332,6 +342,10 @@ task.spawn(function()
                         task.wait(0.5)
                     end
                 end
+            end)
+
+            if not hopSuccess then
+                warn("[Nomexy] Hopper Error: " .. tostring(hopError))
             end
         end
     end
