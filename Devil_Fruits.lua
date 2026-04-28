@@ -320,49 +320,103 @@ task.spawn(function()
                 if listArea then
                     local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                     local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
-                    local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + 58
+                    local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + 58-- [[ HOP SERVER - KOMUNITAS LOGIC (CLEAN API + ANTI 772) ]]
+-- Logika ini jauh lebih stabil karena pakai API excludeFullGames=true.
+-- PERINGATAN: Kalau di Sea 2/3 Xeno/Delta lu kena 773, itu limitasi executor, bukan salah kode.
 
-                    -- FORCE FOCUS: Klik tengah UI biar scroll ga nyasar ke kamera
-                    VIM:SendMouseMoveEvent(cX, cY, game)
-                    VIM:SendMouseButtonEvent(cX, cY, 0, true, game, 0)
-                    task.wait(0.05)
-                    VIM:SendMouseButtonEvent(cX, cY, 0, false, game, 0)
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
-                    -- HYPER DRILLING
-                    for i = 1, _G.DeepDiveDepth do
-                        VIM:SendMouseWheelEvent(cX, cY, false, game)
-                        if i % 40 == 0 then task.wait() end 
-                    end
-                    task.wait(1.5)
+local ServerHopConfig = {
+    MaxStore = 3600, -- Simpan history server selama 1 jam
+    CheckInterval = 2, -- Jeda antar cek API
+    TeleportInterval = 1 -- Jeda antar teleport
+}
 
-                    -- SNIPE
-                    local targets = {}
-                    for _, v in pairs(listArea:GetDescendants()) do
-                        if v:IsA("TextButton") and v.Text == "Join" and v.Visible then
-                            if v.AbsolutePosition.Y > sP.Y + 45 and v.AbsolutePosition.Y < (sP.Y + sS.Y - 45) then
-                                table.insert(targets, v)
-                            end
-                        end
-                    end
+function _G.Cat.HopServer()
+    local PlaceId = game.PlaceId
+    local JobId = game.JobId
 
-                    if #targets > 0 then
-                        for _, target in pairs(targets) do
-                            local bp, bs = target.AbsolutePosition, target.AbsoluteSize
-                            local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
-                            
-                            for i = 1, 5 do
-                                VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                                task.wait(0.01)
-                                VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                            end
-                            task.wait(0.5)
-                        end
-                    end
-                end
-            end)
+    local RootFolder = "CatHUB_ServerHop"
+    local StorageFile = RootFolder .. "/" .. tostring(PlaceId) .. ".json"
+    local Data = {
+        Start = tick(),
+        Jobs = {},
+    }
+
+    -- Load history biar ga balik ke server yang sama
+    if not isfolder(RootFolder) then makefolder(RootFolder) end
+    if isfile(StorageFile) then
+        local Success, NewData = pcall(function() return HttpService:JSONDecode(readfile(StorageFile)) end)
+        if Success and tick() - NewData.Start < ServerHopConfig.MaxStore then
+            Data = NewData
         end
+    end
+
+    -- Masukin server sekarang ke history
+    if not table.find(Data.Jobs, JobId) then
+        table.insert(Data.Jobs, JobId)
+    end
+    writefile(StorageFile, HttpService:JSONEncode(Data))
+
+    local Servers = {}
+    local Cursor = ""
+
+    -- CARI SERVER VIA API (excludeFullGames=true biar ga kena 772)
+    warn("[CatHUB] [HOP] Mencari server yang tidak penuh...")
+    while Cursor and #Servers <= 0 and task.wait(ServerHopConfig.CheckInterval) do
+        local RequestFunc = request or (syn and syn.request)
+        if not RequestFunc then
+            warn("[CatHUB] [HOP] Executor ga support request. Gagal cari server.")
+            break
+        end
+
+        local Success, Response = pcall(function()
+            return RequestFunc({
+                Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true&cursor=" .. Cursor,
+                Method = "GET",
+            })
+        end)
+
+        if not Success or not Response or not Response.Body then continue end
+        
+        local BodySuccess, Body = pcall(function() return HttpService:JSONDecode(Response.Body) end)
+
+        if not BodySuccess or not Body or not Body.data then continue end
+
+        for _, Server in pairs(Body.data) do
+            if typeof(Server) == "table" and Server.id and tonumber(Server.playing) and tonumber(Server.maxPlayers) then
+                -- Cuma masukin server yang ada orang & belum dikunjungi
+                if Server.playing > 0 and Server.playing < Server.maxPlayers and not table.find(Data.Jobs, Server.id) then
+                    table.insert(Servers, 1, Server.id)
+                end
+            end
+        end
+
+        if Body.nextPageCursor then
+            Cursor = Body.nextPageCursor
+        else
+            Cursor = nil
+        end
+    end
+
+    -- TELEPORT KE SERVER YANG KETEMU
+    while #Servers > 0 and task.wait(ServerHopConfig.TeleportInterval) do
+        local Server = Servers[math.random(1, #Servers)]
+        warn("[CatHUB] [HOP] Gas Teleport ke server: " .. Server)
+        TeleportService:TeleportToPlaceInstance(PlaceId, Server, Me)
+    end
+end
+
+-- Sentinel tetap dipertahankan buat nutup popup 772 kalau tetep kejadian
+TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
+    if player == Me then
+        task.spawn(function()
+            for i = 1, 5 do
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                task.wait(0.02)
+            end
+        end)
     end
 end)
 
