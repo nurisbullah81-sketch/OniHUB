@@ -165,7 +165,7 @@ task.spawn(function()
     end 
 end)
 
--- [[ AUTO STORE - NOMEXY LOGIC (DETAILED LOG) ]]
+-- [[ AUTO STORE - EXTORIUS LOGIC (EXACT SYNTAX + BRUTEFORCE) ]]
 local StoreBlacklist={}
 local isStoring = false
 
@@ -177,44 +177,66 @@ task.spawn(function()
                 local character = Me.Character
                 if not character then isStoring = false return end 
                 
-                local fruit = nil
+                local fruitTool = nil
                 if Me.Backpack then
                     for _, v in pairs(Me.Backpack:GetChildren()) do
                         if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
-                            fruit = v
+                            fruitTool = v
                             break
                         end
                     end
                 end
                 
-                if not fruit then
+                if not fruitTool then
                     for _, v in pairs(character:GetChildren()) do
                         if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
-                            fruit = v
+                            fruitTool = v
                             break
                         end
                     end
                 end
 
-                if fruit then
-                    if fruit.Parent ~= character then
-                        local hum = character:FindFirstChild("Humanoid")
-                        if hum then
-                            hum:EquipTool(fruit)
-                            task.wait(0.3)
-                        end
+                if fruitTool then
+                    -- 1. WAJIB PEGANG BUAH (Equip)
+                    local hum = character:FindFirstChild("Humanoid")
+                    if hum and fruitTool.Parent ~= character then
+                        hum:EquipTool(fruitTool)
+                        task.wait(0.5)
                     end
                     
-                    local success, result = pcall(function()
-                        return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruit.Name)
-                    end)
-                    
-                    if success and result == true then
-                        warn("[CatHUB] " .. fruit.Name .. " berhasil disimpan!")
+                    -- 2. HITUNG NAMA ASLI BUAH (Extorius Trick)
+                    local fruitName = fruitTool.Name
+                    local fruitVal = fruitTool:FindFirstChild("Fruit")
+                    if fruitVal and fruitVal:IsA("StringValue") and fruitVal.Value ~= "" then
+                        fruitName = fruitVal.Value -- Contoh: "Bomb-Bomb" (Nama asli dari StringValue)
                     else
-                        -- Print persis apa yang server jawab biar kita tau kenapa gagal
-                        warn("[CatHUB] Gagal simpan " .. fruit.Name .. ". Respon Server: " .. tostring(result) .. ". Auto Blacklist & Hop!")
-                        table.insert(StoreBlacklist, fruit.Name) 
+                        -- Fallback Extorius kalau ga ada StringValue
+                        fruitName = string.gsub(fruitTool.Name, " Fruit", "")
+                        fruitName = fruitName.."-"..fruitName 
+                    end
+                    
+                    -- 3. BRUTEFORCE REMOTE (Spam 10x biar server kebaca)
+                    warn("[CatHUB] Menyimpan " .. fruitName .. "...")
+                    local storeSuccess = false
+                    for _ = 1, 10 do
+                        if storeSuccess then break end
+                        local ok, result = pcall(function()
+                            -- INI SINTAKS RAHASIA DARI EXTORIUS: (Action, NamaAsli, ObjekTool)
+                            return ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName, fruitTool)
+                        end)
+                        
+                        if ok and result == true then
+                            warn("[CatHUB] Berhasil disimpan!")
+                            storeSuccess = true
+                        end
+                        task.wait(0.1)
+                    end
+                    
+                    if not storeSuccess then
+                        warn("[CatHUB] Gagal simpan (Penuh?). Blacklist & Unequip!")
+                        table.insert(StoreBlacklist, fruitTool.Name)
+                        -- PENTING: Turunin buah biar Context Menu (Eat/Drop) ga muncul & ganggu Hopper!
+                        if hum then hum:EquipTool(nil) end
                     end
                 end
             end) 
