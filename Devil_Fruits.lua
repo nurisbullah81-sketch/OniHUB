@@ -129,27 +129,6 @@ task.spawn(function()
     end 
 end)
 
--- [[ SENTINEL V6: EVENT TRACKER + RE-FOCUS ]]
-local lastTeleportFail = 0
-
--- Detektor 772/773 dari Engine Roblox (Bukan UI)
-TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
-    if player == Me then
-        warn("[SENTINEL] Teleport Gagal! (" .. tostring(errorMessage) .. "). Menutup popup...")
-        lastTeleportFail = tick()
-        
-        -- Spam Enter buat ngehajar popup yang ngumpet
-        task.spawn(function()
-            for i = 1, 5 do
-                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                task.wait(0.01)
-                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                task.wait(0.01)
-            end
-        end)
-    end
-end)
-
 -- [[ SENTINEL V7: EVENT TRACKER + AGGRESSIVE OK ]]
 local lastTeleportFail = 0
 
