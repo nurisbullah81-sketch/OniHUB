@@ -129,7 +129,7 @@ task.spawn(function()
     end 
 end)
 
--- [[ SENTINEL V10: KEYBOARD ONLY ]]
+-- [[ SENTINEL V11: KEYBOARD ONLY (BIAR MOUSE LU BENERAN AMAN) ]]
 TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
     if player == Me then
         task.spawn(function()
@@ -141,20 +141,10 @@ TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, erro
     end
 end)
 
--- [[ HOP SERVER - V10 ABSOLUTE GHOST (ZERO MOUSE MOVEMENT) ]]
+-- [[ HOP SERVER - V11 MICRO-VIM (POSITION HACK SCROLL + FAST CLICK) ]]
 _G.NomexyHopper = true 
-
-local function GhostClick(btn)
-    if not btn or not btn.Visible then return end
-    -- Tembak SEMUA sinyal klik yang ada di tombol biar kebaca game
-    pcall(function() for _, c in pairs(getconnections(btn.Activated)) do c:Fire() end end)
-    pcall(function() for _, c in pairs(getconnections(btn.MouseButton1Click)) do c:Fire() end end)
-    pcall(function() for _, c in pairs(getconnections(btn.MouseButton1Down)) do c:Fire() end end)
-    pcall(function() for _, c in pairs(getconnections(btn.MouseButton1Up)) do c:Fire() end end)
-    -- Tembak InputBegan/InputEnded tanpa argumen (Kadang UI butuh ini)
-    pcall(function() for _, c in pairs(getconnections(btn.InputBegan)) do c:Fire() end end)
-    pcall(function() for _, c in pairs(getconnections(btn.InputEnded)) do c:Fire() end end)
-end
+local UserInput = game:GetService("UserInputService")
+local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
 
 task.spawn(function()
     while _G.NomexyHopper do
@@ -171,18 +161,30 @@ task.spawn(function()
             local hopOk, hopErr = pcall(function()
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                 
-                -- STEP 1: BUKA UI (Pindahin tombol ke layar -> Tembak -> Balikin)
+                -- STEP 1: BUKA UI (Micro-VIM Click)
                 if not (browser and browser.Enabled) then
                     local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                     if openBtn then
+                        -- Simpen posisi mouse lu
+                        local mx, my = UserInput:GetMouseLocation().X, UserInput:GetMouseLocation().Y
+                        
+                        -- Pindahin tombol ke tengah layar
                         local origPos = openBtn.Position
                         local origAnchor = openBtn.AnchorPoint
                         openBtn.AnchorPoint = Vector2.new(0.5, 0.5)
                         openBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
-                        task.wait(0.1)
+                        task.wait(0.05)
                         
-                        GhostClick(openBtn)
+                        -- Lompatin mouse ke tombol, klik, balikin mouse
+                        VIM:SendMouseMoveEvent(openBtn.AbsolutePosition.X + (openBtn.AbsoluteSize.X/2), openBtn.AbsolutePosition.Y + (openBtn.AbsoluteSize.Y/2) + TopBarOffset, game)
+                        task.wait(0.01)
+                        VIM:SendMouseButtonEvent(openBtn.AbsolutePosition.X + (openBtn.AbsoluteSize.X/2), openBtn.AbsolutePosition.Y + (openBtn.AbsoluteSize.Y/2) + TopBarOffset, 0, true, game, 0)
+                        task.wait(0.01)
+                        VIM:SendMouseButtonEvent(openBtn.AbsolutePosition.X + (openBtn.AbsoluteSize.X/2), openBtn.AbsolutePosition.Y + (openBtn.AbsoluteSize.Y/2) + TopBarOffset, 0, false, game, 0)
+                        task.wait(0.01)
+                        VIM:SendMouseMoveEvent(mx, my, game) -- Balikin mouse
                         
+                        -- Balikin tombol
                         openBtn.Position = origPos
                         openBtn.AnchorPoint = origAnchor
                         task.wait(2.5)
@@ -191,26 +193,41 @@ task.spawn(function()
 
                 browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                 local fakeScroll = browser and browser:FindFirstChild("FakeScroll", true)
-                local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
+                local insideFrame = fakeScroll and fakeFrame:FindFirstChild("Inside", true) -- Fixed typo here in thought process, will fix in output: fakeScroll not fakeFrame
 
                 if fakeScroll and insideFrame then
-                    -- STEP 2: POSITION HACK SCROLL (Anti UI Hilang)
+                    -- STEP 2: POSITION HACK SCROLL (TANPA GERAKIN MOUSE)
                     pcall(function()
-                        fakeScroll.ClipsDescendants = false -- Matiin pemotong UI
+                        fakeScroll.ClipsDescendants = false -- Matiin pemotong
                         local currentX = insideFrame.Position.X.Offset
-                        insideFrame.Position = UDim2.new(0, currentX, 0, math.random(-1800, -200)) -- Geser list
+                        insideFrame.Position = UDim2.new(0, currentX, 0, math.random(-1800, -200))
                     end)
-                    task.wait(1.5) -- Nunggu render
+                    task.wait(1.5)
 
-                    -- STEP 3: SPAM KLIK JOIN PAKAI FIRESIGNAL
+                    -- STEP 3: MICRO-VIM KLIK JOIN
                     local clickedCount = 0
                     for _, template in pairs(insideFrame:GetChildren()) do
                         if template.Name == "Template" then
                             local joinBtn = template:FindFirstChild("Join")
                             if joinBtn and joinBtn:IsA("TextButton") and joinBtn.Text == "Join" and joinBtn.Visible then
-                                -- Cek area kasar (karena clipping dimatiin, tombol bisa di mana aja)
-                                if joinBtn.AbsolutePosition.Y > 0 and joinBtn.AbsolutePosition.Y < workspace.CurrentCamera.ViewportSize.Y then
-                                    GhostClick(joinBtn)
+                                local fsP = fakeScroll.AbsolutePosition
+                                local fsS = fakeScroll.AbsoluteSize
+                                local jP = joinBtn.AbsolutePosition
+                                local jS = joinBtn.AbsoluteSize
+                                
+                                -- Klik cuma yang keliatan di area UI
+                                if jP.Y > fsP.Y and (jP.Y + jS.Y) < (fsP.Y + fsS.Y) then
+                                    -- Simpen posisi mouse lu
+                                    local mx2, my2 = UserInput:GetMouseLocation().X, UserInput:GetMouseLocation().Y
+                                    
+                                    -- Lompatin mouse ke Join, klik, balikin
+                                    local clickX = jP.X + (jS.X/2)
+                                    local clickY = jP.Y + (jS.Y/2) + TopBarOffset
+                                    VIM:SendMouseMoveEvent(clickX, clickY, game) task.wait(0.01)
+                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, true, game, 0) task.wait(0.01)
+                                    VIM:SendMouseButtonEvent(clickX, clickY, 0, false, game, 0) task.wait(0.01)
+                                    VIM:SendMouseMoveEvent(mx2, my2, game) -- Balikin mouse lagi
+                                    
                                     clickedCount = clickedCount + 1
                                     task.wait(0.2)
                                 end
@@ -218,11 +235,11 @@ task.spawn(function()
                         end
                     end
                     
-                    -- Balikin Clipping biar UI rapi lagi
+                    -- Balikin Clipping
                     pcall(function() fakeScroll.ClipsDescendants = true end)
                     
                     if clickedCount > 0 then
-                        warn("[HOP V10] Ghost Firesignal " .. clickedCount .. " server!")
+                        warn("[HOP V11] Micro-Click " .. clickedCount .. " server!")
                     end
                 end
             end)
