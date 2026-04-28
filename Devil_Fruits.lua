@@ -1,6 +1,7 @@
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VIM = game:GetService("VirtualInputManager")
@@ -226,7 +227,6 @@ task.spawn(function()
                     
                     if not storeSuccess then
                         table.insert(StoreBlacklist, fruitTool.Name) 
-                        -- PENTING: Turunin buah biar Context Menu (Eat/Drop) ga muncul & ga ganggu Hopper
                         if hum then hum:EquipTool(nil) end
                     end
                 end
@@ -236,101 +236,9 @@ task.spawn(function()
     end 
 end)
 
--- [[ SENTINEL V14: HANYA ENTER (JANGAN ESCAPE) ]]
--- Kalau kena 772, tekan Enter buat tutup popup. Jangan Escape karena nutup UI Server juga!
-TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
-    if player == Me then
-        task.spawn(function()
-            for i = 1, 5 do
-                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                task.wait(0.02)
-            end
-        end)
-    end
-end)
-
--- [[ HOP SERVER - V14 STABLE GEMINI LOGIC ]]
-_G.NomexyHopper = true 
-_G.DeepDiveDepth = 250 
-_G.MinServerLoad = 25  
-
-task.spawn(function()
-    while _G.NomexyHopper do
-        task.wait(1)
-        
-        if Settings.AutoHop then
-            local fruitCount = 0
-            
-            -- 1. Cek Map
-            for f, _ in pairs(Data) do
-                if f and f.Parent and f.Parent == Workspace then fruitCount = fruitCount + 1 end
-            end
-            -- 2. Cek Tangan & Backpack (Abaikan yang udah di Blacklist / Penuh)
-            if Me.Backpack then 
-                for _, tool in pairs(Me.Backpack:GetChildren()) do 
-                    if tool:IsA("Tool") and string.find(tool.Name, "Fruit") and not table.find(StoreBlacklist, tool.Name) then 
-                        fruitCount = fruitCount + 1 
-                    end 
-                end 
-            end
-            if Me.Character then 
-                for _, tool in pairs(Me.Character:GetChildren()) do 
-                    if tool:IsA("Tool") and string.find(tool.Name, "Fruit") and not table.find(StoreBlacklist, tool.Name) then 
-                        fruitCount = fruitCount + 1 
-                    end 
-                end 
-            end
-            
-            if fruitCount > 0 then
-                continue -- Masih ada buah, nunggu
-            end
-
-            -- KALO GAADA BUAH, GAS ENGINE GEMINI!
-            pcall(function()
-                warn("Nomexy Engine: Ga ada buah! Menyiapkan amunisi...")
-
-                local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                if not (browser and browser.Enabled) then
-                    local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
-                    if openBtn then
-                        local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
-                        task.wait(0.1)
-                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
-                    end
-                end
-
-                local listArea
-                local loadTimeout = 0
-                
-                repeat 
-                    task.wait(0.5)
-                    loadTimeout = loadTimeout + 1
-                    browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                    listArea = browser and browser:FindFirstChild("Inside", true)
-                    
-                    local currentLoad = 0
-                    if listArea then
-                        for _, v in pairs(listArea:GetChildren()) do
-                            if v:FindFirstChild("Join") then currentLoad = currentLoad + 1 end
-                        end
-                    end
-                until (currentLoad >= _G.MinServerLoad) or loadTimeout > 20
-
-                if listArea then
-                    local scrollFrame = browser:FindFirstChild("FakeScroll", true)
-                    local sP, sS = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
-                    local cX, cY = sP.X + (sS.X / 2), sP.Y + (sS.Y / 2) + 58-- [[ HOP SERVER - KOMUNITAS LOGIC (CLEAN API + ANTI 772) ]]
--- Logika ini jauh lebih stabil karena pakai API excludeFullGames=true.
--- PERINGATAN: Kalau di Sea 2/3 Xeno/Delta lu kena 773, itu limitasi executor, bukan salah kode.
-
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
-
+-- [[ HOP SERVER - KOMUNITAS LOGIC (FALLBACK HTTP) ]]
 local ServerHopConfig = {
-    MaxStore = 3600, -- Simpan history server selama 1 jam
-    CheckInterval = 2, -- Jeda antar cek API
-    TeleportInterval = 1 -- Jeda antar teleport
+    MaxStore = 3600,
 }
 
 function _G.Cat.HopServer()
@@ -345,66 +253,74 @@ function _G.Cat.HopServer()
     }
 
     -- Load history biar ga balik ke server yang sama
-    if not isfolder(RootFolder) then makefolder(RootFolder) end
-    if isfile(StorageFile) then
-        local Success, NewData = pcall(function() return HttpService:JSONDecode(readfile(StorageFile)) end)
-        if Success and tick() - NewData.Start < ServerHopConfig.MaxStore then
-            Data = NewData
+    pcall(function()
+        if not isfolder(RootFolder) then makefolder(RootFolder) end
+        if isfile(StorageFile) then
+            local Success, NewData = pcall(function() return HttpService:JSONDecode(readfile(StorageFile)) end)
+            if Success and tick() - NewData.Start < ServerHopConfig.MaxStore then
+                Data = NewData
+            end
         end
-    end
-
-    -- Masukin server sekarang ke history
-    if not table.find(Data.Jobs, JobId) then
-        table.insert(Data.Jobs, JobId)
-    end
-    writefile(StorageFile, HttpService:JSONEncode(Data))
+        if not table.find(Data.Jobs, JobId) then
+            table.insert(Data.Jobs, JobId)
+        end
+        writefile(StorageFile, HttpService:JSONEncode(Data))
+    end)
 
     local Servers = {}
     local Cursor = ""
 
     -- CARI SERVER VIA API (excludeFullGames=true biar ga kena 772)
-    warn("[CatHUB] [HOP] Mencari server yang tidak penuh...")
-    while Cursor and #Servers <= 0 and task.wait(ServerHopConfig.CheckInterval) do
-        local RequestFunc = request or (syn and syn.request)
-        if not RequestFunc then
-            warn("[CatHUB] [HOP] Executor ga support request. Gagal cari server.")
-            break
-        end
-
-        local Success, Response = pcall(function()
-            return RequestFunc({
-                Url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true&cursor=" .. Cursor,
-                Method = "GET",
-            })
-        end)
-
-        if not Success or not Response or not Response.Body then continue end
+    warn("[CatHUB] [HOP] Mencari server via API (Anti 772)...")
+    
+    while Cursor and #Servers <= 0 and task.wait(2) do
+        local ApiUrl = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true&cursor=" .. Cursor
         
-        local BodySuccess, Body = pcall(function() return HttpService:JSONDecode(Response.Body) end)
-
-        if not BodySuccess or not Body or not Body.data then continue end
-
-        for _, Server in pairs(Body.data) do
-            if typeof(Server) == "table" and Server.id and tonumber(Server.playing) and tonumber(Server.maxPlayers) then
-                -- Cuma masukin server yang ada orang & belum dikunjungi
-                if Server.playing > 0 and Server.playing < Server.maxPlayers and not table.find(Data.Jobs, Server.id) then
-                    table.insert(Servers, 1, Server.id)
-                end
-            end
+        local Body = nil
+        
+        -- 1. Try game:HttpGet (Most reliable for Xeno/Delta)
+        local s, r = pcall(function() return game:HttpGet(ApiUrl, true) end)
+        if s and type(r) == "string" and not r:find("<!DOCTYPE") then 
+            Body = r 
+        end
+        
+        -- 2. Fallbacks
+        if not Body then
+            s, r = pcall(function() return http_request({Url = ApiUrl, Method = "GET"}).Body end)
+            if s and type(r) == "string" then Body = r end
+        end
+        if not Body then
+            s, r = pcall(function() return request({Url = ApiUrl, Method = "GET"}).Body end)
+            if s and type(r) == "string" then Body = r end
         end
 
-        if Body.nextPageCursor then
-            Cursor = Body.nextPageCursor
+        if Body then
+            local Success, Decoded = pcall(function() return HttpService:JSONDecode(Body) end)
+            if Success and Decoded and Decoded.data then
+                for _, Server in pairs(Decoded.data) do
+                    if typeof(Server) == "table" and Server.id and tonumber(Server.playing) and tonumber(Server.maxPlayers) then
+                        if Server.playing > 0 and Server.playing < Server.maxPlayers and not table.find(Data.Jobs, Server.id) then
+                            table.insert(Servers, Server.id)
+                        end
+                    end
+                end
+                Cursor = Decoded.nextPageCursor
+            else
+                Cursor = nil
+            end
         else
             Cursor = nil
         end
     end
 
     -- TELEPORT KE SERVER YANG KETEMU
-    while #Servers > 0 and task.wait(ServerHopConfig.TeleportInterval) do
+    if #Servers > 0 then
         local Server = Servers[math.random(1, #Servers)]
         warn("[CatHUB] [HOP] Gas Teleport ke server: " .. Server)
         TeleportService:TeleportToPlaceInstance(PlaceId, Server, Me)
+    else
+        warn("[CatHUB] [HOP] API Gagal / Tidak ada server. Fallback ke Random...")
+        TeleportService:Teleport(PlaceId, Me)
     end
 end
 
