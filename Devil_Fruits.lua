@@ -129,10 +129,9 @@ task.spawn(function()
     end 
 end)
 
--- [[ SENTINEL V8: KEYBOARD ONLY (NO MOUSE HIJACK) ]]
+-- [[ SENTINEL V9: KEYBOARD ONLY (NO MOUSE HIJACK) ]]
 TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, errorMessage)
     if player == Me then
-        -- Hanya pakai keyboard (Enter) buat tutup popup. Mouse lu diemin!
         task.spawn(function()
             for i = 1, 5 do
                 VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait(0.02) VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
@@ -142,8 +141,10 @@ TeleportService.TeleportInitFailed:Connect(function(player, teleportResult, erro
     end
 end)
 
--- [[ HOP SERVER - V8 GHOST PROTOCOL (FIRESIGNAL + POSITION HACK) ]]
+-- [[ HOP SERVER - V9 HYBRID GHOST (MOUSE SNAP + FIRESIGNAL) ]]
 _G.NomexyHopper = true 
+local UserInput = game:GetService("UserInputService")
+local TopBarOffset = game:GetService("GuiService"):GetGuiInset().Y
 
 task.spawn(function()
     while _G.NomexyHopper do
@@ -160,25 +161,23 @@ task.spawn(function()
             local hopOk, hopErr = pcall(function()
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                 
-                -- STEP 1: BUKA UI PAKAI FIRESIGNAL (NO MOUSE!)
+                -- STEP 1: BUKA UI PAKAI FIRESIGNAL + POSITION HACK
                 if not (browser and browser.Enabled) then
                     local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                     if openBtn then
-                        -- Position Hack: Pindahin tombol ke tengah layar biar firesignal diterima
                         local origPos = openBtn.Position
                         local origAnchor = openBtn.AnchorPoint
                         openBtn.AnchorPoint = Vector2.new(0.5, 0.5)
                         openBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
                         task.wait(0.1)
                         
-                        -- Tembak logika klik (Firesignal)
+                        -- Tembak semua sinyal klik
                         for _, conn in pairs(getconnections(openBtn.Activated)) do conn:Fire() end
+                        for _, conn in pairs(getconnections(openBtn.MouseButton1Click)) do conn:Fire() end
                         
-                        -- Balikin posisi tombol biar ga merusak UI
-                        task.wait(0.1)
                         openBtn.Position = origPos
                         openBtn.AnchorPoint = origAnchor
-                        task.wait(2.5) -- Nunggu UI load
+                        task.wait(2.5)
                     end
                 end
 
@@ -187,24 +186,38 @@ task.spawn(function()
                 local insideFrame = fakeScroll and fakeScroll:FindFirstChild("Inside", true)
 
                 if fakeScroll and insideFrame then
-                    -- STEP 2: POSITION HACK (Geser list server tanpa scroll mouse)
-                    pcall(function()
-                        insideFrame.Position = UDim2.new(0, 0, 0, math.random(-1800, -800))
-                    end)
-                    task.wait(1.5)
+                    local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
+                    local scrollCenterX = fsP.X + (fsS.X / 2)
+                    local scrollCenterY = fsP.Y + (fsS.Y / 2) + TopBarOffset
 
-                    -- STEP 3: SPAM KLIK JOIN PAKAI FIRESIGNAL (NO MOUSE!)
+                    -- STEP 2: MOUSE SNAP (Simpen posisi mouse lu, lompat ke UI, scroll, balikin)
+                    local myMouseX, myMouseY = UserInput:GetMouseLocation().X, UserInput:GetMouseLocation().Y
+                    
+                    -- Lompatin mouse ke tengah scroll
+                    VIM:SendMouseMoveEvent(scrollCenterX, scrollCenterY, game) task.wait(0.05)
+                    
+                    -- Scroll 15x (Super cepat)
+                    for i = 1, 15 do
+                        VIM:SendMouseWheelEvent(scrollCenterX, scrollCenterY, false, game)
+                        if i % 5 == 0 then task.wait() end 
+                    end
+                    
+                    -- Balikin mouse ke posisi lu main (biar kamera ga nge-zoom)
+                    VIM:SendMouseMoveEvent(myMouseX, myMouseY, game)
+                    task.wait(1.5) -- Nunggu UI render
+
+                    -- STEP 3: SPAM KLIK JOIN PAKAI FIRESIGNAL
                     local clickedCount = 0
                     for _, template in pairs(insideFrame:GetChildren()) do
                         if template.Name == "Template" then
                             local joinBtn = template:FindFirstChild("Join")
                             if joinBtn and joinBtn:IsA("TextButton") and joinBtn.Text == "Join" and joinBtn.Visible then
                                 local jP, jS = joinBtn.AbsolutePosition, joinBtn.AbsoluteSize
-                                local fsP, fsS = fakeScroll.AbsolutePosition, fakeScroll.AbsoluteSize
                                 
                                 if jP.Y > fsP.Y and (jP.Y + jS.Y) < (fsP.Y + fsS.Y) then
-                                    -- Tembak logika klik (Firesignal)
+                                    -- Tembak sinyal klik
                                     for _, conn in pairs(getconnections(joinBtn.Activated)) do conn:Fire() end
+                                    for _, conn in pairs(getconnections(joinBtn.MouseButton1Click)) do conn:Fire() end
                                     clickedCount = clickedCount + 1
                                     task.wait(0.2)
                                 end
@@ -213,7 +226,7 @@ task.spawn(function()
                     end
                     
                     if clickedCount > 0 then
-                        warn("[HOP V8] Firesignal dikirim ke " .. clickedCount .. " server! (Mouse lu aman)")
+                        warn("[HOP V9] Firesignal " .. clickedCount .. " server! (Mouse lu aman)")
                     end
                 end
             end)
