@@ -589,26 +589,30 @@ end)
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
 
 -- ==========================================
--- 4. CCTV BUAH (AUTO-DETECT DI TANGAN & TAS) - FIXED
+-- 4. CCTV DETEKTIF (MODE DEBUGGING F9)
 -- ==========================================
 task.spawn(function()
     local player = game:GetService("Players").LocalPlayer
-    local sentFruits = {} -- Memori Anti-Spam biar kaga ngirim double
+    local sentFruits = {}
     
     local function CheckForFruit(item)
-        -- Kalau toggle Webhook di UI lagi mati, cuekin aja
-        if not _G.Cat.Settings.FruitWebhook then return end 
-        
         if item:IsA("Tool") then
+            -- MATIKAN FILTER SEMENTARA! Kita bongkar nama asli itemnya
+            warn("------------------------------------------------")
+            warn("[CCTV DETEKTIF] Lu lagi megang / masukin ke tas: " .. tostring(item.Name))
+            warn("------------------------------------------------")
+            
+            if not _G.Cat.Settings.FruitWebhook then 
+                warn("[CCTV DETEKTIF] Gagal ngirim! Toggle 'Fruit Webhook' di UI lu masih MATI (belum ungu)!")
+                return 
+            end 
+            
             local isFruit = false
             local fruitName = item.Name
             
-            -- [LOGIKA BYPASS BLOX FRUIT]
-            -- Buah fisik di game ini namanya selalu diulang pakai strip (contoh: "Venom-Venom" atau "T-Rex-T-Rex")
+            -- Cek Pola 1: "Kitsune-Kitsune"
             local len = string.len(item.Name)
             local half = math.floor(len / 2)
-            
-            -- Kita belah namanya jadi dua buat ngecek apakah ini buah fisik
             if half > 0 then
                 local part1 = string.sub(item.Name, 1, half)
                 local part2 = string.sub(item.Name, half + 2, len)
@@ -616,30 +620,38 @@ task.spawn(function()
                 
                 if mid == "-" and part1 == part2 then
                     isFruit = true
-                    fruitName = part1 -- Ambil nama aslinya aja (contoh: cuma ngambil "Venom")
+                    fruitName = part1
                 end
             end
             
-            -- Buat jaga-jaga kalau ada buah tipe lama yang masih pake kata "Fruit"
+            -- Cek Pola 2: Ada kata "Fruit"
             if not isFruit and string.find(string.lower(item.Name), "fruit") then
                 isFruit = true
                 fruitName = string.gsub(item.Name, " Fruit", "")
             end
             
-            -- Kalau beneran Buah, Eksekusi Webhooknya!
+            -- Cek Pola 3: Physical Fruit (Biasa developer ngasih tag/class begini)
+            if not isFruit and item:GetAttribute("Fruit") then
+                isFruit = true
+                fruitName = item.Name
+            end
+            
             if isFruit then
-                -- Sistem Anti-Spam (Cegah notif double saat buah pindah dari tas ke tangan)
-                if sentFruits[fruitName] then return end
+                warn("[CCTV DETEKTIF] Item ini VALID dianggap BUAH! Namanya: " .. fruitName)
+                
+                if sentFruits[fruitName] then 
+                    warn("[CCTV DETEKTIF] Notif ditahan karena Anti-Spam (biar ga double pas lu pindah ke tangan).")
+                    return 
+                end
+                
                 sentFruits[fruitName] = true
-                task.delay(15, function() sentFruits[fruitName] = nil end) -- Reset memori setelah 15 detik
+                task.delay(15, function() sentFruits[fruitName] = nil end)
                 
-                warn("[CatHUB] Buah fisik terdeteksi di tangan/tas: " .. fruitName)
-                
-                local jobId = game.JobId
-                if jobId == "" then jobId = "Singleplayer/Test-Server" end
-                
-                -- Panggil mesin Webhook lu
                 if _G.Cat.Webhook then
+                    warn("[CCTV DETEKTIF] MESIN WEBHOOK SEKARANG SEDANG MENGIRIM KE DISCORD...")
+                    local jobId = game.JobId
+                    if jobId == "" then jobId = "Singleplayer/Test-Server" end
+                    
                     _G.Cat.Webhook:Send(
                         fruitName, 
                         jobId, 
@@ -647,20 +659,28 @@ task.spawn(function()
                         _G.Cat.Settings.FruitWebhookURL
                     )
                 end
+            else
+                warn("[CCTV DETEKTIF] Item ini BUKAN dianggap buah sama script. Kalau ini beneran buah, laporin ke gue bang!")
             end
         end
     end
 
-    -- 1. Pasang CCTV di Tas (Backpack)
+    -- Pantau Tas
     player.Backpack.ChildAdded:Connect(CheckForFruit)
 
-    -- 2. Pasang CCTV di Tangan (Character)
+    -- Pantau Tangan
     if player.Character then
         player.Character.ChildAdded:Connect(CheckForFruit)
     end
     
-    -- Jaga-jaga kalau lu mati dan respawn, CCTV dipasang ulang ke badan baru lu
     player.CharacterAdded:Connect(function(char)
         char.ChildAdded:Connect(CheckForFruit)
     end)
+    
+    -- JAGA-JAGA: Kalau lu UDAH megang buahnya duluan pas script jalan
+    if player.Character then
+        for _, item in pairs(player.Character:GetChildren()) do
+            if item:IsA("Tool") then CheckForFruit(item) end
+        end
+    end
 end)
