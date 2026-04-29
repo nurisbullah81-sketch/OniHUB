@@ -489,7 +489,7 @@ task.spawn(function()
                         cam.CameraSubject = Me.Character.Humanoid
                     end
                     
-                    task.wait(5) -- Kasih napas bentar ke game
+                    task.wait(15) -- Kasih napas bentar ke game
                 end
             end
         end)
