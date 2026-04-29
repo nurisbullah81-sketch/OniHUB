@@ -138,15 +138,16 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. PROXY TWEEN ENGINE (THUNDER Z STYLE - REPLACED Z.AI)
+-- 3. PROXY TWEEN ENGINE (FIX DASH BUG)
 -- ==========================================
 local isTweening = false
 local currentTarget = nil
 local proxyPart = nil
 local noclipConn = nil
 local currentTween = nil
+local originalCollisions = {} -- THE SAVIOR: Penyimpan memori fisik karakter
 
-local TWEEN_SPEED = 300 -- Kecepatan standar executor premium
+local TWEEN_SPEED = 300 
 
 local function StopSmartTween()
     if isTweening then
@@ -164,12 +165,17 @@ local function StopSmartTween()
             proxyPart:Destroy()
             proxyPart = nil
         end
+        
+        -- KEMBALIKAN FISIK SESUAI MEMORI (Biar pedang & rambut ga jadi beton)
         pcall(function()
             if Me.Character then
-                for _, part in pairs(Me.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = true end
+                for part, state in pairs(originalCollisions) do
+                    if part and part.Parent then
+                        part.CanCollide = state
+                    end
                 end
             end
+            table.clear(originalCollisions) -- Bersihkan memori setelah dipakai
         end)
     end
 end
@@ -178,9 +184,8 @@ local function GetNearestFruit()
     local closest, minDist = nil, math.huge 
     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
     if not hrp then return nil end 
-    
     for f, _ in pairs(Data) do 
-        -- THE BUG FIX: Harus ngecek f.Parent == Workspace
+        -- Pengecekan wajib biar ga ngejar buah di dalem tangan
         if f and f.Parent == Workspace then 
             local p = Pos(f) 
             if p then 
@@ -190,7 +195,6 @@ local function GetNearestFruit()
                 end 
             end 
         else
-            -- Kalau buah udah dipungut (masuk ke tas/tangan), hapus dari radar!
             Rem(f)
         end 
     end 
@@ -211,15 +215,22 @@ task.spawn(function()
                     local dist = (targetPos - hrp.Position).Magnitude 
                     
                     if dist < 5 then
-                        -- Udah di atas buah, stop tween biar lu bisa ambil
                         StopSmartTween()
                     else
                         if currentTarget ~= nearest or not isTweening then
-                            StopSmartTween() -- Bersihkan rute lama kalau buah ganti
+                            StopSmartTween() 
                             currentTarget = nearest
                             isTweening = true
                             
-                            -- 1. SPAWN GHOST PART
+                            -- MENGHAFAL BENTUK FISIK ASLI KARAKTER LU
+                            table.clear(originalCollisions)
+                            for _, part in pairs(Me.Character:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    originalCollisions[part] = part.CanCollide
+                                end
+                            end
+                            
+                            -- SPAWN GHOST PART
                             local startCFrame = CFrame.lookAt(hrp.Position, targetPos)
                             proxyPart = Instance.new("Part")
                             proxyPart.Name = "NomexyProxy"
@@ -230,7 +241,6 @@ task.spawn(function()
                             proxyPart.CFrame = startCFrame
                             proxyPart.Parent = workspace
 
-                            -- 2. NOCLIP & SYNC KE GHOST PART
                             noclipConn = RunService.Stepped:Connect(function()
                                 if isTweening and Me.Character and hrp and proxyPart then
                                     for _, part in pairs(Me.Character:GetDescendants()) do
@@ -244,8 +254,7 @@ task.spawn(function()
                                 end
                             end)
                             
-                            -- 3. TWEEN THE GHOST (Mulus nembus apa aja)
-                            local endPos = targetPos + Vector3.new(0, 2, 0) -- Hover 2 meter di atas buah biar pas
+                            local endPos = targetPos + Vector3.new(0, 2, 0) 
                             local endCFrame = CFrame.lookAt(endPos, endPos + startCFrame.LookVector)
                             local timeToTravel = dist / TWEEN_SPEED
                             
