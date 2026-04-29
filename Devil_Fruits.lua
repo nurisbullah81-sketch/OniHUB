@@ -418,7 +418,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. HOP SERVER - SOVEREIGN V26 (5K TP + 100% ACCURACY VIM)
+-- 6. HOP SERVER - SOVEREIGN V26 (5K TP + HOVER + STRICT BOUND)
 -- ==========================================
 local isHopping = false
 
@@ -434,42 +434,37 @@ function _G.Cat.HopServer()
     task.spawn(function()
         warn("[CatHUB] [HOP] Executing Sovereign V26 Engine (Stable)...")
         
-        -- [1] SKY TP 5K: Aman dari bounty hunter, ringan buat engine Roblox
+        -- [1] PRE-HOP: TP ke langit 5K biar ga ketangkap bounty hunter & enteng
         pcall(function()
             if Me.Character then
                 local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
                 if hrp then
                     hrp.CFrame = CFrame.new(hrp.Position.X, 5000, hrp.Position.Z)
                     hrp.Anchored = true
-                    warn("[CatHUB] Stealth Hop: Teleported to 5K Sky Zone!")
+                    warn("[CatHUB] Stealth Hop: TP to 5K Sky Zone!")
                 end
             end
         end)
-        
-        -- Jeda napas biar FPS stabil setelah map hilang
-        task.wait(0.5)
+        task.wait(0.5) -- Jeda napas biar FPS stabil setelah map ilang
         
         while Settings.AutoHop do 
             local pg = Me:FindFirstChild("PlayerGui")
             if not pg then task.wait(1) continue end
             
             local browser = pg:FindFirstChild("ServerBrowser", true)
-            local inset = GuiService:GetGuiInset().Y 
             
-            -- [2] BUKA UI (Warming Up Hover + Jeda 0.05s)
+            -- [2] BUKA UI (Tambahin Hover Mouse biar UI ke-trigger bener)
             if not browser or not browser.Enabled then
                 local openBtn = pg:FindFirstChild("ServerBrowserButton", true)
                 if openBtn then
                     local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                    local tx, ty = p.X + (s.X/2), p.Y + (s.Y/2) + inset
+                    local tx, ty = p.X + (s.X/2), p.Y + (s.Y/2) + 58
                     
-                    VIM:SendMouseMovementEvent(tx, ty)
-                    task.wait(0.1) -- Biar tombol bereaksi
+                    VIM:SendMouseMovementEvent(tx, ty) -- Hover dulu biar UI nyala
+                    task.wait(0.1)
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    task.wait(0.05) -- Napas 1 frame
+                    task.wait(0.1)
                     VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                    
-                    task.wait(0.5) 
                 end
             end
 
@@ -478,18 +473,11 @@ function _G.Cat.HopServer()
 
             local listArea = browser:FindFirstChild("Inside", true)
             local count = 0
-            
             repeat
                 task.wait(0.5)
                 count = count + 1
                 listArea = browser:FindFirstChild("Inside", true)
             until (listArea and #listArea:GetChildren() > 5) or count > 20
-
-            if count > 20 then
-                browser.Enabled = false
-                task.wait(1)
-                continue 
-            end
 
             if listArea then
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
@@ -503,16 +491,13 @@ function _G.Cat.HopServer()
                 if not scrollFrame then continue end
 
                 local buttons = {}
-                local sTop = scrollFrame.AbsolutePosition.Y
-                local sBottom = sTop + scrollFrame.AbsoluteSize.Y
-                
+                local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                 for _, v in pairs(listArea:GetDescendants()) do
                     if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
-                        -- [3] STRICT BOUNDS: Pastikan tombol bener-bener 100% di dalam layar scroll
+                        -- [3] STRICT BOUNDS: Cek tombol beneran keliatan 100% di layar
                         local btnTop = v.AbsolutePosition.Y
                         local btnBottom = btnTop + v.AbsoluteSize.Y
-                        
-                        if btnTop > (sTop + 5) and btnBottom < (sBottom - 5) then
+                        if btnTop > (sPos.Y + 5) and btnBottom < (sPos.Y + sSize.Y - 5) then
                             table.insert(buttons, v)
                         end
                     end
@@ -521,36 +506,36 @@ function _G.Cat.HopServer()
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end 
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
+                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
                     
-                    local tx = bp.X + (bs.X/2)
-                    local ty = bp.Y + (bs.Y/2) + inset
-                    
-                    -- [4] JOIN CLICK: Stabil, presisi, anti-ghost click
+                    -- [4] JOIN CLICK: Wajib Hover + Klik + Enter Key (Rahasianya disini!)
                     VIM:SendMouseMovementEvent(tx, ty) -- Arahin kursor dulu
                     task.wait(0.1)
                     
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0) 
-                    task.wait(0.05) -- Jeda emas 1 frame
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0) 
+                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game) -- INI YANG DIHAPUS GEMINI, WAJIB ADA!
                     
-                    warn("[CatHUB] Server Join clicked. Waiting for teleport...")
+                    task.wait(0.05) 
                     
-                    break -- Rem darurat, langsung tunggu loading
+                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                    
+                    task.wait(0.1)
+                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+
+                    task.wait(0.5) 
                 end
-                
-                task.wait(5)
             end
             task.wait(1)
         end
         
-        -- Bersihin layar kalau toggle dimatiin
+        -- Bersihin layar & turunin jangkar kalau toggle dimatiin
         local pg = Me:FindFirstChild("PlayerGui")
         if pg then
             local browser = pg:FindFirstChild("ServerBrowser", true)
             if browser then browser.Enabled = false end
         end
         
-        -- Turunin jangkar
         pcall(function()
             if Me.Character then
                 local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
@@ -583,7 +568,7 @@ task.spawn(function()
                     _G.Cat.HopServer()
                 else
                     isHopping = false
-                    -- [ANTI CRASH FIX]
+                    -- CARA AMAN BACA PLAYERGUI
                     local pg = Me:FindFirstChild("PlayerGui")
                     if pg then
                         local browser = pg:FindFirstChild("ServerBrowser", true)
@@ -594,12 +579,20 @@ task.spawn(function()
         else
             if not Settings.AutoHop then
                 isHopping = false
-                -- [ANTI CRASH FIX]
+                -- CARA AMAN BACA PLAYERGUI
                 local pg = Me:FindFirstChild("PlayerGui")
                 if pg then
                     local browser = pg:FindFirstChild("ServerBrowser", true)
                     if browser then browser.Enabled = false end
                 end
+                
+                -- Lepas jangkar kalau hop dimatiin manual
+                pcall(function()
+                    if Me.Character then
+                        local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp and hrp.Anchored then hrp.Anchored = false end
+                    end
+                end)
             end
         end
     end
