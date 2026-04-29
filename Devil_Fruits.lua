@@ -138,16 +138,21 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. SMART UPRIGHT TWEEN (ANTI-MIRING & TEMBUS TEMBOK)
+-- 3. 3-PHASE GHOST FLY (ANTI-AIR & PERFECT LANDING)
 -- ==========================================
 local isTweening = false
 local currentTarget = nil
 local noclipConn = nil
+local flightPhase = "Idle" -- Idle, Ascend, Transit, Descend
+
+local SAFE_HEIGHT = 800 -- Ketinggian aman di atas awam/pulau
+local TWEEN_SPEED = 400 -- Super cepat
 
 local function StopSmartTween()
     if isTweening then
         isTweening = false
         currentTarget = nil
+        flightPhase = "Idle"
         if noclipConn then
             noclipConn:Disconnect()
             noclipConn = nil
@@ -181,6 +186,7 @@ local function GetNearestFruit()
     return closest 
 end
 
+-- Logic Pemilih Fase (Decision Maker)
 task.spawn(function() 
     while task.wait(0.5) do 
         pcall(function() 
@@ -193,11 +199,14 @@ task.spawn(function()
                     if pos then 
                         local dist = (pos - hrp.Position).Magnitude 
                         
-                        -- Jarak 3 studs baru berhenti (Supaya pas di atas buah)
-                        if dist > 3 then
+                        -- Jarak 1 stud baru berhenti (Nempel persis)
+                        if dist < 1 then
+                            StopSmartTween()
+                        else
                             if not isTweening then
                                 isTweening = true
                                 currentTarget = nearest
+                                flightPhase = "Ascend" -- Mulai dari naik dulu
                                 
                                 -- Noclip Connection
                                 noclipConn = RunService.Stepped:Connect(function()
@@ -212,9 +221,8 @@ task.spawn(function()
                             -- Pindah target jika ada buah yang lebih dekat
                             if currentTarget ~= nearest then
                                 currentTarget = nearest
+                                flightPhase = "Ascend" -- Reset fase ke naik
                             end
-                        else
-                            StopSmartTween()
                         end 
                     else 
                         StopSmartTween()
@@ -229,38 +237,55 @@ task.spawn(function()
     end 
 end)
 
--- Loop penggerak Tween (Heartbeat biar smooth & ga miring)
+-- Loop Penggerak Fisik (Heartbeat biar halus & tembus)
 RunService.Heartbeat:Connect(function(dt)
     if isTweening and currentTarget and currentTarget.Parent and Me.Character then
         local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
         local fruitPos = Pos(currentTarget)
         
         if hrp and fruitPos then
-            local dist = (fruitPos - hrp.Position).Magnitude
-            
-            if dist < 3 then
-                StopSmartTween()
-                return
-            end
-            
-            -- Hitung arah
-            local direction = (fruitPos - hrp.Position).Unit
-            local speed = 300 -- Kecepatan sangat cepat, tembus laut
-            local moveVector = direction * math.min(speed * dt, dist)
-            
-            -- KUNCI ANTI-MIRING: Buat karakter tetap berdiri tegak (Hanya rotasi Y/Kiri-Kanan)
-            local lookDirection = Vector3.new(direction.X, 0, direction.Z)
-            local newCFrame
-            
-            if lookDirection.Magnitude > 0.01 then
-                newCFrame = CFrame.new(hrp.Position + moveVector, hrp.Position + moveVector + lookDirection)
-            else
-                newCFrame = CFrame.new(hrp.Position + moveVector)
-            end
-            
-            hrp.CFrame = newCFrame
             hrp.Velocity = Vector3.zero
             hrp.RotVelocity = Vector3.zero
+            
+            local currentPos = hrp.Position
+            local targetPos
+            
+            -- KALKULASI FASE PENERBANGAN
+            if flightPhase == "Ascend" then
+                -- Target: Naik ke atas tepat di posisi X,Z karakter sekarang
+                targetPos = Vector3.new(currentPos.X, SAFE_HEIGHT, currentPos.Z)
+                if math.abs(currentPos.Y - SAFE_HEIGHT) < 10 then
+                    flightPhase = "Transit" -- Udah sampe atas, ganti ke mode geser
+                end
+            elseif flightPhase == "Transit" then
+                -- Target: Geser di ketinggian aman menuju X,Z buah
+                targetPos = Vector3.new(fruitPos.X, SAFE_HEIGHT, fruitPos.Z)
+                local distXZ = Vector3.new(currentPos.X - fruitPos.X, 0, currentPos.Z - fruitPos.Z).Magnitude
+                if distXZ < 15 then
+                    flightPhase = "Descend" -- Udah di atas buah, ganti ke mode turun
+                end
+            elseif flightPhase == "Descend" then
+                -- Target: Turun tepat di atas buah (+3 Y biar nginjek dari atas)
+                targetPos = Vector3.new(fruitPos.X, fruitPos.Y + 3, fruitPos.Z)
+                local dist = (currentPos - targetPos).Magnitude
+                if dist < 2 then
+                    StopSmartTween()
+                    return
+                end
+            end
+            
+            -- EKSEKUSI PERGERAKAN
+            local direction = (targetPos - currentPos).Unit
+            local moveVector = direction * math.min(TWEEN_SPEED * dt, (targetPos - currentPos).Magnitude)
+            
+            local newPos = currentPos + moveVector
+            local lookDirection = Vector3.new(direction.X, 0, direction.Z)
+            
+            if lookDirection.Magnitude > 0.01 then
+                hrp.CFrame = CFrame.new(newPos, newPos + lookDirection)
+            else
+                hrp.CFrame = CFrame.new(newPos)
+            end
         else
             StopSmartTween()
         end
