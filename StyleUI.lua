@@ -268,6 +268,7 @@ end)
 
 -- Di bagian atas UI lu, tambahin ini biar setting ga nil
 if _G.Cat.Settings.AutoAttack == nil then _G.Cat.Settings.AutoAttack = false end
+if _G.Cat.Settings.InstantTPFruit == nil then _G.Cat.Settings.InstantTPFruit = false end
 if _G.Cat.Settings.WebhookEnabled == nil then _G.Cat.Settings.WebhookEnabled = false end
 if _G.Cat.Settings.WebhookURL == nil then _G.Cat.Settings.WebhookURL = "" end
 
@@ -300,6 +301,7 @@ CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _
 CreateSection(DevilFruitsTab, "FRUIT FINDER")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
 CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
+CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", _G.Cat.Settings.InstantTPFruit, function(state) _G.Cat.Settings.InstantTPFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
