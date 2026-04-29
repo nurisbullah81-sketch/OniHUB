@@ -1,8 +1,14 @@
 local HttpService = game:GetService("HttpService")
 local RS = game:GetService("ReplicatedStorage")
 
+-- [OBAT MODULE MISSING] Bikin _G.Cat kalau belum ada biar kaga error!
+if not _G.Cat then _G.Cat = {} end
+
 local Webhook = {}
 
+-- ==========================================
+-- FUNGSI DEWA: NYEDOT DATA DARI OTAK GAME
+-- ==========================================
 local function GetDynamicRarity(rawFruitName)
     local cleanName = string.lower(string.gsub(rawFruitName, " Fruit", ""))
     local foundRarity = "Common"
@@ -39,9 +45,12 @@ local function GetDynamicRarity(rawFruitName)
     return foundRarity
 end
 
+-- ==========================================
+-- CORE WEBHOOK SENDER (BYPASS DISCORD)
+-- ==========================================
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     if not webhookURL or webhookURL == "" then return end
-    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") -- Bersihin spasi
+    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") 
     
     local fruitRarity = GetDynamicRarity(fruitName)
     local shouldSend = false
@@ -95,9 +104,7 @@ function Webhook:Test(webhookURL)
         return false, "No URL" 
     end
     
-    -- OBAT 1: Bersihin spasi nyelip di URL lu
     webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
-    
     warn("[CatHUB] Mencoba kirim tes ke: " .. webhookURL)
 
     local payload = HttpService:JSONEncode({
