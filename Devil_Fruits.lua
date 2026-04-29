@@ -418,7 +418,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. HOP SERVER - HTTP PREMIUM ENGINE (NO VIM & NO UI CLICK)
+-- 6. HOP SERVER - HTTP PROXY ENGINE (SOLARA/XENO FIX)
 -- ==========================================
 local isHopping = false
 
@@ -432,14 +432,14 @@ function _G.Cat.HopServer()
     end)
     
     task.spawn(function()
-        warn("[CatHUB] [HOP] Executing Premium HTTP Hop Engine...")
+        warn("[CatHUB] [HOP] Executing Premium HTTP Proxy Engine...")
+        
+        local PlaceId = game.PlaceId
+        local JobId = game.JobId
         
         while Settings.AutoHop do 
-            local PlaceId = game.PlaceId
-            local JobId = game.JobId
-            
-            -- Tembak API resmi Roblox untuk minta daftar server (Mirip cara ThunderZ)
-            local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+            -- RAHASIA THUNDERZ: Pakai RoProxy biar API Roblox ga ngeblokir Solara lu
+            local url = "https://games.roproxy.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
             
             local success, result = pcall(function()
                 return HttpService:JSONDecode(game:HttpGet(url))
@@ -447,22 +447,23 @@ function _G.Cat.HopServer()
 
             if success and result and result.data then
                 for _, server in ipairs(result.data) do
-                    -- Cari server yang playernya belum penuh dan bukan server kita sekarang
-                    if type(server) == "table" and server.playing < server.maxPlayers - 1 and server.id ~= JobId then
-                        warn("[CatHUB] Teleporting to new server: " .. server.id)
+                    -- Cari server yang ga penuh dan bukan server yang sama
+                    if type(server) == "table" and server.playing and server.maxPlayers and server.playing < server.maxPlayers - 1 and server.id ~= JobId then
+                        warn("[CatHUB] Found Server! Teleporting to JobID: " .. server.id)
                         
                         pcall(function()
                             TeleportService:TeleportToPlaceInstance(PlaceId, server.id, Me)
                         end)
                         
-                        task.wait(3) -- Jeda biar teleportnya jalan
+                        -- Kasih jeda panjang biar TeleportService kerja
+                        task.wait(5) 
                     end
                 end
             else
-                warn("[CatHUB] HTTP API Timeout. Retrying...")
+                warn("[CatHUB] Proxy API Timeout / Error. Retrying in 3s...")
             end
             
-            task.wait(2)
+            task.wait(3)
         end
         
         isHopping = false
