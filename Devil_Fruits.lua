@@ -138,7 +138,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. SMART TWEEN V5.1 (PRECISION FIX - ANAKIN STYLE)
+-- 3. SMART TWEEN V5 (BUTTER SMOOTH & NO TOOL TILT)
 -- ==========================================
 local isTweening = false
 local tweenNoclip = nil
@@ -169,6 +169,7 @@ local function StopSmartTween()
     if tweenNoclip then tweenNoclip:Disconnect(); tweenNoclip = nil end
     if tweenMove then tweenMove:Disconnect(); tweenMove = nil end
     
+    -- Balikin Collision biar ga jatoh
     pcall(function()
         for _, part in pairs(Me.Character:GetDescendants()) do
             if part:IsA("BasePart") then part.CanCollide = true end
@@ -184,11 +185,11 @@ task.spawn(function()
             
             if nearest and hrp then 
                 local pos = Pos(nearest) 
-                -- FIX: Jarak start diturunin jadi 3 studs. Jadi kalau buahnya ada di sebelah lu, lu tetep maju sekedarnya buat ngambil.
-                if pos and (pos - hrp.Position).Magnitude > 3 then
+                if pos and (pos - hrp.Position).Magnitude > 8 then
                     if not isTweening then
                         isTweening = true
                         
+                        -- NYALAIN NOCLIP (Tembus Tembok)
                         tweenNoclip = RunService.Stepped:Connect(function()
                             if isTweening and Me.Character then
                                 for _, part in pairs(Me.Character:GetDescendants()) do
@@ -197,6 +198,7 @@ task.spawn(function()
                             end
                         end)
                         
+                        -- NYALAIN SMOOTH MOVER
                         tweenMove = RunService.Heartbeat:Connect(function(delta)
                             if not isTweening or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
                                 StopSmartTween() return
@@ -206,20 +208,20 @@ task.spawn(function()
                             if not currentPos then StopSmartTween() return end
                             
                             local dist = (currentPos - hrp.Position).Magnitude
-                            -- FIX: Jarak stop diturunin jadi 3 studs biar pas nyampe di atas buahnya, ga jauh di sebelahnya.
-                            if dist <= 3 then StopSmartTween() return end
+                            if dist <= 8 then StopSmartTween() return end
                             
                             local direction = (currentPos - hrp.Position).Unit
-                            local speed = 350 * delta 
+                            local speed = 350 * delta -- Kecepatan super kencang tapi halus
                             if speed > dist then speed = dist end
                             
                             local newPos = hrp.Position + (direction * speed)
                             
+                            -- SMART ROTATION: Lerp biar ga miring pas megang buah, muter halus
                             local targetRotation = CFrame.lookAt(hrp.Position, currentPos)
                             local smoothRotation = hrp.CFrame.Rotation:Lerp(targetRotation.Rotation, 0.15)
                             
                             hrp.CFrame = CFrame.new(newPos) * smoothRotation
-                            hrp.Velocity = Vector3.zero 
+                            hrp.Velocity = Vector3.zero -- Biar ga kena physics glitch
                             hrp.RotVelocity = Vector3.zero
                         end)
                     end
@@ -317,6 +319,7 @@ function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
+    -- SAVE CONFIG SEBELUM HOP BIAR GA ILANG
     pcall(function()
         local ConfigFile = "CatHUB_Config.json"
         writefile(ConfigFile, HttpService:JSONEncode(Settings))
@@ -328,6 +331,7 @@ function _G.Cat.HopServer()
         while Settings.AutoHop do
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             
+            -- AUTO-OPEN UI
             if not browser or not browser.Enabled then
                 local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                 if openBtn then
@@ -353,6 +357,7 @@ function _G.Cat.HopServer()
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                 local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
                 
+                -- INVISIBLE SCROLL (ANTI-ZOOM)
                 if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                     dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
                     task.wait(1) 
@@ -360,6 +365,7 @@ function _G.Cat.HopServer()
 
                 if not scrollFrame then task.wait(1) continue end
 
+                -- TARGET ACQUISITION
                 local buttons = {}
                 local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                 for _, v in pairs(listArea:GetDescendants()) do
@@ -370,6 +376,7 @@ function _G.Cat.HopServer()
                     end
                 end
 
+                -- STRIKE & FAILSAFE
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
