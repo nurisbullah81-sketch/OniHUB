@@ -456,3 +456,31 @@ function _G.Cat.GetFruitsList()
     for f, _ in pairs(Data) do if f and f.Parent then table.insert(names, f.Name) end end
     return names
 end
+
+-- ==========================================
+-- 6. AUTO SELECT TEAM (MARINES) - 24/7 AFK
+-- ==========================================
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            -- Cek apakah UI Utama Blox Fruits ada
+            local mainGui = Me.PlayerGui:FindFirstChild("Main")
+            if mainGui then
+                -- Cek apakah layar "PICK A SIDE" sedang muncul
+                local chooseTeam = mainGui:FindFirstChild("ChooseTeam")
+                if chooseTeam and chooseTeam.Visible then
+                    warn("[CatHUB] Memilih tim Marines secara otomatis...")
+                    
+                    -- Eksekusi instan memotong jalur UI (Pure API)
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+                    
+                    -- Paksa tutup UI-nya biar karakter lu bisa langsung gerak
+                    chooseTeam.Visible = false
+                    
+                    -- Jeda sebentar ngasih napas ke server buat nge-spawn badan lu
+                    task.wait(2)
+                end
+            end
+        end)
+    end
+end)
