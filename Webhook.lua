@@ -18,18 +18,38 @@ local function GetRarity(fruitName)
     return "Common"
 end
 
+-- FUNGSI HTTP EXECUTOR (INI YANG BENER, DIPAKE THAN/NAT HUB)
+local function sendRequest(url, data)
+    local json = HttpService:JSONEncode(data)
+    
+    -- Deteksi fungsi request bawaan executor (Solara, Xeno, Fluxus, etc)
+    local reqFunc = http_request or request or HttpPost or syn.request or fluxus.request
+    
+    if reqFunc then
+        -- PAKAI INI: Bisa kirim Content-Type: application/json, Discord pasti terima!
+        reqFunc({
+            Url = url,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = json
+        })
+    else
+        -- FALLBACK: Kalau executor blok semua, coba pakai HttpService biasa (Kemungkinan besar gagal ke Discord)
+        pcall(function()
+            HttpService:PostAsync(url, json, Enum.HttpPriority.Default, false, {["Content-Type"] = "application/json"})
+        end)
+    end
+end
+
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     if not webhookURL or webhookURL == "" then return end
     
     local fruitRarity = GetRarity(fruitName)
     local shouldSend = false
     
-    if raritySetting == "All Fruits" then
-        shouldSend = true
-    elseif raritySetting == "Legendary & Mythical" then
-        if fruitRarity == "Legendary" or fruitRarity == "Mythical" then shouldSend = true end
-    elseif raritySetting == "Mythical Only" then
-        if fruitRarity == "Mythical" then shouldSend = true end
+    if raritySetting == "All Fruits" then shouldSend = true
+    elseif raritySetting == "Legendary & Mythical" then if fruitRarity == "Legendary" or fruitRarity == "Mythical" then shouldSend = true end
+    elseif raritySetting == "Mythical Only" then if fruitRarity == "Mythical" then shouldSend = true end
     end
     
     if not shouldSend then return end
@@ -39,33 +59,28 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     elseif fruitRarity == "Mythical" then embedColor = 16711935
     end
     
-    local data = HttpService:JSONEncode({
+    local data = {
         embeds = {{
             title = "🚨 " .. fruitRarity .. " Fruit Detected! 🚨",
             description = "**Fruit:** " .. fruitName .. "\n**JobID:** `" .. jobId .. "`\n\nUse this JobID to teleport!",
             color = embedColor,
             footer = { text = "CatHUB Premium Scanner" }
         }}
-    })
+    }
     
-    pcall(function() 
-        -- WAJIB PAKAI HEADER INI BIAR DISCORD KAGAK NOLAK
-        HttpService:PostAsync(webhookURL, data, Enum.HttpPriority.Default, false, {["Content-Type"] = "application/json"}) 
-    end)
+    pcall(function() sendRequest(webhookURL, data) end)
 end
 
 function Webhook:Test(webhookURL)
     if not webhookURL or webhookURL == "" then return false, "No URL" end
-    local data = HttpService:JSONEncode({
+    local data = {
         embeds = {{
             title = "✅ Webhook Test Successful!",
             description = "CatHUB is connected to this channel.",
             color = 32768
         }}
-    })
-    local ok, err = pcall(function() 
-        HttpService:PostAsync(webhookURL, data, Enum.HttpPriority.Default, false, {["Content-Type"] = "application/json"}) 
-    end)
+    }
+    local ok, err = pcall(function() sendRequest(webhookURL, data) end)
     return ok, tostring(err)
 end
 
