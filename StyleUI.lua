@@ -13,6 +13,7 @@ if not _G.Cat then
         Settings = { 
             FruitESP = false, 
             TweenFruit = false,
+            InstantTPFruit = false, -- TAMBAHIN INI
             AutoStoreFruit = false,
             AutoHop = false,
             AntiAFK = true
@@ -22,6 +23,17 @@ if not _G.Cat then
 else
     _G.Cat.Player = game:GetService("Players").LocalPlayer
     if not _G.Cat.Labels then _G.Cat.Labels = {} end
+    
+    -- AUTO LOAD CONFIG: Biar settingan ga reset pas pindah server
+    pcall(function()
+        local ConfigFile = "CatHUB_Config.json"
+        if isfile(ConfigFile) then
+            local savedSettings = game:GetService("HttpService"):JSONDecode(readfile(ConfigFile))
+            for key, value in pairs(savedSettings) do
+                _G.Cat.Settings[key] = value
+            end
+        end
+    end)
 end
 
 local Gui = Instance.new("ScreenGui", CoreGui)
