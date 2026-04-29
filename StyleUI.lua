@@ -1,18 +1,18 @@
--- CatHUB vFINAL PREMIUM: English UI, Search Bar, Dark Inner BG, Fixed Resizer
+-- CatHUB vFINAL PREMIUM: English UI, Search Bar, Dark Inner BG, Fixed Resizer + AUTO CONFIG
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInput = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
 if CoreGui:FindFirstChild("CatUI") then 
     CoreGui.CatUI:Destroy() 
 end
 
-local HttpService = game:GetService("HttpService")
-local ConfigFile = "CatHUB_Config.json"
-
 -- ==========================================
 -- SELF-HEALING CONFIG (MASTER BLUEPRINT)
 -- ==========================================
+local ConfigFile = "CatHUB_Config.json"
+
 local DefaultSettings = {
     FruitESP = false,
     TweenFruit = false,
@@ -27,17 +27,13 @@ local DefaultSettings = {
 
 local function LoadSettings()
     local settings = {}
-    -- 1. Isi dulu dengan default (Master Blueprint)
-    for k, v in pairs(DefaultSettings) do
-        settings[k] = v
-    end
+    for k, v in pairs(DefaultSettings) do settings[k] = v end
     
-    -- 2. Timpa dengan data yang tersimpan di file JSON (Smart Loader)
     pcall(function()
         if isfile(ConfigFile) then
             local saved = HttpService:JSONDecode(readfile(ConfigFile))
             for key, value in pairs(saved) do
-                if settings[key] ~= nil then -- Hanya load jika ada di blueprint
+                if settings[key] ~= nil then
                     settings[key] = value
                 end
             end
@@ -47,7 +43,6 @@ local function LoadSettings()
     return settings
 end
 
--- Auto-Sync Function (Nembak save tiap ada perubahan)
 local function SaveSettings()
     pcall(function()
         writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
@@ -57,49 +52,44 @@ end
 if not _G.Cat then
     _G.Cat = {
         Player = game:GetService("Players").LocalPlayer,
-        Settings = LoadSettings(), -- Langsung pakai Smart Loader
+        Settings = LoadSettings(),
         Labels = {}
     }
 else
     _G.Cat.Player = game:GetService("Players").LocalPlayer
     if not _G.Cat.Labels then _G.Cat.Labels = {} end
-    _G.Cat.Settings = LoadSettings() -- Update jika re-execute
+    _G.Cat.Settings = LoadSettings()
 end
 
--- ==========================================
--- UI BUILDING (BIAR KAGAK RIBET)
--- ==========================================
--- ... (Bagian UI lu yang bikin Main, Side, Top, dll tetap disini) ...
--- ... (Fungsi CreateTab, CreateSection, CreateLabel juga tetap disini) ...
+local Gui = Instance.new("ScreenGui", CoreGui)
+Gui.Name = "CatUI"
+Gui.ResetOnSpawn = false
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- PENTING: Ganti function CreateToggle lu jadi ini biar auto-save tiap klik:
-local function CreateToggle(parent, text, description, stateRef, callback)
-    local frameHeight = description and 52 or 36
-    local F = Instance.new("TextButton", parent); F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0; F.Text = ""; F.AutoButtonColor = false
-    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", F).Color = Theme.Line
-    local L = Instance.new("TextLabel", F); L.Size = UDim2.new(1, -60, 0, 20); L.Position = UDim2.new(0, 12, 0, description and 6 or 8); L.Text = text; L.TextColor3 = Theme.Text; L.Font = Enum.Font.GothamMedium; L.TextSize = 12; L.TextXAlignment = Enum.TextXAlignment.Left; L.BackgroundTransparency = 1
-    if description then local D = Instance.new("TextLabel", F); D.Size = UDim2.new(1, -60, 0, 14); D.Position = UDim2.new(0, 12, 0, 26); D.Text = description; D.TextColor3 = Theme.TextDim; D.Font = Enum.Font.Gotham; D.TextSize = 10; D.TextXAlignment = Enum.TextXAlignment.Left; D.BackgroundTransparency = 1 end
-    local Sw = Instance.new("Frame", F); Sw.Size = UDim2.new(0, 36, 0, 18); Sw.Position = UDim2.new(1, -48, 0.5, -9); Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff; Sw.BorderSizePixel = 0
-    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0) 
-    local Dot = Instance.new("Frame", Sw); Dot.Size = UDim2.new(0, 14, 0, 14); Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7); Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255); Dot.BorderSizePixel = 0
-    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0) 
-    
-    F.MouseEnter:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play() end)
-    F.MouseLeave:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardBG}):Play() end)
-    F.MouseButton1Click:Connect(function()
-        stateRef = not stateRef
-        TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play()
-        TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
-        if callback then callback(stateRef) end
-        
-        -- [AUTO-SYNC] Langsung simpan ke JSON tiap lu pencet toggle!
-        SaveSettings() 
-    end)
-    table.insert(AllToggles, {Btn = F, Label = L})
-end
+local Theme = {
+    MainBG      = Color3.fromRGB(10, 10, 10),   
+    SideBG      = Color3.fromRGB(14, 14, 16),   
+    TopBG       = Color3.fromRGB(10, 10, 10),
+    TabOn       = Color3.fromRGB(38, 38, 42),   
+    TabOff      = Color3.fromRGB(25, 25, 30), 
+    PageBG      = Color3.fromRGB(17, 18, 22),   
+    CardBG      = Color3.fromRGB(28, 28, 32),   
+    CardHov     = Color3.fromRGB(36, 36, 42),
+    Text        = Color3.fromRGB(250, 250, 250),
+    TextDim     = Color3.fromRGB(140, 140, 145),
+    ToggleOn    = Color3.fromRGB(138, 43, 226), 
+    ToggleOff   = Color3.fromRGB(75, 75, 80),
+    CatPurple   = Color3.fromRGB(160, 100, 255),
+    Gold        = Color3.fromRGB(255, 200, 50), 
+    Accent      = Color3.fromRGB(138, 43, 226), 
+    Line        = Color3.fromRGB(40, 40, 45)    
+}
 
--- ... (Bagian bawahnya SearchBox, Build Tabs, dll tetap pakai code lu yang kemarin) ...
+local FloatCont = Instance.new("Frame", Gui)
+FloatCont.Size = UDim2.new(0, 70, 0, 40) 
+FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
+FloatCont.BackgroundTransparency = 1
+FloatCont.ZIndex = 99999 
 
 local FloatBtn = Instance.new("TextButton", FloatCont)
 FloatBtn.Size = UDim2.new(0, 40, 1, 0)
@@ -294,6 +284,9 @@ local function CreateToggle(parent, text, description, stateRef, callback)
         TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play()
         TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
         if callback then callback(stateRef) end
+        
+        -- [AUTO-SYNC] Langsung simpan ke JSON tiap lu pencet toggle!
+        SaveSettings() 
     end)
     table.insert(AllToggles, {Btn = F, Label = L})
 end
@@ -313,17 +306,11 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     for _, toggle in ipairs(AllToggles) do local text = string.lower(toggle.Label.Text); toggle.Btn.Visible = query == "" or string.find(text, query) ~= nil end
 end)
 
--- Di bagian atas UI lu, tambahin ini biar setting ga nil
-if _G.Cat.Settings.AutoAttack == nil then _G.Cat.Settings.AutoAttack = false end
-if _G.Cat.Settings.InstantTPFruit == nil then _G.Cat.Settings.InstantTPFruit = false end
-if _G.Cat.Settings.WebhookEnabled == nil then _G.Cat.Settings.WebhookEnabled = false end
-if _G.Cat.Settings.WebhookURL == nil then _G.Cat.Settings.WebhookURL = "" end
-
 -- ==========================================
 -- BUILD TABS & ISI KONTEN (URUTAN BARU)
 -- ==========================================
 local StatusTab = CreateTab("Status", true) 
-local AutoFarmTab = CreateTab("Auto Farm", false) -- TAB BARU DI ATAS DEVIL FRUITS
+local AutoFarmTab = CreateTab("Auto Farm", false) 
 local DevilFruitsTab = CreateTab("Devil Fruits", false) 
 local MiscTab = CreateTab("Misc", false) 
 
@@ -340,11 +327,11 @@ _G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycl
 _G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
 _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
--- AUTO FARM TAB (ISINYA COMBAT DOANG)
+-- AUTO FARM TAB
 CreateSection(AutoFarmTab, "COMBAT SYSTEM")
 CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
 
--- DEVIL FRUITS TAB (MURNI BUAH)
+-- DEVIL FRUITS TAB
 CreateSection(DevilFruitsTab, "FRUIT FINDER")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
 CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
@@ -352,7 +339,7 @@ CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", 
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- MISC TAB (WEBHOOK PINDAH KESINI)
+-- MISC TAB
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
 
 CreateSection(MiscTab, "NETWORK SCANNER (MYTHICAL HUNTER)")
@@ -368,4 +355,4 @@ WebhookBox.Size = UDim2.new(1, -16, 1, 0); WebhookBox.Position = UDim2.new(0, 8,
 WebhookBox.Text = _G.Cat.Settings.WebhookURL ~= "" and _G.Cat.Settings.WebhookURL or "Paste Discord Webhook URL here..."
 WebhookBox.TextColor3 = Theme.Text; WebhookBox.PlaceholderText = "Paste Discord Webhook URL here..."; WebhookBox.PlaceholderColor3 = Theme.TextDim
 WebhookBox.Font = Enum.Font.GothamMedium; WebhookBox.TextSize = 11; WebhookBox.TextXAlignment = Enum.TextXAlignment.Left; WebhookBox.ClearTextOnFocus = false
-WebhookBox.FocusLost:Connect(function() _G.Cat.Settings.WebhookURL = WebhookBox.Text end)
+WebhookBox.FocusLost:Connect(function() _G.Cat.Settings.WebhookURL = WebhookBox.Text SaveSettings() end)
