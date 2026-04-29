@@ -460,26 +460,49 @@ end
 -- ==========================================
 -- 6. AUTO SELECT TEAM (MARINES) - 24/7 AFK
 -- ==========================================
+local GuiService = game:GetService("GuiService")
+local VIM = game:GetService("VirtualInputManager")
+
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            -- Cek apakah UI Utama Blox Fruits ada
             local mainGui = Me.PlayerGui:FindFirstChild("Main")
-            if mainGui then
-                -- Cek apakah layar "PICK A SIDE" sedang muncul
-                local chooseTeam = mainGui:FindFirstChild("ChooseTeam")
-                if chooseTeam and chooseTeam.Visible then
-                    warn("[CatHUB] Memilih tim Marines secara otomatis...")
-                    
-                    -- Eksekusi instan memotong jalur UI (Pure API)
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-                    
-                    -- Paksa tutup UI-nya biar karakter lu bisa langsung gerak
-                    chooseTeam.Visible = false
-                    
-                    -- Jeda sebentar ngasih napas ke server buat nge-spawn badan lu
-                    task.wait(2)
+            if not mainGui then return end
+            
+            local chooseTeam = mainGui:FindFirstChild("ChooseTeam")
+            if chooseTeam and chooseTeam.Visible then
+                warn("[CatHUB] Mengeksekusi Auto-Team Marines...")
+                
+                -- 1. Tembak API murni ke Server (Biar data lu kecatet masuk Marines)
+                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+                
+                task.wait(0.5) -- Kasih napas setengah detik
+                
+                -- 2. THE KILLSHOT: Tembak paksa tombol UI secara virtual (Memancing script asli game biar loading)
+                if chooseTeam.Visible then
+                    -- Cari container/kotak biru Marines
+                    local marineFrame = chooseTeam:FindFirstChild("Marines", true)
+                    if marineFrame then
+                        -- Cari tombol aslinya di dalam kotak biru
+                        local btn = marineFrame:FindFirstChildWhichIsA("TextButton", true)
+                        if btn and btn.Visible then
+                            -- Kalkulasi akurasi piksel persis kayak bot V26 kita
+                            local inset = GuiService:GetGuiInset()
+                            local p, s = btn.AbsolutePosition, btn.AbsoluteSize
+                            local tx, ty = p.X + (s.X/2), p.Y + (s.Y/2) + inset.Y
+                            
+                            -- Spam klik 2x buat mastiin masuk
+                            for i = 1, 2 do
+                                VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                                task.wait(0.05)
+                                VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                                task.wait(0.05)
+                            end
+                        end
+                    end
                 end
+                
+                task.wait(2) -- Jeda biar ga spam berlebihan saat loading
             end
         end)
     end
