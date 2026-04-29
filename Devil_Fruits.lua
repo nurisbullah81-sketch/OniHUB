@@ -17,7 +17,7 @@ local FC = 0
 local SKIP = 10
 
 -- ==========================================
--- 1. GUARDIAN (DIBUNGUS PCALL BIAR GA CRASH)
+-- 1. GUARDIAN (PCALL KETAT BIAR GA ERROR)
 -- ==========================================
 pcall(function()
     GuiService.ErrorMessageChanged:Connect(function()
@@ -28,16 +28,20 @@ pcall(function()
 end)
 
 pcall(function()
-    local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
-    if promptGui then
-        local overlay = promptGui:WaitForChild("promptOverlay", 5)
-        if overlay then
-            overlay.Visible = false
-            overlay:GetPropertyChangedSignal("Visible"):Connect(function()
-                if Settings.AutoHop then overlay.Visible = false end
-            end)
+    task.spawn(function()
+        local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
+        if promptGui then
+            local overlay = promptGui:WaitForChild("promptOverlay", 5)
+            if overlay then
+                overlay.Visible = false
+                pcall(function()
+                    overlay:GetPropertyChangedSignal("Visible"):Connect(function()
+                        if Settings.AutoHop then overlay.Visible = false end
+                    end)
+                end)
+            end
         end
-    end
+    end)
 end)
 
 -- ==========================================
@@ -322,64 +326,37 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 5. HOP SERVER (ORIGINAL + DEBUG)
+-- 5. HOP SERVER - NOMEXY V26 MENTAHAN 100%
 -- ==========================================
-local isHopping = false
 
+-- FUNGSI HOP (DIPANGGIL OLEH MAIN.lua ATAU MANUAL)
 function _G.Cat.HopServer()
-    if isHopping then return end
-    isHopping = true
-    
-    task.spawn(function()
-        while Settings.AutoHop do
+    -- Aktifkan hop sementara
+    Settings.AutoHop = true
+    warn("[CatHUB] Hop Server diaktifkan!")
+end
+
+-- ENGINE HOP V26 (JALAN TERUS DI BACKGROUND)
+task.spawn(function()
+    while task.wait(1) do
+        if Settings.AutoHop then
             pcall(function()
-                local char = Me.Character
-                local hum = char and char:FindFirstChild("Humanoid")
-                if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
-                    task.wait(1)
-                    return
-                end
-
-                local fruitCount = 0
-                for f, _ in pairs(Data) do
-                    if f and f.Parent then
-                        local isHeld = false
-                        if Me.Character then
-                            for _, tool in pairs(Me.Character:GetChildren()) do
-                                if tool == f then isHeld = true break end
-                            end
-                        end
-                        if not isHeld then fruitCount = fruitCount + 1 end
-                    end
-                end
-
-                warn("[CatHUB] Buah di map: "..fruitCount)
-
-                if fruitCount > 0 then
-                    local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                    if browser and browser.Enabled then
-                        browser.Enabled = false
-                    end
-                    task.wait(3)
-                    return
-                end
-
-                warn("[CatHUB] Tidak ada buah. Memulai hop...")
+                local LP = Me
+                local browser = LP.PlayerGui:FindFirstChild("ServerBrowser", true)
                 
-                local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                -- AUTO-OPEN UI
                 if not browser or not browser.Enabled then
-                    local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
+                    local openBtn = LP.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                     if openBtn then
                         local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                        local bX, bY = p.X + (s.X/2), p.Y + (s.Y/2) + 58
-                        VIM:SendMouseButtonEvent(bX, bY, 0, true, game, 0)
+                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
                         task.wait(0.1)
-                        VIM:SendMouseButtonEvent(bX, bY, 0, false, game, 0)
+                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
                     end
                 end
 
-                browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                if not browser then task.wait(1) return end
+                browser = LP.PlayerGui:FindFirstChild("ServerBrowser", true)
+                if not browser then task.wait(1) continue end
 
                 local listArea = browser:FindFirstChild("Inside", true)
                 local count = 0
@@ -393,13 +370,15 @@ function _G.Cat.HopServer()
                     local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                     local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
                     
+                    -- INVISIBLE SCROLL (ANTI-ZOOM)
                     if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                         dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
                         task.wait(1) 
                     end
 
-                    if not scrollFrame then task.wait(1) return end
+                    if not scrollFrame then continue end
 
+                    -- TARGET ACQUISITION
                     local buttons = {}
                     local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                     for _, v in pairs(listArea:GetDescendants()) do
@@ -410,8 +389,7 @@ function _G.Cat.HopServer()
                         end
                     end
 
-                    warn("[CatHUB] Ditemukan "..#buttons.." tombol Join")
-
+                    -- STRIKE & FAILSAFE
                     for _, target in pairs(buttons) do
                         if not Settings.AutoHop then break end
                         local bp, bs = target.AbsolutePosition, target.AbsoluteSize
@@ -419,26 +397,18 @@ function _G.Cat.HopServer()
                         
                         VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                         VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                        task.wait(0.05)
+                        task.wait(0.05) 
                         VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
                         VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
                         task.wait(0.1)
                         VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                        task.wait(0.5)
+                        task.wait(0.5) 
                     end
                 end
+                task.wait(1)
             end)
-            task.wait(1)
-        end
-        isHopping = false
-    end)
-end
-
-task.spawn(function()
-    while task.wait(5) do
-        warn("[CatHUB] Hop Loop Check - AutoHop: "..tostring(Settings.AutoHop))
-        if Settings.AutoHop then
-            _G.Cat.HopServer()
+        else
+            task.wait(2)
         end
     end
 end)
