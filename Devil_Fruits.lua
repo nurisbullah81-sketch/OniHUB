@@ -392,8 +392,8 @@ task.spawn(function()
                         if storeSuccess then break end
                         local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
                         if remote then
-                            local result = SafeInvoke(remote, "StoreFruit", fruitName, fruitTool)
-                            if result == true then storeSuccess = true end
+                            local ok, result = SafeInvoke(remote, "StoreFruit", fruitName, fruitTool)
+                            if ok and result == true then storeSuccess = true end
                         end
                         task.wait(0.5)
                     end
