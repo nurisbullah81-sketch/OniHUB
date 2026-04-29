@@ -1,95 +1,69 @@
--- CatHUB Loader + Auto Re-execute + AUTO SAVE
+-- [[ CatHUB MAIN LOADER & AUTO SAVE ENGINE ]] --
 local _ENV = (getgenv or getrenv or getfenv)()
 
--- Debounce
-local last_exec = _ENV.cat_exec_debounce
-if last_exec and (tick() - last_exec) <= 5 then return end
-_ENV.cat_exec_debounce = tick()
+-- Debounce & Queue on Teleport (Anti-Reset Pas Hop Server)
+if _ENV.Cat_Executed then return end
+_ENV.Cat_Executed = true
 
--- queue_on_teleport
 local executor = syn or fluxus
 local queueteleport = queue_on_teleport or (executor and executor.queue_on_teleport)
-
-if not _ENV.cat_queued and type(queueteleport) == "function" then
-    _ENV.cat_queued = true
+if type(queueteleport) == "function" then
     local scriptUrl = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/Main.lua"))()'
     pcall(queueteleport, scriptUrl)
 end
 
--- Load System
-local function Load(file)
-    local url = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/" .. file .. "?v=" .. math.random()
-    local ok, r = pcall(function() return loadstring(game:HttpGet(url))() end)
-    if not ok then warn("[CatHUB] Fail: " .. file .. " | " .. tostring(r)) end
-    return r
-end
-
--- [[ AUTO-SAVE SYSTEM ]]
 local HttpService = game:GetService("HttpService")
-local defaultSettings = { 
-    FruitESP = true, 
-    TweenFruit = true,
-    AutoStoreFruit = true,
-    AutoHop = true,
-    AntiAFK = true
-}
+local ConfigFile = "CatHUB_Config.json"
 
-local function loadSettings()
-    local ok, data = pcall(function()
-        return HttpService:JSONDecode(readfile("CatHUB_Settings.json"))
-    end)
-    if ok and type(data) == "table" then
-        for k, v in pairs(defaultSettings) do
-            if data[k] == nil then data[k] = v end
-        end
-        return data
-    end
-    return defaultSettings
-end
-
-local function saveSettings()
-    pcall(function()
-        writefile("CatHUB_Settings.json", HttpService:JSONEncode(_G.Cat.Settings))
-    end)
-end
-
+-- 1. INISIALISASI SETTINGAN DEFAULT
 _G.Cat = {
     Player = game:GetService("Players").LocalPlayer,
     Settings = { 
-        FruitESP = true, 
-        TweenFruit = true,
-        AutoStoreFruit = true,
-        AutoHop = true,
-        AntiAFK = true
+        FruitESP = false, 
+        TweenFruit = false,
+        AutoStoreFruit = false,
+        AutoHop = false,
+        AntiAFK = false
     },
     Labels = {}
 }
 
--- LOAD CONFIG DARI FILE PC (BIAR GA RESET PAS HOP)
-local ConfigFile = "CatHUB_Config.json"
-local HttpService = game:GetService("HttpService")
-
-pcall(function()
-    if isfile(ConfigFile) then
-        local SavedSettings = HttpService:JSONDecode(readfile(ConfigFile))
-        for k, v in pairs(SavedSettings) do
-            if _G.Cat.Settings[k] ~= nil then
-                _G.Cat.Settings[k] = v
+-- 2. LOAD SYSTEM (Membaca file dari PC lu jika ada)
+if isfile and isfile(ConfigFile) then
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(readfile(ConfigFile))
+    end)
+    
+    if ok and type(data) == "table" then
+        for key, value in pairs(data) do
+            if _G.Cat.Settings[key] ~= nil then
+                _G.Cat.Settings[key] = value -- Menimpa default dengan settingan tersimpan
             end
         end
-        warn("[CatHUB] Config loaded dari file!")
+        warn("[CatHUB] Berhasil memuat settingan dari " .. ConfigFile)
     end
-end)
+end
 
--- SAVE CONFIG SETIAP ADA YANG BERUBAH DI UI
+-- 3. AUTO-SAVE SYSTEM (Menyimpan otomatis setiap 3 detik di background)
 task.spawn(function()
-    while task.wait(2) do
-        pcall(function()
-            writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
-        end)
+    while task.wait(3) do
+        if writefile then
+            pcall(function()
+                writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
+            end)
+        end
     end
 end)
 
+-- 4. MODULE LOADER (Menjalankan file UI dan Logic)
+local function Load(file)
+    local url = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/" .. file .. "?v=" .. tostring(math.random(1000, 9999))
+    local ok, r = pcall(function() return loadstring(game:HttpGet(url))() end)
+    if not ok then warn("[CatHUB] Gagal meload: " .. file .. " | Error: " .. tostring(r)) end
+    return r
+end
+
+-- PENTING: Load UI harus dilakukan SETELAH data JSON di-load!
 Load("StyleUI.lua")
 Load("Status.lua")
 Load("Devil_Fruits.lua")
