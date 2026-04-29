@@ -9,7 +9,7 @@ local VIM = game:GetService("VirtualInputManager")
 -- SERVICES UNTUK SOVEREIGN V26
 local GuiService = game:GetService("GuiService")
 local CoreGui = game:GetService("CoreGui")
-local VirtualUser = game:GetService("VirtualUser") -- TAMBAHAN: Bukan buat macro, tapi buat anti-kick AFK!
+local VirtualUser = game:GetService("VirtualUser") 
 
 local Me = _G.Cat.Player
 local Settings = _G.Cat.Settings
@@ -20,7 +20,30 @@ local FC = 0
 local SKIP = 10
 
 -- ==========================================
--- 1. THE GUARDIAN V26 (ZERO-BLINK TECHNOLOGY)
+-- 1. MASTER LOCK (ANTI BUG LOADING)
+-- ==========================================
+-- Ini gerbang utama. Selama ini FALSE, Tween, Hop, dan Store DILARANG JALAN.
+local IsGameReady = false
+
+task.spawn(function()
+    while task.wait(1) do
+        -- Syarat: Lu udah punya Tim DAN Karakter fisik udah spawn di map
+        if Me.Team ~= nil and Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") then
+            if not IsGameReady then
+                warn("[CatHUB] GAME LOADED & READY. Systems unlocked.")
+                IsGameReady = true
+            end
+        else
+            if IsGameReady then
+                warn("[CatHUB] LOADING/TEAM SELECT. Systems locked.")
+                IsGameReady = false
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- 2. THE GUARDIAN V26 (ZERO-BLINK TECHNOLOGY)
 -- ==========================================
 GuiService.ErrorMessageChanged:Connect(function()
     if Settings.AutoHop then
@@ -44,10 +67,8 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 1.5. ANTI-AFK IMMORTALITY (AFK 24/7 FIX)
+-- 2.5. ANTI-AFK IMMORTALITY (AFK 24/7 FIX)
 -- ==========================================
--- Roblox nge-kick lu kalau lu ga ngirim input apapun selama 20 menit.
--- Ini bikin lu tetep "hidup" di mata server walau PC lu ngadep kipas.
 Me.Idled:Connect(function()
     if Settings.TweenFruit or Settings.AutoHop then
         VirtualUser:CaptureController()
@@ -56,7 +77,7 @@ Me.Idled:Connect(function()
 end)
 
 -- ==========================================
--- 2. ESP SYSTEM (ORIGINAL - UNTOUCHED)
+-- 3. ESP SYSTEM (ORIGINAL - UNTOUCHED)
 -- ==========================================
 local function Pos(f) 
     if not f or not f.Parent then return nil end 
@@ -151,7 +172,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. PROXY TWEEN ENGINE (ANTI-FLING & INSTANT KILL SWITCH)
+-- 4. PROXY TWEEN ENGINE (ANTI-FLING & INSTANT KILL SWITCH)
 -- ==========================================
 local isTweening = false
 local currentTarget = nil
@@ -163,7 +184,6 @@ local originalCollisions = {}
 local TWEEN_SPEED = 300 
 
 local function StopSmartTween()
-    -- Cegah double stop yang bikin bug
     if not isTweening then return end
     isTweening = false
     currentTarget = nil
@@ -177,15 +197,12 @@ local function StopSmartTween()
         noclipConn = nil
     end
     
-    -- ANTI-FLING/NINJUTSU FIX:
-    -- Pas tween berhenti, kita matiin fisika sebentar, reset velocity bersih, baru nyalain lagi.
-    -- Ini biar server Roblox ga ngeresync karakter lu ke langit/laut.
     pcall(function()
         if Me.Character then
             local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
                 hrp.Anchored = true
-                task.wait(0.05) -- Kasih jeda server nangkap posisi terakhir
+                task.wait(0.05) 
                 hrp.AssemblyLinearVelocity = Vector3.zero
                 hrp.AssemblyAngularVelocity = Vector3.zero
                 hrp.Anchored = false
@@ -229,7 +246,8 @@ end
 task.spawn(function() 
     while task.wait(0.2) do 
         pcall(function() 
-            if Settings.TweenFruit then 
+            -- MASTER LOCK: Tween HANYA jalan kalau game udah ready (udah masuk tim & karakter ada)
+            if Settings.TweenFruit and IsGameReady then 
                 local nearest = GetNearestFruit() 
                 local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
                 
@@ -264,21 +282,17 @@ task.spawn(function()
                             proxyPart.CFrame = startCFrame
                             proxyPart.Parent = workspace
 
-                            -- INSTANT KILL SWITCH FIX:
-                            -- Noclip sekarang ngecek Settings.TweenFruit tiap frame!
                             noclipConn = RunService.Stepped:Connect(function()
-                                if isTweening and Settings.TweenFruit and Me.Character and hrp and hrp.Parent and proxyPart then
+                                if isTweening and Settings.TweenFruit and IsGameReady and Me.Character and hrp and hrp.Parent and proxyPart then
                                     for _, part in pairs(Me.Character:GetDescendants()) do
                                         if part:IsA("BasePart") and part.CanCollide then 
                                             part.CanCollide = false 
                                         end
                                     end
-                                    -- Ganti Velocity -> AssemblyLinearVelocity (Fisika modern, ga bikin desync)
                                     hrp.AssemblyLinearVelocity = Vector3.zero
                                     hrp.AssemblyAngularVelocity = Vector3.zero
                                     hrp.CFrame = proxyPart.CFrame
                                 else
-                                    -- Kalau lu pencet OFF, atau karakter mati, langsung hancurin prosesnya!
                                     StopSmartTween()
                                 end
                             end)
@@ -303,12 +317,11 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 4. AUTO STORE (ANTI-FREEZE INVOKE)
+-- 5. AUTO STORE (ANTI-FREEZE INVOKE)
 -- ==========================================
 local StoreBlacklist={}
 local isStoring = false
 
--- Fungsi pembantu biar InvokeServer ga nge-freeze loop utama kalau server lag
 local function SafeInvoke(remote, ...)
     local args = {...}
     local result = nil
@@ -322,7 +335,6 @@ local function SafeInvoke(remote, ...)
         task.spawn(thread, true)
     end)
     
-    -- Kalau lebih dari 5 detik ga ada jawaban, bypass dan lanjut!
     task.delay(5, function()
         if result == nil then
             task.spawn(thread, false) 
@@ -335,7 +347,8 @@ end
 
 task.spawn(function() 
     while task.wait(1) do 
-        if Settings.AutoStoreFruit and not isStoring then 
+        -- MASTER LOCK: Store HANYA jalan kalau game udah ready
+        if Settings.AutoStoreFruit and not isStoring and IsGameReady then 
             isStoring = true
             pcall(function() 
                 local character = Me.Character
@@ -377,7 +390,7 @@ task.spawn(function()
                     end
                     
                     local storeSuccess = false
-                    for _ = 1, 3 do -- Turunin jadi 3x percobaan, lagipake SafeInvoke
+                    for _ = 1, 3 do 
                         if storeSuccess then break end
                         local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
                         if remote then
@@ -399,7 +412,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 5. HOP SERVER - SOVEREIGN V26 (TOGGLE FIX)
+-- 6. HOP SERVER - SOVEREIGN V26 (TOGGLE FIX)
 -- ==========================================
 local isHopping = false
 
@@ -415,7 +428,7 @@ function _G.Cat.HopServer()
     task.spawn(function()
         warn("[CatHUB] [HOP] Executing Sovereign V26 Engine...")
         
-        while Settings.AutoHop do -- Loop ini langsung berhenti kalau lu pencet OFF
+        while Settings.AutoHop do 
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             
             if not browser or not browser.Enabled then
@@ -461,7 +474,7 @@ function _G.Cat.HopServer()
                 end
 
                 for _, target in pairs(buttons) do
-                    if not Settings.AutoHop then break end -- Fix: Langsung berhenti klik kalau di OFF
+                    if not Settings.AutoHop then break end 
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
                     local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
                     
@@ -482,7 +495,6 @@ function _G.Cat.HopServer()
             task.wait(1)
         end
         
-        -- Failsafe: Kalau keluar loop karena di OFF, bersih-bersih
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
         if browser then browser.Enabled = false end
         isHopping = false
@@ -493,7 +505,8 @@ task.spawn(function()
     task.wait(10) 
     
     while task.wait(5) do
-        if Settings.AutoHop and Me.Team ~= nil and Me.Character then
+        -- MASTER LOCK: Hop HANYA jalan kalau game ready
+        if Settings.AutoHop and IsGameReady then
             pcall(function()
                 local fruitCount = 0
                 for f, _ in pairs(Data) do
@@ -517,7 +530,6 @@ task.spawn(function()
             end)
         else
             if not Settings.AutoHop then
-                -- Fix: Kalau AutoHop dimatiin tengah jalan, bersihkan state
                 isHopping = false
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                 if browser then browser.Enabled = false end
@@ -533,14 +545,19 @@ function _G.Cat.GetFruitsList()
 end
 
 -- ==========================================
--- 6. GOD-TIER AUTO TEAM (MARINES) - ANTI FREEZE
+-- 7. GOD-TIER AUTO TEAM (MARINES) - SMART LOADING
 -- ==========================================
 local function GetMarineButton()
     for _, v in pairs(Me.PlayerGui:GetDescendants()) do
         if v.Name == "ChooseTeam" and v.Visible then
             local marineContainer = v:FindFirstChild("Marines", true)
             if marineContainer then
-                return marineContainer:FindFirstChildWhichIsA("TextButton", true)
+                local btn = marineContainer:FindFirstChildWhichIsA("TextButton", true)
+                -- PINTER: Tombol harus udah beneran ke-render di layar (Ukuran lebih dari 0)
+                -- Kalau masih loading, AbsoluteSize pasti 0. Jadi dia ga akan di klik pas lag!
+                if btn and btn.AbsoluteSize.X > 0 and btn.AbsoluteSize.Y > 0 then
+                    return btn
+                end
             end
         end
     end
@@ -554,11 +571,10 @@ task.spawn(function()
                 local btn = GetMarineButton()
                 
                 if btn then
-                    warn("[CatHUB] Team selection detected. Forcing Marines...")
+                    warn("[CatHUB] Team UI fully loaded. Forcing Marines...")
                     
                     local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
                     if remote then
-                        -- Pake SafeInvoke biar ga nge-freeze kalau server lag pas milih team
                         SafeInvoke(remote, "SetTeam", "Marines")
                     end
                     
