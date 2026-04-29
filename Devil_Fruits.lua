@@ -468,8 +468,10 @@ function _G.Cat.HopServer()
         
         isHopping = false
     end)
-end-- ==========================================
--- 6. HOP SERVER - SOVEREIGN V26 (VIM ORIGINAL + ANTI-CRASH FIX)
+end
+
+-- ==========================================
+-- 6. HOP SERVER - SOVEREIGN V26 (SUNG GAS / FAST VIM)
 -- ==========================================
 local isHopping = false
 
@@ -483,22 +485,24 @@ function _G.Cat.HopServer()
     end)
     
     task.spawn(function()
-        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine (Original VIM)...")
+        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine (Fast VIM)...")
         
         while Settings.AutoHop do 
-            -- [ANTI CRASH FIX] Ambil PlayerGui pakai FindFirstChild biar ga error pas lu mati/lag
             local pg = Me:FindFirstChild("PlayerGui")
             if not pg then task.wait(1) continue end
             
             local browser = pg:FindFirstChild("ServerBrowser", true)
+            local inset = GuiService:GetGuiInset().Y -- Fix presisi Y axis
             
+            -- Buka UI browser pakai klik kilat
             if not browser or not browser.Enabled then
                 local openBtn = pg:FindFirstChild("ServerBrowserButton", true)
                 if openBtn then
                     local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
-                    task.wait(0.1)
-                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
+                    local tx, ty = p.X + (s.X/2), p.Y + (s.Y/2) + inset
+                    
+                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
                 end
             end
 
@@ -507,11 +511,18 @@ function _G.Cat.HopServer()
 
             local listArea = browser:FindFirstChild("Inside", true)
             local count = 0
+            
             repeat
                 task.wait(0.5)
                 count = count + 1
                 listArea = browser:FindFirstChild("Inside", true)
             until (listArea and #listArea:GetChildren() > 5) or count > 20
+
+            if count > 20 then
+                browser.Enabled = false
+                task.wait(1)
+                continue 
+            end
 
             if listArea then
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
@@ -526,9 +537,10 @@ function _G.Cat.HopServer()
 
                 local buttons = {}
                 local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                
                 for _, v in pairs(listArea:GetDescendants()) do
                     if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
-                        if v.AbsolutePosition.Y > sPos.Y and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 30) then
+                        if v.AbsolutePosition.Y > sPos.Y + 10 and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 40) then
                             table.insert(buttons, v)
                         end
                     end
@@ -537,21 +549,22 @@ function _G.Cat.HopServer()
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end 
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
-                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
                     
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    local tx = bp.X + (bs.X/2)
+                    local ty = bp.Y + (bs.Y/2) + inset
                     
-                    task.wait(0.05) 
+                    -- SUNG GAS CLICK: Tanpa jeda nahan, eksekusi super kilat
+                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0) 
+                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0) 
                     
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                    warn("[CatHUB] Server Join clicked. Waiting for teleport...")
                     
-                    task.wait(0.1)
-                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-
-                    task.wait(0.5) 
+                    -- REM DARURAT: Langsung stop loop biar ga nyepam klik tombol lain
+                    break
                 end
+                
+                -- Kasih jeda buat game napas dan ngirim data teleport
+                task.wait(5)
             end
             task.wait(1)
         end
