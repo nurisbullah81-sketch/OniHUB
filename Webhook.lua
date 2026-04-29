@@ -3,23 +3,23 @@ local HttpService = game:GetService("HttpService")
 local Webhook = {}
 
 -- ==========================================
--- 1. DATABASE RARITY (BLOX FRUITS)
+-- 1. DATABASE RARITY (Hanya buat filter. Nama di Discord otomatis dari Game)
 -- ==========================================
+-- Kalau ada buah baru besok, lu cuma perlu nambahin disini.
+-- Kalau lu milih "All Fruits", daftar ini diabaikan (semua kekirim).
 Webhook.Rarities = {
-    Mythical = {"Kitsune", "Leopard", "T-Rex", "Dragon", "Venom", "Shadow", "Spirit", "Control", "Gravity", "Paw", "Dough", "Mama"},
-    Legendary = {"Quake", "Buddha", "Rumble", "Phoenix", "String", "Dark", "Ice", "Light", "Magma", "Flame", "Sand", "Rubber"}
+    Mythical = {"Kitsune", "Leopard", "T-Rex", "Dragon", "Venom", "Shadow", "Spirit", "Control", "Gravity", "Dough"},
+    Legendary = {"Quake", "Buddha", "Rumble", "Phoenix", "String", "Dark", "Ice", "Light", "Magma", "Flame"}
 }
 
 -- ==========================================
--- 2. DATABASE THUMBNAIL (FOTO BUAH)
+-- 2. DATABASE THUMBNAIL (Opsional)
 -- ==========================================
--- Ganti URL ini dengan link gambar buah yang lu mau. 
--- Cara dapetin: Klik kanan gambar buah di Wiki Blox Fruits -> Copy Image Address (harus ujungnya .png/.webp)
+-- Masukin link gambar kalau mau keren. Kalau ga ada, otomatis pakai gambar Default.
 Webhook.Thumbnails = {
-    ["Kitsune"] = "https://static.wikia.nocookie.net/roblox-blox-piece/images/5/5a/KitsuneFruit.png", -- CONTOH
-    ["Leopard"] = "https://static.wikia.nocookie.net/roblox-blox-piece/images/5/5a/LeopardFruit.png", -- CONTOH
-    -- Tambahin sisanya sesuai wiki...
-    ["Default"] = "https://static.wikia.nocookie.net/roblox/images/5/5a/DevilFruitIcon.png" -- Fallback kalau buah ga ada di database
+    -- ["Venom"] = "LINK GAMBAR VENOM SINI",
+    -- ["Dragon"] = "LINK GAMBAR DRAGON SINI",
+    ["Default"] = "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Question_mark_%28black%29.svg/800px-Question_mark_%28black%29.svg.png"
 }
 
 -- ==========================================
@@ -37,7 +37,7 @@ local function GetRarity(fruitName)
 end
 
 -- ==========================================
--- 4. FUNGSI KIRIM WEBHOOK (EMBED PREMIUM)
+-- 4. FUNGSI KIRIM WEBHOOK
 -- ==========================================
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     if not webhookURL or webhookURL == "" then return end
@@ -55,7 +55,7 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     
     if not shouldSend then return end
     
-    -- Cari gambar buah
+    -- Cari gambar buah, kalau ga ada pakai default
     local thumbURL = Webhook.Thumbnails["Default"]
     for key, url in pairs(Webhook.Thumbnails) do
         if string.find(string.lower(fruitName), string.lower(key)) then
@@ -64,32 +64,39 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
         end
     end
     
-    -- Warna embed berdasarkan rarity
-    local embedColor = 16777215 -- Putih (Common)
+    -- Warna embed
+    local embedColor = 16777215 -- Putih
     if fruitRarity == "Legendary" then embedColor = 16753920 -- Oranye
-    elseif fruitRarity == "Mythical" then embedColor = 16711935 -- Magenta/Pink
+    elseif fruitRarity == "Mythical" then embedColor = 16711935 -- Pink
     end
     
+    -- Format Nama Buah Otomatis dari Game (Bukan dari tabel lagi)
     local data = HttpService:JSONEncode({
         embeds = {{
             title = "🚨 " .. fruitRarity .. " Fruit Detected! 🚨",
-            description = "**Fruit:** " .. fruitName .. "\n**JobID:** `" .. jobId .. "`\n\nUse this JobID to teleport to the server!",
+            description = "**Fruit:** " .. fruitName .. "\n**JobID:** `" .. jobId .. "`\n\nUse this JobID to teleport!",
             color = embedColor,
-            thumbnail = {
-                url = thumbURL
-            },
-            footer = {
-                text = "CatHUB Premium Scanner"
-            }
+            thumbnail = { url = thumbURL },
+            footer = { text = "CatHUB Premium Scanner" }
         }}
     })
     
-    pcall(function()
-        HttpService:PostAsync(webhookURL, data)
-    end)
+    pcall(function() HttpService:PostAsync(webhookURL, data) end)
 end
 
--- Daftarin ke Global biar Devil_Fruits bisa akses
-_G.Cat.Webhook = Webhook
+-- Fungsi Test Webhook
+function Webhook:Test(webhookURL)
+    if not webhookURL or webhookURL == "" then return false end
+    local data = HttpService:JSONEncode({
+        embeds = {{
+            title = "✅ Webhook Test Successful!",
+            description = "CatHUB is connected to this channel.",
+            color = 32768 -- Hijau
+        }}
+    })
+    local ok, err = pcall(function() HttpService:PostAsync(webhookURL, data) end)
+    return ok
+end
 
+_G.Cat.Webhook = Webhook
 return Webhook
