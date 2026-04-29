@@ -286,13 +286,8 @@ _G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycl
 _G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
 _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
--- DEVIL FRUITS TAB
-CreateSection(DevilFruitsTab, "DEVIL FRUITS")
-CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", false, function(state) _G.Cat.Settings.FruitESP = state end)
-CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", false, function(state) _G.Cat.Settings.TweenFruit = state end)
-CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", false, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
-CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", false, function(state) _G.Cat.Settings.AutoHop = state end)
-
--- MISC TAB
-CreateSection(MiscTab, "MISCELLANEOUS")
-CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", true, function(state) _G.Cat.Settings.AntiAFK = state end)
+CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
+CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
+CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
+CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
+CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
