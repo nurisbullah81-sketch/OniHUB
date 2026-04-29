@@ -418,7 +418,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. HOP SERVER - SOVEREIGN V26 (TOGGLE FIX)
+-- 6. HOP SERVER - SOVEREIGN V26 (MEMORY CLICK / NO VIM)
 -- ==========================================
 local isHopping = false
 
@@ -432,22 +432,27 @@ function _G.Cat.HopServer()
     end)
     
     task.spawn(function()
-        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine...")
+        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine (Memory Click)...")
         
         while Settings.AutoHop do 
-            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            local pg = Me:FindFirstChild("PlayerGui")
+            if not pg then task.wait(1) continue end
+
+            local browser = pg:FindFirstChild("ServerBrowser", true)
             
+            -- 1. BUKA SERVER BROWSER DARI MEMORI (Bukan pakai VIM)
             if not browser or not browser.Enabled then
-                local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
+                local openBtn = pg:FindFirstChild("ServerBrowserButton", true)
                 if openBtn then
-                    local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
-                    task.wait(0.1)
-                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
+                    pcall(function() openBtn.MouseButton1Click:Fire() end)
+                    pcall(function() openBtn.Activated:Fire() end)
+                    if getconnections then
+                        for _, conn in pairs(getconnections(openBtn.MouseButton1Click)) do pcall(function() conn.Function() end) end
+                    end
                 end
             end
 
-            browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            browser = pg:FindFirstChild("ServerBrowser", true)
             if not browser then task.wait(1) continue end
 
             local listArea = browser:FindFirstChild("Inside", true)
@@ -462,6 +467,7 @@ function _G.Cat.HopServer()
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                 local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
                 
+                -- Acak posisi scroll biar dapet server random
                 if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                     dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
                     task.wait(1) 
@@ -471,6 +477,8 @@ function _G.Cat.HopServer()
 
                 local buttons = {}
                 local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                
+                -- Kumpulin semua tombol "Join" yang lagi kelihatan di layar (dalam batas scroll)
                 for _, v in pairs(listArea:GetDescendants()) do
                     if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
                         if v.AbsolutePosition.Y > sPos.Y and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 30) then
@@ -479,30 +487,33 @@ function _G.Cat.HopServer()
                     end
                 end
 
+                -- 2. EKSEKUSI JOIN DARI MEMORI (Tanpa VIM, ga bakal nabrak UI CatHUB lu)
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end 
-                    local bp, bs = target.AbsolutePosition, target.AbsoluteSize
-                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
                     
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    warn("[CatHUB] Menembak tombol Join via Internal Trigger...")
+                    pcall(function() target.MouseButton1Click:Fire() end)
+                    pcall(function() target.Activated:Fire() end)
                     
-                    task.wait(0.05) 
+                    -- Failsafe buat eksekutor level atas
+                    if getconnections then
+                        for _, conn in pairs(getconnections(target.MouseButton1Click)) do 
+                            pcall(function() conn.Function() end) 
+                        end
+                    end
                     
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                    
-                    task.wait(0.1)
-                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-
-                    task.wait(0.5) 
+                    task.wait(1.5) -- Kasih jeda napas pas loading pindah server
                 end
             end
             task.wait(1)
         end
         
-        local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-        if browser then browser.Enabled = false end
+        -- Kalau AutoHop dimatiin di tengah jalan, bersih-bersih
+        local pg = Me:FindFirstChild("PlayerGui")
+        if pg then
+            local browser = pg:FindFirstChild("ServerBrowser", true)
+            if browser then browser.Enabled = false end
+        end
         isHopping = false
     end)
 end
