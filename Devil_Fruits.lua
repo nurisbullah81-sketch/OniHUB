@@ -478,41 +478,57 @@ function _G.Cat.GetFruitsList()
     return names
 end
 
--- ==========================================
--- 6. AUTO SELECT TEAM (MARINES) - SMART SYNC
--- ==========================================
+-- [[ MODUL 6: GOD-TIER AUTO TEAM (MARINES) ]] --
+-- Language: English
+
+local function GetMarineButton()
+    -- Cari folder ChooseTeam di mana pun dia sembunyi di PlayerGui
+    for _, v in pairs(Me.PlayerGui:GetDescendants()) do
+        if v.Name == "ChooseTeam" and v.Visible then
+            -- Cari kontainer Marines
+            local marineContainer = v:FindFirstChild("Marines", true)
+            if marineContainer then
+                -- Cari tombol aslinya di dalem kontainer itu
+                return marineContainer:FindFirstChildWhichIsA("TextButton", true)
+            end
+        end
+    end
+    return nil
+end
+
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            local chooseTeam = Me.PlayerGui:FindFirstChild("Main") and Me.PlayerGui.Main:FindFirstChild("ChooseTeam")
-            
-            -- HANYA eksekusi JIKA layar "PICK A SIDE" benar-benar terlihat di layar
-            if chooseTeam and chooseTeam.Visible then
-                warn("[CatHUB] Team screen detected! Waiting for game to stabilize...")
+            -- Syarat: Jalankan hanya jika lu belum punya tim
+            if Me.Team == nil then
+                local btn = GetMarineButton()
                 
-                -- JEDA PINTAR: Biarkan loading data game selesai (Ga bakal instan nyangkut lagi)
-                task.wait(3) 
-                
-                if chooseTeam.Visible then
-                    warn("[CatHUB] Forcing Marines team API...")
+                if btn then
+                    warn("[CatHUB] Team selection detected. Forcing Marines...")
                     
-                    -- Spam API perlahan sampai server mengiyakan
-                    repeat
-                        task.wait(0.5)
-                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-                    until Me.Team and Me.Team.Name == "Marines"
+                    -- 1. Tembak API Server (Pasti Masuk Marines)
+                    local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+                    remote:InvokeServer("SetTeam", "Marines")
                     
-                    if Me.Team and Me.Team.Name == "Marines" then
-                        warn("[CatHUB] Successfully joined Marines! Cleaning up UI...")
-                        chooseTeam.Visible = false
+                    task.wait(0.5)
+                    
+                    -- 2. Trigger Fungsi Internal (Biar Layar Ilang Secara Natural)
+                    -- Ini bypass buat executor yang ga support getconnections
+                    pcall(function() btn.MouseButton1Click:Fire() end)
+                    pcall(function() btn.Activated:Fire() end)
+                    
+                    -- 3. Failsafe: Kalau masih bandel layarnya nyangkut
+                    task.wait(1)
+                    if Me.Team ~= nil then
+                        local chooseTeamUI = btn:FindFirstAncestor("ChooseTeam")
+                        if chooseTeamUI then chooseTeamUI.Visible = false end
                         
+                        -- Perbaiki Kamera
                         local cam = workspace.CurrentCamera
                         cam.CameraType = Enum.CameraType.Custom
                         if Me.Character and Me.Character:FindFirstChild("Humanoid") then
                             cam.CameraSubject = Me.Character.Humanoid
                         end
-                        
-                        task.wait(2)
                     end
                 end
             end
