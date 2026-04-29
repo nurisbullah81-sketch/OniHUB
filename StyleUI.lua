@@ -249,7 +249,11 @@ local function CreateTab(name, isFirst)
     Page.Size = UDim2.new(1, -16, 1, -16); Page.Position = UDim2.new(0, 8, 0, 8); Page.BackgroundColor3 = Theme.PageBG; Page.BackgroundTransparency = 0; Page.ScrollBarThickness = 2; Page.ScrollBarImageColor3 = Theme.TextDim; Page.Visible = isFirst; Page.BorderSizePixel = 0
     Instance.new("UICorner", Page).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", Page).Color = Theme.Line
-    local List = Instance.new("UIListLayout", Page); List.Padding = UDim.new(0, 6)
+    
+    local List = Instance.new("UIListLayout", Page); 
+    List.Padding = UDim.new(0, 6)
+    List.SortOrder = Enum.SortOrder.LayoutOrder -- [OBAT ANTI NUMPUK 1]
+    
     local Pad = Instance.new("UIPadding", Page); Pad.PaddingTop = UDim.new(0, 10); Pad.PaddingLeft = UDim.new(0, 10); Pad.PaddingRight = UDim.new(0, 14); Pad.PaddingBottom = UDim.new(0, 10)
     
     Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator, Stroke = BtnStroke}
@@ -263,13 +267,17 @@ local function CreateTab(name, isFirst)
 end
 
 local function CreateSection(parent, text)
-    local F = Instance.new("Frame", parent); F.Size = UDim2.new(1, 0, 0, 24); F.BackgroundTransparency = 1
+    local F = Instance.new("Frame", parent); 
+    F.LayoutOrder = #parent:GetChildren() -- [OBAT ANTI NUMPUK 2]
+    F.Size = UDim2.new(1, 0, 0, 24); F.BackgroundTransparency = 1
     local L = Instance.new("TextLabel", F); L.Size = UDim2.new(1, 0, 1, 0); L.Position = UDim2.new(0, 4, 0, 0); L.Text = text; L.TextColor3 = Theme.TextDim; L.Font = Enum.Font.GothamBold; L.TextSize = 11; L.TextXAlignment = Enum.TextXAlignment.Left; L.BackgroundTransparency = 1
 end
 
 local function CreateToggle(parent, text, description, stateRef, callback)
     local frameHeight = description and 52 or 36
-    local F = Instance.new("TextButton", parent); F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0; F.Text = ""; F.AutoButtonColor = false
+    local F = Instance.new("TextButton", parent); 
+    F.LayoutOrder = #parent:GetChildren() -- [OBAT ANTI NUMPUK 3]
+    F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0; F.Text = ""; F.AutoButtonColor = false
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", F).Color = Theme.Line
     local L = Instance.new("TextLabel", F); L.Size = UDim2.new(1, -60, 0, 20); L.Position = UDim2.new(0, 12, 0, description and 6 or 8); L.Text = text; L.TextColor3 = Theme.Text; L.Font = Enum.Font.GothamMedium; L.TextSize = 12; L.TextXAlignment = Enum.TextXAlignment.Left; L.BackgroundTransparency = 1
@@ -286,8 +294,6 @@ local function CreateToggle(parent, text, description, stateRef, callback)
         TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play()
         TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
         if callback then callback(stateRef) end
-        
-        -- [AUTO-SYNC] Langsung simpan ke JSON tiap lu pencet toggle!
         SaveSettings() 
     end)
     table.insert(AllToggles, {Btn = F, Label = L})
@@ -295,7 +301,9 @@ end
 
 local function CreateLabel(parent, text, description)
     local frameHeight = description and 45 or 30
-    local F = Instance.new("Frame", parent); F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0
+    local F = Instance.new("Frame", parent); 
+    F.LayoutOrder = #parent:GetChildren() -- [OBAT ANTI NUMPUK 4]
+    F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", F).Color = Theme.Line
     local L = Instance.new("TextLabel", F); L.Size = UDim2.new(1, -20, 0, 20); L.Position = UDim2.new(0, 12, 0, description and 4 or 5); L.Text = text; L.TextColor3 = Theme.Text; L.Font = Enum.Font.GothamMedium; L.TextSize = 12; L.TextXAlignment = Enum.TextXAlignment.Left; L.BackgroundTransparency = 1
@@ -310,31 +318,6 @@ end)
 
 -- ==========================================
 -- BUILD TABS & ISI KONTEN
--- ==========================================
-local StatusTab = CreateTab("Status", true) 
-local AutoFarmTab = CreateTab("Auto Farm", false) 
-local DevilFruitsTab = CreateTab("Devil Fruits", false) 
-local MiscTab = CreateTab("Misc", false) 
-
--- STATUS TAB
-CreateSection(StatusTab, "PLAYER STATUS")
-_G.Cat.Labels.Level = CreateLabel(StatusTab, "Level: ...", "Current level progress")
-_G.Cat.Labels.Money = CreateLabel(StatusTab, "Money: ...", "In-game currency balance")
-_G.Cat.Labels.Fragments = CreateLabel(StatusTab, "Fragments: ...", "Used for awakening")
-_G.Cat.Labels.Bounty = CreateLabel(StatusTab, "Bounty/Honor: ...", "PvP score tracking")
-
-CreateSection(StatusTab, "SERVER STATUS")
-_G.Cat.Labels.Players = CreateLabel(StatusTab, "Players: ...", "Currently in this server")
-_G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycle")
-_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
-_G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
-
--- AUTO FARM TAB
-CreateSection(AutoFarmTab, "COMBAT SYSTEM")
-CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
-
--- ==========================================
--- BUILD TABS & ISI KONTEN (UI LAYOUT FIXED)
 -- ==========================================
 local StatusTab = CreateTab("Status", true) 
 local AutoFarmTab = CreateTab("Auto Farm", false) 
@@ -374,48 +357,32 @@ CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory f
 CreateSection(DevilFruitsTab, "DISCORD WEBHOOK")
 CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alerts to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
 
--- Container khusus biar kotak URL, Rarity, dan Test ga berantakan
+-- Webhook Container Frame (Biar sejajar dan ga berantakan)
 local WHConfig = Instance.new("Frame", DevilFruitsTab)
+WHConfig.LayoutOrder = #DevilFruitsTab:GetChildren() -- [OBAT ANTI NUMPUK 5]
 WHConfig.Size = UDim2.new(1, 0, 0, 106)
 WHConfig.BackgroundTransparency = 1
 local WHConfigLayout = Instance.new("UIListLayout", WHConfig)
 WHConfigLayout.Padding = UDim.new(0, 6)
+WHConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder -- [OBAT ANTI NUMPUK 6]
 
 -- 1. URL Box
 local WHURLFrame = Instance.new("Frame", WHConfig)
-WHURLFrame.Size = UDim2.new(1, 0, 0, 32)
-WHURLFrame.BackgroundColor3 = Theme.CardBG
-WHURLFrame.BorderSizePixel = 0
+WHURLFrame.LayoutOrder = 1
+WHURLFrame.Size = UDim2.new(1, 0, 0, 32); WHURLFrame.BackgroundColor3 = Theme.CardBG; WHURLFrame.BorderSizePixel = 0
 Instance.new("UICorner", WHURLFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHURLFrame).Color = Theme.Line
-
 local WHURLBox = Instance.new("TextBox", WHURLFrame)
-WHURLBox.Size = UDim2.new(1, -16, 1, 0)
-WHURLBox.Position = UDim2.new(0, 8, 0, 0)
-WHURLBox.BackgroundTransparency = 1
+WHURLBox.Size = UDim2.new(1, -16, 1, 0); WHURLBox.Position = UDim2.new(0, 8, 0, 0); WHURLBox.BackgroundTransparency = 1
 WHURLBox.Text = _G.Cat.Settings.FruitWebhookURL ~= "" and _G.Cat.Settings.FruitWebhookURL or ""
-WHURLBox.TextColor3 = Theme.Text
-WHURLBox.PlaceholderText = "Paste Discord Webhook URL here..."
-WHURLBox.PlaceholderColor3 = Theme.TextDim
-WHURLBox.Font = Enum.Font.GothamMedium
-WHURLBox.TextSize = 11
-WHURLBox.TextXAlignment = Enum.TextXAlignment.Left
-WHURLBox.ClearTextOnFocus = false
-WHURLBox.FocusLost:Connect(function() 
-    _G.Cat.Settings.FruitWebhookURL = WHURLBox.Text 
-    SaveSettings() 
-end)
+WHURLBox.TextColor3 = Theme.Text; WHURLBox.PlaceholderText = "Paste Discord Webhook URL here..."; WHURLBox.PlaceholderColor3 = Theme.TextDim
+WHURLBox.Font = Enum.Font.GothamMedium; WHURLBox.TextSize = 11; WHURLBox.TextXAlignment = Enum.TextXAlignment.Left; WHURLBox.ClearTextOnFocus = false
+WHURLBox.FocusLost:Connect(function() _G.Cat.Settings.FruitWebhookURL = WHURLBox.Text SaveSettings() end)
 
 -- 2. Rarity Cycle Button
 local WHRarityBtn = Instance.new("TextButton", WHConfig)
-WHRarityBtn.Size = UDim2.new(1, 0, 0, 28)
-WHRarityBtn.BackgroundColor3 = Theme.SideBG
-WHRarityBtn.BorderSizePixel = 0
-WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity
-WHRarityBtn.TextColor3 = Theme.Text
-WHRarityBtn.Font = Enum.Font.GothamMedium
-WHRarityBtn.TextSize = 11
-WHRarityBtn.AutoButtonColor = false
+WHRarityBtn.LayoutOrder = 2
+WHRarityBtn.Size = UDim2.new(1, 0, 0, 28); WHRarityBtn.BackgroundColor3 = Theme.SideBG; WHRarityBtn.BorderSizePixel = 0; WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHRarityBtn.TextColor3 = Theme.Text; WHRarityBtn.Font = Enum.Font.GothamMedium; WHRarityBtn.TextSize = 11; WHRarityBtn.AutoButtonColor = false
 Instance.new("UICorner", WHRarityBtn).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHRarityBtn).Color = Theme.Line
 
@@ -424,10 +391,7 @@ WHRarityBtn.MouseButton1Click:Connect(function()
     local current = _G.Cat.Settings.FruitWebhookRarity
     local nextIndex = 1
     for i, v in ipairs(rarityOptions) do
-        if v == current then 
-            nextIndex = (i % #rarityOptions) + 1 
-            break 
-        end
+        if v == current then nextIndex = (i % #rarityOptions) + 1 break end
     end
     _G.Cat.Settings.FruitWebhookRarity = rarityOptions[nextIndex]
     WHRarityBtn.Text = "Rarity: " .. rarityOptions[nextIndex]
@@ -436,17 +400,10 @@ end)
 
 -- 3. Test Webhook Button
 local WHTestBtn = Instance.new("TextButton", WHConfig)
-WHTestBtn.Size = UDim2.new(1, 0, 0, 28)
-WHTestBtn.BackgroundColor3 = Theme.SideBG
-WHTestBtn.BorderSizePixel = 0
-WHTestBtn.Text = "Test Webhook"
-WHTestBtn.TextColor3 = Theme.CatPurple
-WHTestBtn.Font = Enum.Font.GothamBold
-WHTestBtn.TextSize = 11
-WHTestBtn.AutoButtonColor = false
+WHTestBtn.LayoutOrder = 3
+WHTestBtn.Size = UDim2.new(1, 0, 0, 28); WHTestBtn.BackgroundColor3 = Theme.SideBG; WHTestBtn.BorderSizePixel = 0; WHTestBtn.Text = "Test Webhook"; WHTestBtn.TextColor3 = Theme.CatPurple; WHTestBtn.Font = Enum.Font.GothamBold; WHTestBtn.TextSize = 11; WHTestBtn.AutoButtonColor = false
 Instance.new("UICorner", WHTestBtn).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHTestBtn).Color = Theme.Line
-
 WHTestBtn.MouseButton1Click:Connect(function()
     WHTestBtn.Text = "Sending..."
     if _G.Cat.Webhook then
