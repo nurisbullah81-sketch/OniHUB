@@ -252,7 +252,7 @@ local function CreateTab(name, isFirst)
     
     local List = Instance.new("UIListLayout", Page); 
     List.Padding = UDim.new(0, 6)
-    List.SortOrder = Enum.SortOrder.LayoutOrder -- [OBAT ANTI NUMPUK 1]
+    List.SortOrder = Enum.SortOrder.LayoutOrder -- [OBAT 1: Biar ga diurutin pake abjad lagi]
     
     local Pad = Instance.new("UIPadding", Page); Pad.PaddingTop = UDim.new(0, 10); Pad.PaddingLeft = UDim.new(0, 10); Pad.PaddingRight = UDim.new(0, 14); Pad.PaddingBottom = UDim.new(0, 10)
     
@@ -267,16 +267,26 @@ local function CreateTab(name, isFirst)
 end
 
 local function CreateSection(parent, text)
-    local F = Instance.new("Frame", parent); 
-    F.LayoutOrder = #parent:GetChildren() -- [OBAT ANTI NUMPUK 2]
-    F.Size = UDim2.new(1, 0, 0, 24); F.BackgroundTransparency = 1
-    local L = Instance.new("TextLabel", F); L.Size = UDim2.new(1, 0, 1, 0); L.Position = UDim2.new(0, 4, 0, 0); L.Text = text; L.TextColor3 = Theme.TextDim; L.Font = Enum.Font.GothamBold; L.TextSize = 11; L.TextXAlignment = Enum.TextXAlignment.Left; L.BackgroundTransparency = 1
+    local F = Instance.new("Frame", parent)
+    F.LayoutOrder = #parent:GetChildren() 
+    F.Size = UDim2.new(1, 0, 0, 36) -- [REGANGAN: Tinggi frame ditambahin biar ada jarak]
+    F.BackgroundTransparency = 1
+    
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, 0, 0, 14) 
+    L.Position = UDim2.new(0, 4, 0, 16) -- [REGANGAN: Teks diturunin ke bawah biar atasnya kosong]
+    L.Text = text
+    L.TextColor3 = Theme.TextDim
+    L.Font = Enum.Font.GothamBold
+    L.TextSize = 11
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
 end
 
 local function CreateToggle(parent, text, description, stateRef, callback)
     local frameHeight = description and 52 or 36
     local F = Instance.new("TextButton", parent); 
-    F.LayoutOrder = #parent:GetChildren() -- [OBAT ANTI NUMPUK 3]
+    F.LayoutOrder = #parent:GetChildren() -- [OBAT 2: Kasih nomor antrean]
     F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0; F.Text = ""; F.AutoButtonColor = false
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", F).Color = Theme.Line
@@ -302,7 +312,7 @@ end
 local function CreateLabel(parent, text, description)
     local frameHeight = description and 45 or 30
     local F = Instance.new("Frame", parent); 
-    F.LayoutOrder = #parent:GetChildren() -- [OBAT ANTI NUMPUK 4]
+    F.LayoutOrder = #parent:GetChildren() 
     F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0
     Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
     Instance.new("UIStroke", F).Color = Theme.Line
@@ -317,7 +327,7 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- ==========================================
--- BUILD TABS & ISI KONTEN
+-- BUILD TABS & ISI KONTEN (MURNI 1 KALI RENDER)
 -- ==========================================
 local StatusTab = CreateTab("Status", true) 
 local AutoFarmTab = CreateTab("Auto Farm", false) 
@@ -341,9 +351,7 @@ _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits
 CreateSection(AutoFarmTab, "COMBAT SYSTEM")
 CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
 
--- ==========================================
--- DEVIL FRUITS TAB (KATEGORI 1: FRUIT FINDER)
--- ==========================================
+-- DEVIL FRUITS TAB (KATEGORI 1)
 CreateSection(DevilFruitsTab, "FRUIT FINDER")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
 CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
@@ -351,20 +359,17 @@ CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", 
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- ==========================================
--- DEVIL FRUITS TAB (KATEGORI 2: DISCORD WEBHOOK)
--- ==========================================
+-- DEVIL FRUITS TAB (KATEGORI 2)
 CreateSection(DevilFruitsTab, "DISCORD WEBHOOK")
 CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alerts to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
 
--- Webhook Container Frame (Biar sejajar dan ga berantakan)
 local WHConfig = Instance.new("Frame", DevilFruitsTab)
-WHConfig.LayoutOrder = #DevilFruitsTab:GetChildren() -- [OBAT ANTI NUMPUK 5]
+WHConfig.LayoutOrder = #DevilFruitsTab:GetChildren()
 WHConfig.Size = UDim2.new(1, 0, 0, 106)
 WHConfig.BackgroundTransparency = 1
 local WHConfigLayout = Instance.new("UIListLayout", WHConfig)
 WHConfigLayout.Padding = UDim.new(0, 6)
-WHConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder -- [OBAT ANTI NUMPUK 6]
+WHConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 -- 1. URL Box
 local WHURLFrame = Instance.new("Frame", WHConfig)
@@ -420,7 +425,5 @@ WHTestBtn.MouseButton1Click:Connect(function()
     WHTestBtn.Text = "Test Webhook"
 end)
 
--- ==========================================
 -- MISC TAB
--- ==========================================
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
