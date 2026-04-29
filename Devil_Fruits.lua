@@ -458,36 +458,41 @@ function _G.Cat.GetFruitsList()
 end
 
 -- ==========================================
--- 6. AUTO SELECT TEAM (MARINES) - CAMERA BYPASS
+-- 6. AUTO SELECT TEAM (MARINES) - PURE API SPAM
 -- ==========================================
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.5) do
         pcall(function()
-            local Player = game:GetService("Players").LocalPlayer
-            local mainGui = Player.PlayerGui:FindFirstChild("Main")
+            local mainGui = Me.PlayerGui:FindFirstChild("Main")
             if not mainGui then return end
             
             local chooseTeam = mainGui:FindFirstChild("ChooseTeam")
             if chooseTeam and chooseTeam.Visible then
-                warn("[CatHUB] Mengeksekusi Auto-Team Marines (Camera Bypass)...")
+                warn("[CatHUB] Menunggu server siap dan memaksa masuk tim Marines...")
                 
-                -- 1. Tembak API ke Server (Pilih Marines)
-                game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+                -- SPAM API SAMPAI SERVER MENYERAH
+                local maxTries = 20
+                local tries = 0
+                repeat
+                    task.wait(0.5)
+                    tries = tries + 1
+                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+                until (Me.Team and Me.Team.Name == "Marines") or not chooseTeam.Visible or tries > maxTries
                 
-                -- 2. Paksa tutup UI
-                chooseTeam.Visible = false
-                
-                -- 3. THE REAL FIX: Kembalikan kamera dari awang-awang ke karakter lu!
-                local cam = workspace.CurrentCamera
-                cam.CameraType = Enum.CameraType.Custom
-                
-                -- Pastikan karakter udah dirender server lalu arahkan kamera ke kepalanya
-                task.wait(0.5)
-                if Player.Character and Player.Character:FindFirstChild("Humanoid") then
-                    cam.CameraSubject = Player.Character.Humanoid
+                -- JIKA SERVER SUDAH RESMI MEMASUKKAN KITA KE MARINES
+                if Me.Team and Me.Team.Name == "Marines" then
+                    warn("[CatHUB] Sukses masuk Marines! Membersihkan layar...")
+                    
+                    -- 1. Hilangkan UI
+                    chooseTeam.Visible = false
+                    
+                    -- 2. Kembalikan kamera dari mode nonton (awang-awang) ke punggung karakter lu
+                    local cam = workspace.CurrentCamera
+                    cam.CameraType = Enum.CameraType.Custom
+                    if Me.Character and Me.Character:FindFirstChild("Humanoid") then
+                        cam.CameraSubject = Me.Character.Humanoid
+                    end
                 end
-                
-                task.wait(2)
             end
         end)
     end
