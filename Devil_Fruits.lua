@@ -320,7 +320,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 5. AUTO STORE (ANTI-FREEZE INVOKE)
+-- 5. AUTO STORE (STEALTH MODE - NO EQUIP)
 -- ==========================================
 local StoreBlacklist={}
 local isStoring = false
@@ -340,7 +340,6 @@ local function SafeInvoke(remote, ...)
         end
     end)
     
-    -- Timeout 3 detik, kalau server lag, PUTUS. Jangan nunggu sampe kiamat.
     task.delay(3, function()
         if not completed then
             completed = true
@@ -363,6 +362,8 @@ task.spawn(function()
                 if not character then isStoring = false return end 
                 
                 local fruitTool = nil
+                
+                -- 1. Cari buah di dalem tas (Backpack) dulu
                 if Me.Backpack then
                     for _, v in pairs(Me.Backpack:GetChildren()) do
                         if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
@@ -372,6 +373,7 @@ task.spawn(function()
                     end
                 end
                 
+                -- 2. Kalau ga ada di tas, cek di tangan (siapa tau lu lagi pegang manual)
                 if not fruitTool then
                     for _, v in pairs(character:GetChildren()) do
                         if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then
@@ -382,12 +384,8 @@ task.spawn(function()
                 end
 
                 if fruitTool then
-                    local hum = character:FindFirstChild("Humanoid")
-                    if hum and fruitTool.Parent ~= character then
-                        hum:EquipTool(fruitTool)
-                        task.wait(0.5)
-                    end
-                    
+                    -- RAHASIA THUNDERZ: KITA HAPUS KODE EQUIP TOOL DI SINI!
+                    -- Langsung baca nama buahnya aja.
                     local fruitName = fruitTool.Name
                     local fruitVal = fruitTool:FindFirstChild("Fruit")
                     if fruitVal and fruitVal:IsA("StringValue") and fruitVal.Value ~= "" then
@@ -402,6 +400,7 @@ task.spawn(function()
                         if storeSuccess then break end
                         local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
                         if remote then
+                            -- Langsung tembak API pakai Tool yang masih nyumput di tas lu!
                             local ok, result = SafeInvoke(remote, "StoreFruit", fruitName, fruitTool)
                             if ok and result == true then storeSuccess = true end
                         end
@@ -410,7 +409,6 @@ task.spawn(function()
                     
                     if not storeSuccess then
                         table.insert(StoreBlacklist, fruitTool.Name) 
-                        if hum then hum:EquipTool(nil) end
                     end
                 end
             end) 
