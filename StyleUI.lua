@@ -25,7 +25,6 @@ local DefaultSettings = {
     FruitWebhook = false,
     FruitWebhookURL = "",
     FruitWebhookRarity = "Mythical Only",
-    WebhookURL = ""
 }
 
 local function LoadSettings()
@@ -342,75 +341,63 @@ CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", 
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- WEBHOOK EXPANDABLE CARD
-local WHContainer = Instance.new("Frame", DevilFruitsTab)
-WHContainer.Size = UDim2.new(1, 0, 0, 36); WHContainer.BackgroundColor3 = Theme.CardBG; WHContainer.BorderSizePixel = 0; WHContainer.ClipsDescendants = true
-Instance.new("UICorner", WHContainer).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", WHContainer).Color = Theme.Line
+-- DEVIL FRUITS TAB (SIMPLE & BUG FREE)
+CreateSection(DevilFruitsTab, "FRUIT FINDER")
+CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
+CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
+CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", _G.Cat.Settings.InstantTPFruit, function(state) _G.Cat.Settings.InstantTPFruit = state end)
+CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
+CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
-local WHToggleFrame = Instance.new("Frame", WHContainer)
-WHToggleFrame.Size = UDim2.new(1, 0, 0, 36); WHToggleFrame.BackgroundTransparency = 1
-local WHL = Instance.new("TextLabel", WHToggleFrame); WHL.Size = UDim2.new(1, -60, 0, 20); WHL.Position = UDim2.new(0, 12, 0, 8); WHL.Text = "Fruit Webhook"; WHL.TextColor3 = Theme.Text; WHL.Font = Enum.Font.GothamMedium; WHL.TextSize = 12; WHL.TextXAlignment = Enum.TextXAlignment.Left; WHL.BackgroundTransparency = 1
-local WHSw = Instance.new("Frame", WHToggleFrame); WHSw.Size = UDim2.new(0, 36, 0, 18); WHSw.Position = UDim2.new(1, -48, 0.5, -9); WHSw.BackgroundColor3 = _G.Cat.Settings.FruitWebhook and Theme.Accent or Theme.ToggleOff; WHSw.BorderSizePixel = 0
-Instance.new("UICorner", WHSw).CornerRadius = UDim.new(1, 0)
-local WHDot = Instance.new("Frame", WHSw); WHDot.Size = UDim2.new(0, 14, 0, 14); WHDot.Position = _G.Cat.Settings.FruitWebhook and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7); WHDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255); WHDot.BorderSizePixel = 0
-Instance.new("UICorner", WHDot).CornerRadius = UDim.new(1, 0)
+-- WEBHOOK SYSTEM (SIMPLE & BULLETTPROOF)
+CreateSection(DevilFruitsTab, "DISCORD WEBHOOK")
 
-local WHDetails = Instance.new("Frame", WHContainer)
-WHDetails.Size = UDim2.new(1, -20, 0, 90); WHDetails.Position = UDim2.new(0, 10, 0, 40); WHDetails.BackgroundTransparency = 1; WHDetails.Visible = _G.Cat.Settings.FruitWebhook
-
--- Webhook URL Box
-local WHURLBox = Instance.new("TextBox", WHDetails)
-WHURLBox.Size = UDim2.new(1, 0, 0, 30); WHURLBox.BackgroundColor3 = Theme.SideBG; WHURLBox.BorderSizePixel = 0
-Instance.new("UICorner", WHURLBox).CornerRadius = UDim.new(0, 4)
-WHURLBox.Text = _G.Cat.Settings.FruitWebhookURL ~= "" and _G.Cat.Settings.FruitWebhookURL or "Paste Webhook URL..."
-WHURLBox.TextColor3 = Theme.Text; WHURLBox.PlaceholderText = "Paste Webhook URL..."; WHURLBox.PlaceholderColor3 = Theme.TextDim
+-- 1. URL Box
+local WHURLFrame = Instance.new("Frame", DevilFruitsTab)
+WHURLFrame.Size = UDim2.new(1, 0, 0, 36); WHURLFrame.BackgroundColor3 = Theme.CardBG; WHURLFrame.BorderSizePixel = 0
+Instance.new("UICorner", WHURLFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", WHURLFrame).Color = Theme.Line
+local WHURLBox = Instance.new("TextBox", WHURLFrame)
+WHURLBox.Size = UDim2.new(1, -16, 1, 0); WHURLBox.Position = UDim2.new(0, 8, 0, 0); WHURLBox.BackgroundTransparency = 1
+WHURLBox.Text = _G.Cat.Settings.FruitWebhookURL ~= "" and _G.Cat.Settings.FruitWebhookURL or "Paste Discord Webhook URL here..."
+WHURLBox.TextColor3 = Theme.Text; WHURLBox.PlaceholderText = "Paste Discord Webhook URL here..."; WHURLBox.PlaceholderColor3 = Theme.TextDim
 WHURLBox.Font = Enum.Font.GothamMedium; WHURLBox.TextSize = 11; WHURLBox.TextXAlignment = Enum.TextXAlignment.Left; WHURLBox.ClearTextOnFocus = false
-local WHURLPad = Instance.new("UIPadding", WHURLBox); WHURLPad.PaddingLeft = UDim.new(0, 8)
 WHURLBox.FocusLost:Connect(function() _G.Cat.Settings.FruitWebhookURL = WHURLBox.Text SaveSettings() end)
 
--- Rarity Dropdown
-local WHDropBtn = Instance.new("TextButton", WHDetails)
-WHDropBtn.Size = UDim2.new(1, 0, 0, 30); WHDropBtn.Position = UDim2.new(0, 0, 0, 38); WHDropBtn.BackgroundColor3 = Theme.SideBG; WHDropBtn.BorderSizePixel = 0; WHDropBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHDropBtn.TextColor3 = Theme.Text; WHDropBtn.Font = Enum.Font.GothamMedium; WHDropBtn.TextSize = 11; WHDropBtn.AutoButtonColor = false
-Instance.new("UICorner", WHDropBtn).CornerRadius = UDim.new(0, 4)
-local WHDropPad = Instance.new("UIPadding", WHDropBtn); WHDropPad.PaddingLeft = UDim.new(0, 8)
-
-local WHDropList = Instance.new("Frame", WHDetails)
-WHDropList.Size = UDim2.new(1, 0, 0, 70); WHDropList.Position = UDim2.new(0, 0, 0, 70); WHDropList.BackgroundColor3 = Theme.SideBG; WHDropList.BorderSizePixel = 0; WHDropList.Visible = false; WHDropList.ZIndex = 10
-Instance.new("UICorner", WHDropList).CornerRadius = UDim.new(0, 4)
-local WHDropLayout = Instance.new("UIListLayout", WHDropList)
-
-local rarityOptions = {"All Fruits", "Legendary & Mythical", "Mythical Only"}
-for _, opt in ipairs(rarityOptions) do
-    local optBtn = Instance.new("TextButton", WHDropList)
-    optBtn.Size = UDim2.new(1, 0, 0, 22); optBtn.BackgroundColor3 = Theme.SideBG; optBtn.BorderSizePixel = 0; optBtn.Text = opt; optBtn.TextColor3 = Theme.Text; optBtn.Font = Enum.Font.Gotham; optBtn.TextSize = 11; optBtn.AutoButtonColor = false; optBtn.ZIndex = 10
-    local optPad = Instance.new("UIPadding", optBtn); optPad.PaddingLeft = UDim.new(0, 8)
-    optBtn.MouseButton1Click:Connect(function()
-        _G.Cat.Settings.FruitWebhookRarity = opt
-        WHDropBtn.Text = "Rarity: " .. opt
-        WHDropList.Visible = false
-        SaveSettings()
-    end)
-end
-
-WHDropBtn.MouseButton1Click:Connect(function() WHDropList.Visible = not WHDropList.Visible end)
-
--- Webhook Toggle Logic
-WHToggleFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        _G.Cat.Settings.FruitWebhook = not _G.Cat.Settings.FruitWebhook
-        local stateRef = _G.Cat.Settings.FruitWebhook
-        TweenService:Create(WHSw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play()
-        TweenService:Create(WHDot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
-        
-        -- Expand / Collapse Animation
-        WHDetails.Visible = true
-        TweenService:Create(WHContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, stateRef and 135 or 36)}):Play()
-        if not stateRef then task.delay(0.3, function() if not _G.Cat.Settings.FruitWebhook then WHDetails.Visible = false end end) end
-        
-        SaveSettings()
+-- 2. Test Webhook Button
+local WHTestBtn = Instance.new("TextButton", DevilFruitsTab)
+WHTestBtn.Size = UDim2.new(1, 0, 0, 30); WHTestBtn.BackgroundColor3 = Theme.SideBG; WHTestBtn.BorderSizePixel = 0; WHTestBtn.Text = "Test Webhook"; WHTestBtn.TextColor3 = Theme.CatPurple; WHTestBtn.Font = Enum.Font.GothamBold; WHTestBtn.TextSize = 11; WHTestBtn.AutoButtonColor = false
+Instance.new("UICorner", WHTestBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", WHTestBtn).Color = Theme.Line
+WHTestBtn.MouseButton1Click:Connect(function()
+    if _G.Cat.Webhook then
+        local ok = _G.Cat.Webhook:Test(_G.Cat.Settings.FruitWebhookURL)
+        WHTestBtn.Text = ok and "Test Sent!" or "Test Failed!"
+        task.wait(2)
+        WHTestBtn.Text = "Test Webhook"
     end
 end)
+
+-- 3. Rarity Cycle Button (Klik buat ganti, anti bug dropdown)
+local WHRarityBtn = Instance.new("TextButton", DevilFruitsTab)
+WHRarityBtn.Size = UDim2.new(1, 0, 0, 30); WHRarityBtn.BackgroundColor3 = Theme.SideBG; WHRarityBtn.BorderSizePixel = 0; WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHRarityBtn.TextColor3 = Theme.Text; WHRarityBtn.Font = Enum.Font.GothamMedium; WHRarityBtn.TextSize = 11; WHRarityBtn.AutoButtonColor = false
+Instance.new("UICorner", WHRarityBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", WHRarityBtn).Color = Theme.Line
+
+local rarityOptions = {"All Fruits", "Legendary & Mythical", "Mythical Only"}
+WHRarityBtn.MouseButton1Click:Connect(function()
+    local current = _G.Cat.Settings.FruitWebhookRarity
+    local nextIndex = 1
+    for i, v in ipairs(rarityOptions) do
+        if v == current then nextIndex = (i % #rarityOptions) + 1 break end
+    end
+    _G.Cat.Settings.FruitWebhookRarity = rarityOptions[nextIndex]
+    WHRarityBtn.Text = "Rarity: " .. rarityOptions[nextIndex]
+    SaveSettings()
+end)
+
+-- 4. Toggle Webhook
+CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alert to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
 
 -- MISC TAB (BERSIH)
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
