@@ -1,7 +1,6 @@
 local HttpService = game:GetService("HttpService")
 local RS = game:GetService("ReplicatedStorage")
 
--- [OBAT MODULE MISSING] Bikin _G.Cat kalau belum ada biar kaga error!
 if not _G.Cat then _G.Cat = {} end
 
 local Webhook = {}
@@ -46,11 +45,14 @@ local function GetDynamicRarity(rawFruitName)
 end
 
 -- ==========================================
--- CORE WEBHOOK SENDER (BYPASS DISCORD)
+-- CORE WEBHOOK SENDER (BYPASS DISCORD + PROXY)
 -- ==========================================
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     if not webhookURL or webhookURL == "" then return end
+    
+    -- [RAHASIA BYPASS]: Ubah discord.com jadi Proxy Hyra biar kaga diblokir
     webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") 
+    webhookURL = string.gsub(webhookURL, "discord.com", "hooks.hyra.io")
     
     local fruitRarity = GetDynamicRarity(fruitName)
     local shouldSend = false
@@ -96,7 +98,7 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
 end
 
 -- ==========================================
--- DEBUGGER & TESTER
+-- DEBUGGER & TESTER (DENGAN PROXY)
 -- ==========================================
 function Webhook:Test(webhookURL)
     if not webhookURL or webhookURL == "" then 
@@ -104,14 +106,17 @@ function Webhook:Test(webhookURL)
         return false, "No URL" 
     end
     
+    -- [RAHASIA BYPASS]: Pakai Proxy buat ngetes!
     webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
-    warn("[CatHUB] Mencoba kirim tes ke: " .. webhookURL)
+    webhookURL = string.gsub(webhookURL, "discord.com", "hooks.hyra.io")
+    
+    warn("[CatHUB] Mencoba kirim tes ke Proxy: " .. webhookURL)
 
     local payload = HttpService:JSONEncode({
         content = "✅ **CatHUB Webhook Aktif!**",
         embeds = {{
             title = "Koneksi Berhasil",
-            description = "Script lu udah terhubung dengan sempurna ke channel Discord ini bang.",
+            description = "Script lu udah terhubung lewat jalur Proxy ke channel Discord ini bang.",
             color = 32768,
             footer = { text = "CatHUB Diagnostic" }
         }}
@@ -134,21 +139,21 @@ function Webhook:Test(webhookURL)
     end)
     
     if not ok then
-        warn("[CatHUB] PCALL ERROR (Script gagal jalanin request): " .. tostring(res))
+        warn("[CatHUB] PCALL ERROR: " .. tostring(res))
         return false, "Pcall Error"
     end
     
     if res then
         if res.StatusCode == 200 or res.StatusCode == 204 then
-            warn("[CatHUB] SUKSES! Pesan harusnya udah nongol di Discord lu.")
+            warn("[CatHUB] SUKSES TEMBUS PROXY! Cek Discord lu bang.")
             return true, "Success"
         else
-            warn("[CatHUB] DISCORD NOLAK! Status Code: " .. tostring(res.StatusCode))
-            warn("[CatHUB] Alasan Discord Nolak: " .. tostring(res.Body))
+            warn("[CatHUB] PROXY/DISCORD NOLAK! Status Code: " .. tostring(res.StatusCode))
+            warn("[CatHUB] Alasan Nolak: " .. tostring(res.Body))
             return false, "HTTP " .. tostring(res.StatusCode)
         end
     else
-        warn("[CatHUB] ERROR: Tidak ada respon sama sekali dari executor.")
+        warn("[CatHUB] ERROR: Tidak ada respon.")
         return false, "No Response"
     end
 end
