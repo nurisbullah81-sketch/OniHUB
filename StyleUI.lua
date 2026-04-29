@@ -309,7 +309,7 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- ==========================================
--- BUILD TABS & ISI KONTEN (URUTAN BARU)
+-- BUILD TABS & ISI KONTEN
 -- ==========================================
 local StatusTab = CreateTab("Status", true) 
 local AutoFarmTab = CreateTab("Auto Farm", false) 
@@ -333,7 +333,7 @@ _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits
 CreateSection(AutoFarmTab, "COMBAT SYSTEM")
 CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
 
--- DEVIL FRUITS TAB (PREMIUM UI)
+-- DEVIL FRUITS TAB
 CreateSection(DevilFruitsTab, "FRUIT FINDER")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
 CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
@@ -341,15 +341,7 @@ CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", 
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- DEVIL FRUITS TAB (SIMPLE & BUG FREE)
-CreateSection(DevilFruitsTab, "FRUIT FINDER")
-CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
-CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
-CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", _G.Cat.Settings.InstantTPFruit, function(state) _G.Cat.Settings.InstantTPFruit = state end)
-CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
-CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
-
--- WEBHOOK SYSTEM (SIMPLE & BULLETTPROOF)
+-- WEBHOOK SYSTEM
 CreateSection(DevilFruitsTab, "DISCORD WEBHOOK")
 
 -- 1. URL Box
@@ -378,7 +370,7 @@ WHTestBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- 3. Rarity Cycle Button (Klik buat ganti, anti bug dropdown)
+-- 3. Rarity Cycle Button
 local WHRarityBtn = Instance.new("TextButton", DevilFruitsTab)
 WHRarityBtn.Size = UDim2.new(1, 0, 0, 30); WHRarityBtn.BackgroundColor3 = Theme.SideBG; WHRarityBtn.BorderSizePixel = 0; WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHRarityBtn.TextColor3 = Theme.Text; WHRarityBtn.Font = Enum.Font.GothamMedium; WHRarityBtn.TextSize = 11; WHRarityBtn.AutoButtonColor = false
 Instance.new("UICorner", WHRarityBtn).CornerRadius = UDim.new(0, 6)
@@ -399,5 +391,5 @@ end)
 -- 4. Toggle Webhook
 CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alert to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
 
--- MISC TAB (BERSIH)
+-- MISC TAB
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
