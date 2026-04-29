@@ -5,6 +5,8 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VIM = game:GetService("VirtualInputManager")
+
+-- SERVICES UNTUK SOVEREIGN V26
 local GuiService = game:GetService("GuiService")
 local CoreGui = game:GetService("CoreGui")
 
@@ -17,35 +19,31 @@ local FC = 0
 local SKIP = 10
 
 -- ==========================================
--- 1. GUARDIAN (PCALL BIAR GA ERROR)
+-- 1. THE GUARDIAN V26 (ZERO-BLINK TECHNOLOGY)
 -- ==========================================
-pcall(function()
-    GuiService.ErrorMessageChanged:Connect(function()
-        if Settings.AutoHop then
-            pcall(function() GuiService:ClearError() end)
-        end
-    end)
+GuiService.ErrorMessageChanged:Connect(function()
+    if Settings.AutoHop then
+        pcall(function() GuiService:ClearError() end)
+    end
 end)
 
-pcall(function()
-    task.spawn(function()
-        local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
-        if promptGui then
-            local overlay = promptGui:WaitForChild("promptOverlay", 5)
-            if overlay then
-                overlay.Visible = false
-                pcall(function()
-                    overlay:GetPropertyChangedSignal("Visible"):Connect(function()
-                        if Settings.AutoHop then overlay.Visible = false end
-                    end)
-                end)
-            end
+task.spawn(function()
+    local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
+    if promptGui then
+        local overlay = promptGui:WaitForChild("promptOverlay", 5)
+        if overlay then
+            overlay.Visible = false
+            overlay:GetPropertyChangedSignal("Visible"):Connect(function()
+                if Settings.AutoHop then
+                    overlay.Visible = false
+                end
+            end)
         end
-    end)
+    end
 end)
 
 -- ==========================================
--- 2. ESP SYSTEM (ORIGINAL)
+-- 2. ESP SYSTEM (ORIGINAL - UNTOUCHED)
 -- ==========================================
 local function Pos(f) 
     if not f or not f.Parent then return nil end 
@@ -107,11 +105,9 @@ local function Rem(f)
     end 
 end
 
--- SCAN SEMUA CHILD WORKSPACE (TERMASUK FOLDER DI DALAMNYA)
-for _, o in pairs(Workspace:GetDescendants()) do if IsF(o) then Add(o) end end
-Workspace.DescendantAdded:Connect(function(o) task.wait(0.5) if IsF(o) then Add(o) end end)
--- Gunakan DescendantRemoved biar buah yang di-dalam folder juga kehapus
-Workspace.DescendantRemoved:Connect(function(o) Rem(o) end)
+for _, o in pairs(Workspace:GetChildren()) do if IsF(o) then Add(o) end end
+Workspace.ChildAdded:Connect(function(o) task.wait(0.5) if IsF(o) then Add(o) end end)
+Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 
 RunService.RenderStepped:Connect(function() 
     FC=FC+1 
@@ -142,120 +138,148 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. TWEEN DENGAN OVERSHOOT
+-- 3. DYNAMIC HOVER GLIDE TWEEN (ANTI-AIR & NPEL)
 -- ==========================================
 local isTweening = false
 local currentTarget = nil
+local noclipConn = nil
 
-local function GetNearestFruit()
-    local closest, minDist = nil, math.huge
-    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    
-    local heldFruit = nil
-    if Me.Character then
-        for _, tool in pairs(Me.Character:GetChildren()) do
-            if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then
-                heldFruit = tool
-                break
-            end
-        end
-    end
-    
-    for f, _ in pairs(Data) do
-        if f and f.Parent and f ~= heldFruit then
-            local p = Pos(f)
-            if p then
-                local dist = (p - hrp.Position).Magnitude
-                if dist < minDist then
-                    closest, minDist = f, dist
-                end
-            end
-        end
-    end
-    return closest, minDist
-end
+local SAFE_WATER_Y = 50 -- Ketinggian minimal di atas permukaan air
+local LANDING_DISTANCE = 40 -- Jarak mulai turun ke buah
+local TWEEN_SPEED = 350
 
-task.spawn(function()
-    while task.wait(0.1) do
+local function StopSmartTween()
+    if isTweening then
+        isTweening = false
+        currentTarget = nil
+        if noclipConn then
+            noclipConn:Disconnect()
+            noclipConn = nil
+        end
         pcall(function()
-            if not Settings.TweenFruit then
-                isTweening = false
-                currentTarget = nil
-                return
-            end
-            
-            local fruit, dist = GetNearestFruit()
-            
-            if fruit and dist > 3 then
-                currentTarget = fruit
-                isTweening = true
-            elseif not fruit or dist <= 3 then
-                if dist and dist <= 3 then
-                    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
-                    local fruitPos = Pos(fruit)
-                    if hrp and fruitPos then
-                        local dir = (fruitPos - hrp.Position).Unit
-                        hrp.CFrame = CFrame.new(fruitPos + (dir * 3))
-                    end
+            if Me.Character then
+                for _, part in pairs(Me.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
                 end
-                isTweening = false
-                currentTarget = nil
             end
         end)
     end
+end
+
+local function GetNearestFruit() 
+    local closest, minDist = nil, math.huge 
+    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+    if not hrp then return nil end 
+    for f, _ in pairs(Data) do 
+        if f and f.Parent then 
+            local p = Pos(f) 
+            if p then 
+                local dist = (p - hrp.Position).Magnitude 
+                if dist < minDist then 
+                    closest, minDist = f, dist 
+                end 
+            end 
+        end 
+    end 
+    return closest 
+end
+
+-- Decision Maker
+task.spawn(function() 
+    while task.wait(0.5) do 
+        pcall(function() 
+            if Settings.TweenFruit then 
+                local nearest = GetNearestFruit() 
+                local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+                
+                if nearest and hrp then 
+                    local pos = Pos(nearest) 
+                    if pos then 
+                        local dist = (pos - hrp.Position).Magnitude 
+                        
+                        if dist < 3 then
+                            StopSmartTween()
+                        else
+                            if not isTweening then
+                                isTweening = true
+                                currentTarget = nearest
+                                
+                                noclipConn = RunService.Stepped:Connect(function()
+                                    if isTweening and Me.Character then
+                                        for _, part in pairs(Me.Character:GetDescendants()) do
+                                            if part:IsA("BasePart") then part.CanCollide = false end
+                                        end
+                                    end
+                                end)
+                            end
+                            
+                            if currentTarget ~= nearest then
+                                currentTarget = nearest
+                            end
+                        end 
+                    else 
+                        StopSmartTween()
+                    end 
+                else 
+                    StopSmartTween()
+                end 
+            else 
+                StopSmartTween()
+            end 
+        end) 
+    end 
 end)
 
+-- Physical Mover
 RunService.Heartbeat:Connect(function(dt)
-    if not isTweening or not currentTarget or not currentTarget.Parent then
-        isTweening = false
-        currentTarget = nil
-        return
-    end
-    
-    pcall(function()
-        local char = Me.Character
-        if not char then isTweening = false return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then isTweening = false return end
-        
+    if isTweening and currentTarget and currentTarget.Parent and Me.Character then
+        local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
         local fruitPos = Pos(currentTarget)
-        if not fruitPos then
-            isTweening = false
-            currentTarget = nil
-            return
-        end
         
-        local currentPos = hrp.Position
-        local dist = (fruitPos - currentPos).Magnitude
-        
-        if dist < 10 then
-            local dir = (fruitPos - currentPos).Unit
-            hrp.CFrame = CFrame.new(fruitPos + (dir * 3))
+        if hrp and fruitPos then
             hrp.Velocity = Vector3.zero
-            isTweening = false
-            currentTarget = nil
-            return
+            hrp.RotVelocity = Vector3.zero
+            
+            local currentPos = hrp.Position
+            local dist = (fruitPos - currentPos).Magnitude
+            local targetPos
+            
+            -- KALKULASI TARGET POSISI (HOVER GLIDE LOGIC)
+            if dist > LANDING_DISTANCE then
+                -- MODE TERBANG: Geser mendatar, pastikan Y ga nyelam ke air
+                local hoverY = math.max(fruitPos.Y, SAFE_WATER_Y)
+                targetPos = Vector3.new(fruitPos.X, hoverY, fruitPos.Z)
+            else
+                -- MODE LANDING: Tembak lurus ke buah (+2 Y biar nginjek dari atas)
+                targetPos = Vector3.new(fruitPos.X, fruitPos.Y + 2, fruitPos.Z)
+            end
+            
+            -- Perhitungan gerakan
+            local direction = (targetPos - currentPos).Unit
+            local moveDistance = math.min(TWEEN_SPEED * dt, (targetPos - currentPos).Magnitude)
+            local moveVector = direction * moveDistance
+            local newPos = currentPos + moveVector
+            
+            -- Rotasi (Anti Miring)
+            local lookDirection = Vector3.new(direction.X, 0, direction.Z)
+            if lookDirection.Magnitude > 0.01 then
+                hrp.CFrame = CFrame.new(newPos, newPos + lookDirection)
+            else
+                hrp.CFrame = CFrame.new(newPos)
+            end
+            
+            -- Matiin tween kalau udah nempel
+            if dist < 3 then
+                StopSmartTween()
+            end
+        else
+            StopSmartTween()
         end
-        
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-        
-        hrp.Velocity = Vector3.zero
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        
-        local speed = 350
-        local moveAmount = math.min(speed * dt, dist)
-        local direction = (fruitPos - currentPos).Unit
-        local newPos = currentPos + direction * moveAmount
-        local targetCFrame = CFrame.new(newPos, fruitPos)
-        hrp.CFrame = CFrame.new(newPos) * CFrame.Angles(0, targetCFrame.Yaw, 0)
-    end)
+    end
 end)
 
 -- ==========================================
--- 4. AUTO STORE (ORIGINAL)
+-- 4. AUTO STORE - EXTORIUS LOGIC (UNTOUCHED)
 -- ==========================================
 local StoreBlacklist={}
 local isStoring = false
@@ -328,7 +352,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 5. HOP SERVER - NOMEXY V26
+-- 5. HOP SERVER - SOVEREIGN V26 (ZERO BLINK)
 -- ==========================================
 local isHopping = false
 
@@ -342,6 +366,8 @@ function _G.Cat.HopServer()
     end)
     
     task.spawn(function()
+        warn("[CatHUB] [HOP] Menjalankan Sovereign V26...")
+        
         while Settings.AutoHop do
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             
@@ -375,7 +401,7 @@ function _G.Cat.HopServer()
                     task.wait(1) 
                 end
 
-                if not scrollFrame then task.wait(1) continue end
+                if not scrollFrame then continue end
 
                 local buttons = {}
                 local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
@@ -394,11 +420,15 @@ function _G.Cat.HopServer()
                     
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    
                     task.wait(0.05) 
+                    
                     VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
                     VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                    
                     task.wait(0.1)
                     VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+
                     task.wait(0.5) 
                 end
             end
@@ -411,30 +441,18 @@ function _G.Cat.HopServer()
     end)
 end
 
--- CEK BUAH UNTUK HOP (FIXED!)
 task.spawn(function()
     while task.wait(3) do
         if Settings.AutoHop then
             pcall(function()
                 local fruitCount = 0
                 for f, _ in pairs(Data) do
-                    -- FIX: Hanya hitung buah yang VALID (ada parent & bukan yang dipegang)
-                    if f and f.Parent then
-                        -- Cek apakah buah ini sedang dipegang player
-                        local isHeld = false
-                        if Me.Character then
-                            for _, tool in pairs(Me.Character:GetChildren()) do
-                                if tool == f then isHeld = true break end
-                            end
-                        end
-                        -- Hanya hitung buah yang TIDAK dipegang
-                        if not isHeld then
-                            fruitCount = fruitCount + 1
-                        end
+                    if f and f.Parent and f.Parent == Workspace then 
+                        fruitCount = fruitCount + 1 
+                    else
+                        Rem(f)
                     end
                 end
-                
-                warn("[CatHUB] Buah di map: "..fruitCount)
                 
                 if fruitCount == 0 then
                     _G.Cat.HopServer()
