@@ -237,25 +237,40 @@ UserInput.InputChanged:Connect(function(input)
     if draggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then local delta = input.Position - dragStartMain; Main.Position = UDim2.new(startPosMain.X.Scale, startPosMain.X.Offset + delta.X, startPosMain.Y.Scale, startPosMain.Y.Offset + delta.Y) end
 end)
 
--- [RESIZER LU YANG GUE BALIKIN]
+-- ==========================================
+-- TOMBOL TARIK UI (RESIZER) - UDAH DI-FIX
+-- ==========================================
 local Resizer = Instance.new("TextButton", Main)
-Resizer.Size = UDim2.new(0, 20, 0, 20)
-Resizer.Position = UDim2.new(1, -20, 1, -20)
+Resizer.Size = UDim2.new(0, 35, 0, 35) -- Hitbox digedein biar gampang diklik jari/mouse
+Resizer.Position = UDim2.new(1, -35, 1, -35) -- POJOK KANAN BAWAH
 Resizer.BackgroundTransparency = 1
 Resizer.Text = "⌟"
-Resizer.TextColor3 = Theme.TextDim
-Resizer.TextSize = 16
+Resizer.TextColor3 = Theme.CatPurple -- Warnanya ungu biar lu gampang nyarinya
+Resizer.TextSize = 25
 Resizer.Font = Enum.Font.Gotham
-Resizer.ZIndex = 50
+Resizer.ZIndex = 99999 -- Anti ketiban elemen lain
 Resizer.AutoButtonColor = false
 
 local isResizing, resizeStartPos, startSizeR
-Resizer.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then isResizing = true; resizeStartPos = UserInput:GetMouseLocation(); startSizeR = Main.Size end end)
-UserInput.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end end)
+Resizer.InputBegan:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then 
+        isResizing = true
+        resizeStartPos = UserInput:GetMouseLocation()
+        startSizeR = Main.Size 
+    end 
+end)
+
+UserInput.InputEnded:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        isResizing = false 
+    end 
+end)
+
 UserInput.InputChanged:Connect(function(input)
     if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then 
         local delta = UserInput:GetMouseLocation() - resizeStartPos
-        Main.Size = UDim2.new(0, math.clamp(startSizeR.X.Offset + delta.X, 480, 900), 0, math.clamp(startSizeR.Y.Offset + delta.Y, 280, 700))
+        -- Batas minimal gue kecilin jadi 350x220 biar lu bisa ciutin UI nya sempit banget
+        Main.Size = UDim2.new(0, math.clamp(startSizeR.X.Offset + delta.X, 350, 900), 0, math.clamp(startSizeR.Y.Offset + delta.Y, 220, 700))
         lastSize = Main.Size 
     end
 end)
