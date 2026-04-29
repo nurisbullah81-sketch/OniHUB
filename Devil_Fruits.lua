@@ -43,7 +43,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 2. ESP SYSTEM (ORIGINAL - JANGAN DIUTAK ATIK)
+-- 2. ESP SYSTEM (ORIGINAL)
 -- ==========================================
 local function Pos(f) 
     if not f or not f.Parent then return nil end 
@@ -138,9 +138,10 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. TWEEN SMOOTH V2 (RUNSERVICE HEARTBEAT - ANAKIN FLY STYLE)
+-- 3. TWEEN SMOOTH V2 + NOCLIP (TEMBUS TEMBOK)
 -- ==========================================
 local tweenConn = nil
+local noclipConn = nil
 local isTweening = false
 
 local function GetNearestFruit() 
@@ -167,6 +168,20 @@ local function StopSmoothTween()
         tweenConn = nil
     end
     isTweening = false
+    
+    -- MATIIN NOCLIP PAS BERHENTI
+    if noclipConn then
+        noclipConn:Disconnect()
+        noclipConn = nil
+    end
+    -- Balikin collision biar ga jatoh ke bawah tanah
+    pcall(function()
+        for _, part in pairs(Me.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end)
 end
 
 task.spawn(function() 
@@ -179,6 +194,19 @@ task.spawn(function()
                 if pos and (pos - hrp.Position).Magnitude > 5 then
                     if not isTweening then
                         isTweening = true
+                        
+                        -- NYALAIN NOCLIP (TEMBUS TEMBOK)
+                        noclipConn = RunService.Stepped:Connect(function()
+                            if isTweening and Me.Character then
+                                for _, part in pairs(Me.Character:GetDescendants()) do
+                                    if part:IsA("BasePart") then
+                                        part.CanCollide = false
+                                    end
+                                end
+                            end
+                        end)
+                        
+                        -- NYALAIN TWEEN HALUS
                         tweenConn = RunService.Heartbeat:Connect(function(deltaTime)
                             if not Settings.TweenFruit or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
                                 StopSmoothTween() return
@@ -190,7 +218,7 @@ task.spawn(function()
                             if dist <= 5 then StopSmoothTween() return end
                             
                             local direction = (currentPos - hrp.Position).Unit
-                            local speed = 300 * deltaTime -- Kecepatan 300 studs/detik (Sangat cepat & halus)
+                            local speed = 300 * deltaTime 
                             if speed > dist then speed = dist end
                             
                             local newPos = hrp.Position + (direction * speed)
@@ -210,7 +238,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 4. AUTO STORE - EXTORIUS LOGIC (ORIGINAL - JANGAN DIUTAK ATIK)
+-- 4. AUTO STORE - EXTORIUS LOGIC (ORIGINAL)
 -- ==========================================
 local StoreBlacklist={}
 local isStoring = false
@@ -291,6 +319,12 @@ function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
+    -- SAVE CONFIG SEBELUM HOP BIAR GA ILANG
+    pcall(function()
+        local ConfigFile = "CatHUB_Config.json"
+        writefile(ConfigFile, HttpService:JSONEncode(Settings))
+    end)
+    
     task.spawn(function()
         warn("[CatHUB] [HOP] Menjalankan Sovereign V26...")
         
@@ -365,7 +399,6 @@ function _G.Cat.HopServer()
             task.wait(1)
         end
         
-        -- Tutup UI kalau loop selesai/berhenti
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
         if browser then browser.Enabled = false end
         isHopping = false
@@ -374,7 +407,7 @@ end
 
 -- CEK BUAH UNTUK HOP (CEPAT 3 DETIK)
 task.spawn(function()
-    while task.wait(3) do -- Gue ubah dari 10 detik jadi 3 detik biar cepat
+    while task.wait(3) do
         if Settings.AutoHop then
             pcall(function()
                 local fruitCount = 0
@@ -389,14 +422,12 @@ task.spawn(function()
                 if fruitCount == 0 then
                     _G.Cat.HopServer()
                 else
-                    -- Kalau ada buah, hentikan loop V26 dan tutup UI
                     isHopping = false
                     local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                     if browser then browser.Enabled = false end
                 end
             end)
         else
-            -- Kalau AutoHop dimatiin, pastiin UI ketutup
             isHopping = false
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             if browser then browser.Enabled = false end
