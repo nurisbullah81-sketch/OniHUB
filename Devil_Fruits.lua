@@ -20,26 +20,34 @@ local FC = 0
 local SKIP = 10
 
 -- ==========================================
--- 1. MASTER LOCK (ANTI BUG LOADING)
+-- 1. MASTER LOCK (EVENT-BASED - ANTI LAG FREEZE)
 -- ==========================================
--- Ini gerbang utama. Selama ini FALSE, Tween, Hop, dan Store DILARANG JALAN.
 local IsGameReady = false
 
-task.spawn(function()
-    while task.wait(1) do
-        -- Syarat: Lu udah punya Tim DAN Karakter fisik udah spawn di map
-        if Me.Team ~= nil and Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") then
-            if not IsGameReady then
-                warn("[CatHUB] GAME LOADED & READY. Systems unlocked.")
-                IsGameReady = true
-            end
-        else
-            if IsGameReady then
-                warn("[CatHUB] LOADING/TEAM SELECT. Systems locked.")
-                IsGameReady = false
-            end
+local function UpdateGameState()
+    local isReady = (Me.Team ~= nil and Me.Character and Me.Character:FindFirstChild("HumanoidRootPart"))
+    if isReady ~= IsGameReady then
+        IsGameReady = isReady
+        warn("[CatHUB] System State: " .. (IsGameReady and "UNLOCKED (Ready)" or "LOCKED (Loading/Dead)"))
+        if not IsGameReady then 
+            StopSmartTween() -- Paksa putus kalau mati/lag
         end
     end
+end
+
+-- Inisialisasi awal
+task.spawn(UpdateGameState)
+
+-- Pakai Event biar presisi, kagak nunggu loop 1 detik yang bisa ke-skip pas lag
+Me:GetPropertyChangedSignal("Team"):Connect(UpdateGameState)
+Me.CharacterAdded:Connect(function(char)
+    IsGameReady = false
+    local hrp = char:WaitForChild("HumanoidRootPart", 15)
+    UpdateGameState()
+end)
+Me.CharacterRemoving:Connect(function()
+    IsGameReady = false
+    UpdateGameState()
 end)
 
 -- ==========================================
@@ -188,39 +196,24 @@ local function StopSmartTween()
     isTweening = false
     currentTarget = nil
     
-    if currentTween then
-        currentTween:Cancel()
-        currentTween = nil
-    end
-    if noclipConn then
-        noclipConn:Disconnect()
-        noclipConn = nil
-    end
+    if currentTween then pcall(function() currentTween:Cancel() end) currentTween = nil end
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+    if proxyPart then pcall(function() proxyPart:Destroy() end) proxyPart = nil end
     
+    -- HAPUS task.wait sama Anchored! Langsung zero velocity biar fisika ga nge-freeze
     pcall(function()
         if Me.Character then
             local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
-                hrp.Anchored = true
-                task.wait(0.05) 
                 hrp.AssemblyLinearVelocity = Vector3.zero
                 hrp.AssemblyAngularVelocity = Vector3.zero
-                hrp.Anchored = false
             end
-            
             for part, state in pairs(originalCollisions) do
-                if part and part.Parent then
-                    part.CanCollide = state
-                end
+                if part and part.Parent then part.CanCollide = state end
             end
         end
         table.clear(originalCollisions)
     end)
-    
-    if proxyPart then
-        proxyPart:Destroy()
-        proxyPart = nil
-    end
 end
 
 local function GetNearestFruit() 
@@ -324,25 +317,30 @@ local isStoring = false
 
 local function SafeInvoke(remote, ...)
     local args = {...}
-    local result = nil
     local thread = coroutine.running()
+    local completed = false
     
-    local co = task.spawn(function()
+    task.spawn(function()
         local ok, res = pcall(function()
             return remote:InvokeServer(unpack(args))
         end)
-        if ok then result = res end
-        task.spawn(thread, true)
-    end)
-    
-    task.delay(5, function()
-        if result == nil then
-            task.spawn(thread, false) 
+        if not completed then
+            completed = true
+            task.spawn(thread, ok, res)
         end
     end)
     
-    coroutine.yield()
-    return result
+    -- Timeout 3 detik, kalau server lag, PUTUS. Jangan nunggu sampe kiamat.
+    task.delay(3, function()
+        if not completed then
+            completed = true
+            warn("[CatHUB] Invoke Timeout! Server lag, skipping...")
+            task.spawn(thread, false, nil)
+        end
+    end)
+    
+    local ok, res = coroutine.yield()
+    return ok, res
 end
 
 task.spawn(function() 
