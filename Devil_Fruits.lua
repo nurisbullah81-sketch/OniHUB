@@ -43,7 +43,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 2. ESP SYSTEM (ORIGINAL)
+-- 2. ESP SYSTEM (ORIGINAL - UNTOUCHED)
 -- ==========================================
 local function Pos(f) 
     if not f or not f.Parent then return nil end 
@@ -138,23 +138,42 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. SMART TWEEN V5 (BUTTER SMOOTH & NO TOOL TILT)
+-- 3. SMART UPRIGHT TWEEN (ANTI-MIRING & TEMBUS TEMBOK)
 -- ==========================================
 local isTweening = false
-local tweenNoclip = nil
-local tweenMove = nil
+local currentTarget = nil
+local noclipConn = nil
+
+local function StopSmartTween()
+    if isTweening then
+        isTweening = false
+        currentTarget = nil
+        if noclipConn then
+            noclipConn:Disconnect()
+            noclipConn = nil
+        end
+        -- Matikan noclip pas berhenti
+        pcall(function()
+            if Me.Character then
+                for _, part in pairs(Me.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
+                end
+            end
+        end)
+    end
+end
 
 local function GetNearestFruit() 
-    local closest,minDist=nil,math.huge 
-    local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+    local closest, minDist = nil, math.huge 
+    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
     if not hrp then return nil end 
-    for f,_ in pairs(Data) do 
+    for f, _ in pairs(Data) do 
         if f and f.Parent then 
-            local p=Pos(f) 
+            local p = Pos(f) 
             if p then 
-                local dist=(p-hrp.Position).Magnitude 
-                if dist<minDist then 
-                    closest,minDist=f,dist 
+                local dist = (p - hrp.Position).Magnitude 
+                if dist < minDist then 
+                    closest, minDist = f, dist 
                 end 
             end 
         end 
@@ -162,83 +181,94 @@ local function GetNearestFruit()
     return closest 
 end
 
-local function StopSmartTween()
-    if not isTweening then return end
-    isTweening = false
-    
-    if tweenNoclip then tweenNoclip:Disconnect(); tweenNoclip = nil end
-    if tweenMove then tweenMove:Disconnect(); tweenMove = nil end
-    
-    -- Balikin Collision biar ga jatoh
-    pcall(function()
-        for _, part in pairs(Me.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = true end
-        end
-    end)
-end
-
 task.spawn(function() 
     while task.wait(0.5) do 
-        if Settings.TweenFruit then 
-            local nearest = GetNearestFruit() 
-            local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-            
-            if nearest and hrp then 
-                local pos = Pos(nearest) 
-                if pos and (pos - hrp.Position).Magnitude > 8 then
-                    if not isTweening then
-                        isTweening = true
+        pcall(function() 
+            if Settings.TweenFruit then 
+                local nearest = GetNearestFruit() 
+                local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+                
+                if nearest and hrp then 
+                    local pos = Pos(nearest) 
+                    if pos then 
+                        local dist = (pos - hrp.Position).Magnitude 
                         
-                        -- NYALAIN NOCLIP (Tembus Tembok)
-                        tweenNoclip = RunService.Stepped:Connect(function()
-                            if isTweening and Me.Character then
-                                for _, part in pairs(Me.Character:GetDescendants()) do
-                                    if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
-                                end
+                        -- Jarak 3 studs baru berhenti (Supaya pas di atas buah)
+                        if dist > 3 then
+                            if not isTweening then
+                                isTweening = true
+                                currentTarget = nearest
+                                
+                                -- Noclip Connection
+                                noclipConn = RunService.Stepped:Connect(function()
+                                    if isTweening and Me.Character then
+                                        for _, part in pairs(Me.Character:GetDescendants()) do
+                                            if part:IsA("BasePart") then part.CanCollide = false end
+                                        end
+                                    end
+                                end)
                             end
-                        end)
-                        
-                        -- NYALAIN SMOOTH MOVER
-                        tweenMove = RunService.Heartbeat:Connect(function(delta)
-                            if not isTweening or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
-                                StopSmartTween() return
+                            
+                            -- Pindah target jika ada buah yang lebih dekat
+                            if currentTarget ~= nearest then
+                                currentTarget = nearest
                             end
-                            
-                            local currentPos = Pos(nearest)
-                            if not currentPos then StopSmartTween() return end
-                            
-                            local dist = (currentPos - hrp.Position).Magnitude
-                            if dist <= 8 then StopSmartTween() return end
-                            
-                            local direction = (currentPos - hrp.Position).Unit
-                            local speed = 350 * delta -- Kecepatan super kencang tapi halus
-                            if speed > dist then speed = dist end
-                            
-                            local newPos = hrp.Position + (direction * speed)
-                            
-                            -- SMART ROTATION: Lerp biar ga miring pas megang buah, muter halus
-                            local targetRotation = CFrame.lookAt(hrp.Position, currentPos)
-                            local smoothRotation = hrp.CFrame.Rotation:Lerp(targetRotation.Rotation, 0.15)
-                            
-                            hrp.CFrame = CFrame.new(newPos) * smoothRotation
-                            hrp.Velocity = Vector3.zero -- Biar ga kena physics glitch
-                            hrp.RotVelocity = Vector3.zero
-                        end)
-                    end
-                else
+                        else
+                            StopSmartTween()
+                        end 
+                    else 
+                        StopSmartTween()
+                    end 
+                else 
                     StopSmartTween()
                 end 
             else 
                 StopSmartTween()
             end 
-        else 
-            StopSmartTween()
-        end 
+        end) 
     end 
 end)
 
+-- Loop penggerak Tween (Heartbeat biar smooth & ga miring)
+RunService.Heartbeat:Connect(function(dt)
+    if isTweening and currentTarget and currentTarget.Parent and Me.Character then
+        local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
+        local fruitPos = Pos(currentTarget)
+        
+        if hrp and fruitPos then
+            local dist = (fruitPos - hrp.Position).Magnitude
+            
+            if dist < 3 then
+                StopSmartTween()
+                return
+            end
+            
+            -- Hitung arah
+            local direction = (fruitPos - hrp.Position).Unit
+            local speed = 300 -- Kecepatan sangat cepat, tembus laut
+            local moveVector = direction * math.min(speed * dt, dist)
+            
+            -- KUNCI ANTI-MIRING: Buat karakter tetap berdiri tegak (Hanya rotasi Y/Kiri-Kanan)
+            local lookDirection = Vector3.new(direction.X, 0, direction.Z)
+            local newCFrame
+            
+            if lookDirection.Magnitude > 0.01 then
+                newCFrame = CFrame.new(hrp.Position + moveVector, hrp.Position + moveVector + lookDirection)
+            else
+                newCFrame = CFrame.new(hrp.Position + moveVector)
+            end
+            
+            hrp.CFrame = newCFrame
+            hrp.Velocity = Vector3.zero
+            hrp.RotVelocity = Vector3.zero
+        else
+            StopSmartTween()
+        end
+    end
+end)
+
 -- ==========================================
--- 4. AUTO STORE - EXTORIUS LOGIC (ORIGINAL)
+-- 4. AUTO STORE - EXTORIUS LOGIC (UNTOUCHED)
 -- ==========================================
 local StoreBlacklist={}
 local isStoring = false
@@ -363,7 +393,7 @@ function _G.Cat.HopServer()
                     task.wait(1) 
                 end
 
-                if not scrollFrame then task.wait(1) continue end
+                if not scrollFrame then continue end
 
                 -- TARGET ACQUISITION
                 local buttons = {}
