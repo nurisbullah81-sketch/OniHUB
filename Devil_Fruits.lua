@@ -178,8 +178,10 @@ local function GetNearestFruit()
     local closest, minDist = nil, math.huge 
     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
     if not hrp then return nil end 
+    
     for f, _ in pairs(Data) do 
-        if f and f.Parent then 
+        -- THE BUG FIX: Harus ngecek f.Parent == Workspace
+        if f and f.Parent == Workspace then 
             local p = Pos(f) 
             if p then 
                 local dist = (p - hrp.Position).Magnitude 
@@ -187,6 +189,9 @@ local function GetNearestFruit()
                     closest, minDist = f, dist 
                 end 
             end 
+        else
+            -- Kalau buah udah dipungut (masuk ke tas/tangan), hapus dari radar!
+            Rem(f)
         end 
     end 
     return closest 
