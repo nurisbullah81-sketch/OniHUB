@@ -18,9 +18,12 @@ local Players = game:GetService("Players")
 while not Players.LocalPlayer do task.wait(0.1) end
 local Me = Players.LocalPlayer
 
--- Tunggu sampai _G.Cat siap (kalau pakai sistem Modular)
+-- Tunggu sampai _G.Cat siap
 while not _G or not _G.Cat or not _G.Cat.Settings do task.wait(0.1) end
 local Settings = _G.Cat.Settings
+
+-- Failsafe kalau UI blum bikin variabelnya
+if Settings.InstantTPFruit == nil then Settings.InstantTPFruit = false end
 
 local Data = {}
 local Mem = {}
@@ -28,33 +31,19 @@ local FC = 0
 local SKIP = 10
 
 -- ==========================================
--- 1. MASTER LOCK (FIX CRASH NIL VALUE)
+-- 1. MASTER LOCK & ANCHOR SAFETY
 -- ==========================================
 local IsGameReady = false
 
--- [FIX KRITIS] Harus dideklarasiin dulu biar UpdateGameState ga crash!
-local StopSmartTween 
-StopSmartTween = function()
-    if not isTweening then return end
-    isTweening = false
-    currentTarget = nil
-    
-    if currentTween then pcall(function() currentTween:Cancel() end) currentTween = nil end
-    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
-    if proxyPart then pcall(function() proxyPart:Destroy() end) proxyPart = nil end
-    
+-- [FIX KRITIS] Deklarasiin dulu biar ga nil value crash
+local StopSmartTween = function() end
+
+local function ReleaseCharacter()
     pcall(function()
         if Me.Character then
             local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                hrp.AssemblyLinearVelocity = Vector3.zero
-                hrp.AssemblyAngularVelocity = Vector3.zero
-            end
-            for part, state in pairs(originalCollisions) do
-                if part and part.Parent then part.CanCollide = state end
-            end
+            if hrp and hrp.Anchored then hrp.Anchored = false end
         end
-        table.clear(originalCollisions)
     end)
 end
 
@@ -62,9 +51,9 @@ local function UpdateGameState()
     local isReady = (Me.Team ~= nil and Me.Character and Me.Character:FindFirstChild("HumanoidRootPart"))
     if isReady ~= IsGameReady then
         IsGameReady = isReady
-        warn("[CatHUB] System State: " .. (IsGameReady and "UNLOCKED (Ready)" or "LOCKED (Loading/Dead)"))
+        warn("[CatHUB] System State: " .. (IsGameReady and "UNLOCKED" or "LOCKED"))
         if not IsGameReady then 
-            StopSmartTween() -- Sekarang ini aman, ga bakal nil value
+            StopSmartTween() 
         end
     end
 end
@@ -84,7 +73,7 @@ Me.CharacterRemoving:Connect(function()
 end)
 
 -- ==========================================
--- 2. THE GUARDIAN V26 & ANTI-AFK
+-- 2. GUARDIAN & ANTI-AFK
 -- ==========================================
 GuiService.ErrorMessageChanged:Connect(function()
     if Settings.AutoHop then pcall(function() GuiService:ClearError() end) end
@@ -104,7 +93,7 @@ task.spawn(function()
 end)
 
 Me.Idled:Connect(function()
-    if Settings.TweenFruit or Settings.AutoHop then
+    if Settings.TweenFruit or Settings.AutoHop or Settings.InstantTPFruit then
         VirtualUser:CaptureController()
         VirtualUser:ClickButton2(Vector2.new())
     end
@@ -126,7 +115,7 @@ Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 RunService.RenderStepped:Connect(function() FC=FC+1 if FC%SKIP~=0 then return end pcall(function() if not Settings.FruitESP then for _,d in pairs(Data) do if d and d.bb then d.bb.Enabled=false end end return end local c=Me.Character if not c then return end local r=c:FindFirstChild("HumanoidRootPart") if not r then return end local mp=r.Position for f,d in pairs(Data) do if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end local p=Pos(f) if not p then d.bb.Enabled=false continue end local dx,dy,dz=p.X-mp.X,p.Y-mp.Y,p.Z-mp.Z local m=math.floor(math.sqrt(dx*dx+dy*dy+dz*dz)) if math.abs(m-(Mem[f]or-1))>5 then Mem[f]=m d.txt.Text=f.Name.." ["..m.."m]" end d.bb.Enabled=true end end) end)
 
 -- ==========================================
--- 4. PROXY TWEEN ENGINE
+-- 4. PROXY TWEEN ENGINE & INSTAN TP
 -- ==========================================
 local isTweening = false
 local currentTarget = nil
@@ -136,108 +125,79 @@ local currentTween = nil
 local originalCollisions = {} 
 local TWEEN_SPEED = 300 
 
+StopSmartTween = function()
+    if not isTweening then return end
+    isTweening = false; currentTarget = nil
+    if currentTween then pcall(function() currentTween:Cancel() end) currentTween = nil end
+    if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+    if proxyPart then pcall(function() proxyPart:Destroy() end) proxyPart = nil end
+    
+    pcall(function()
+        if Me.Character then
+            local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero end
+            for part, state in pairs(originalCollisions) do if part and part.Parent then part.CanCollide = state end end
+        end
+        table.clear(originalCollisions)
+    end)
+end
+
 local function GetNearestFruit() local closest, minDist = nil, math.huge local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") if not hrp then return nil end for f, _ in pairs(Data) do if f and f.Parent == Workspace then local p = Pos(f) if p then local dist = (p - hrp.Position).Magnitude if dist < minDist then closest, minDist = f, dist end end else Rem(f) end end return closest end
 
 task.spawn(function() 
     while task.wait(0.2) do 
         pcall(function() 
             if IsGameReady then 
-                -- ==========================================
-                -- PRIORITAS 1: INSTAN TP (Menang telak kalau nyala)
-                -- ==========================================
+                -- PRIORITAS 1: INSTAN TP
                 if Settings.InstantTPFruit then
-                    -- Kalau Instan TP nyala, matiin Tween paksa biar ga tabrakan fisika
-                    StopSmartTween() 
-                    
+                    StopSmartTween() -- Matiin tween kalau ada
                     local nearest = GetNearestFruit() 
                     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-                    
                     if nearest and hrp then 
                         local targetPos = Pos(nearest) 
-                        if targetPos then
-                            local dist = (targetPos - hrp.Position).Magnitude 
-                            -- Cuma TP kalau jaraknya lebih dari 5 studs
-                            if dist > 5 then
-                                -- Anti-fling: Nolkin kecepatan sebelum lompat
-                                hrp.AssemblyLinearVelocity = Vector3.zero
-                                hrp.AssemblyAngularVelocity = Vector3.zero
-                                
-                                -- INSTAN TP ke atas buah (+2 stud Y offset biar ga nancep tanah)
-                                hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
-                                
-                                -- Anti-fling: Nolkin lagi setelah mendarat
-                                hrp.AssemblyLinearVelocity = Vector3.zero
-                                hrp.AssemblyAngularVelocity = Vector3.zero
-                            end
+                        if targetPos and (targetPos - hrp.Position).Magnitude > 5 then
+                            hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
+                            hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
+                            hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
                         end
                     end
 
-                -- ==========================================
-                -- PRIORITAS 2: TWEEN (Hanya jalan kalau Instan TP mati)
-                -- ==========================================
+                -- PRIORITAS 2: TWEEN
                 elseif Settings.TweenFruit then 
                     local nearest = GetNearestFruit() 
                     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-                    
                     if nearest and hrp then 
                         local targetPos = Pos(nearest) 
                         if not targetPos then StopSmartTween() return end
-                        
                         local dist = (targetPos - hrp.Position).Magnitude 
-                        
-                        if dist < 5 then
-                            StopSmartTween()
+                        if dist < 5 then StopSmartTween()
                         else
                             if currentTarget ~= nearest or not isTweening then
                                 StopSmartTween() 
-                                currentTarget = nearest
-                                isTweening = true
-                                
+                                currentTarget = nearest; isTweening = true
                                 table.clear(originalCollisions)
-                                for _, part in pairs(Me.Character:GetDescendants()) do
-                                    if part:IsA("BasePart") then
-                                        originalCollisions[part] = part.CanCollide
-                                    end
-                                end
-                                
+                                for _, part in pairs(Me.Character:GetDescendants()) do if part:IsA("BasePart") then originalCollisions[part] = part.CanCollide end end
                                 local startCFrame = CFrame.lookAt(hrp.Position, targetPos)
-                                proxyPart = Instance.new("Part")
-                                proxyPart.Name = "NomexyProxy"
-                                proxyPart.Transparency = 1
-                                proxyPart.Anchored = true
-                                proxyPart.CanCollide = false
-                                proxyPart.Size = Vector3.new(1, 1, 1)
-                                proxyPart.CFrame = startCFrame
-                                proxyPart.Parent = workspace
+                                proxyPart = Instance.new("Part") proxyPart.Name = "NomexyProxy" proxyPart.Transparency = 1 proxyPart.Anchored = true proxyPart.CanCollide = false proxyPart.Size = Vector3.new(1, 1, 1) proxyPart.CFrame = startCFrame proxyPart.Parent = workspace
 
                                 noclipConn = RunService.Stepped:Connect(function()
-                                    -- PENTING: Tambahin pengecekan "not Settings.InstantTPFruit" biar ga bypass
                                     if isTweening and Settings.TweenFruit and not Settings.InstantTPFruit and IsGameReady then
                                         local success, hrpCheck = pcall(function() return Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") end)
                                         if success and hrpCheck and proxyPart then
                                             for _, part in pairs(Me.Character:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end
                                             hrpCheck.AssemblyLinearVelocity = Vector3.zero; hrpCheck.AssemblyAngularVelocity = Vector3.zero; hrpCheck.CFrame = proxyPart.CFrame
                                         end
-                                    else
-                                        StopSmartTween()
-                                    end
+                                    else StopSmartTween() end
                                 end)
                                 
                                 local endPos = targetPos + Vector3.new(0, 2, 0) 
-                                local endCFrame = CFrame.lookAt(endPos, endPos + startCFrame.LookVector)
-                                currentTween = TweenService:Create(proxyPart, TweenInfo.new(dist / TWEEN_SPEED, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = endCFrame})
+                                currentTween = TweenService:Create(proxyPart, TweenInfo.new(dist / TWEEN_SPEED, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.lookAt(endPos, endPos + startCFrame.LookVector)})
                                 currentTween:Play()
                             end
                         end 
-                    else 
-                        StopSmartTween()
-                    end 
-                else 
-                    StopSmartTween()
-                end
-            else 
-                StopSmartTween()
-            end 
+                    else StopSmartTween() end 
+                else StopSmartTween() end
+            else StopSmartTween() end 
         end) 
     end 
 end)
@@ -294,7 +254,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. HOP SERVER (ORIGINAL VIM + 5K TP + STRICT BOUNDS)
+-- 6. HOP SERVER
 -- ==========================================
 local isHopping = false
 
@@ -310,18 +270,6 @@ function _G.Cat.HopServer()
     task.spawn(function()
         warn("[CatHUB] [HOP] Executing Sovereign V26 Engine...")
         
-        -- [FITUR BARU] SKY TP 5K (Naik ke langit biar ga dibunuh pas loading)
-        pcall(function()
-            if Me.Character then
-                local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.CFrame = CFrame.new(hrp.Position.X, 5000, hrp.Position.Z)
-                    hrp.Anchored = true
-                end
-            end
-        end)
-        task.wait(0.5)
-        
         while Settings.AutoHop do 
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             
@@ -329,7 +277,6 @@ function _G.Cat.HopServer()
                 local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                 if openBtn then
                     local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                    -- PAKAI VIM LU YANG ASLI BISA JALAN
                     VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
                     task.wait(0.1)
                     VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
@@ -362,10 +309,7 @@ function _G.Cat.HopServer()
                 local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                 for _, v in pairs(listArea:GetDescendants()) do
                     if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
-                        -- [FITUR BARU] STRICT BOUNDS (Gabakal ngeklik tombol yang kepotong)
-                        local btnTop = v.AbsolutePosition.Y
-                        local btnBottom = btnTop + v.AbsoluteSize.Y
-                        if btnTop > (sPos.Y + 5) and btnBottom < (sPos.Y + sSize.Y - 5) then
+                        if v.AbsolutePosition.Y > sPos.Y and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 30) then
                             table.insert(buttons, v)
                         end
                     end
@@ -376,18 +320,13 @@ function _G.Cat.HopServer()
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
                     local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
                     
-                    -- PAKAI VIM LU YANG ASLI BISA JALAN (KLIK + ENTER)
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                    
                     task.wait(0.05) 
-                    
                     VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
                     VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                    
                     task.wait(0.1)
                     VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-
                     task.wait(0.5) 
                 end
             end
@@ -396,15 +335,6 @@ function _G.Cat.HopServer()
         
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
         if browser then browser.Enabled = false end
-        
-        -- Lepas jangkar kalau hop selesai/dimatiin
-        pcall(function()
-            if Me.Character then
-                local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
-                if hrp and hrp.Anchored then hrp.Anchored = false end
-            end
-        end)
-        
         isHopping = false
     end)
 end
@@ -422,18 +352,15 @@ task.spawn(function()
                 
                 if fruitCount == 0 then
                     _G.Cat.HopServer()
-                else
-                    isHopping = false
-                    local pg = Me:FindFirstChild("PlayerGui")
-                    if pg then local browser = pg:FindFirstChild("ServerBrowser", true) if browser and browser.Enabled then browser.Enabled = false end end
                 end
             end)
         else
-            if not Settings.AutoHop then
+            -- [FIX BUG LAYAR KUNCI] Kalau auto hop mati, pastiin jangkar lepas
+            if isHopping then
                 isHopping = false
-                local pg = Me:FindFirstChild("PlayerGui")
-                if pg then local browser = pg:FindFirstChild("ServerBrowser", true) if browser then browser.Enabled = false end end
+                ReleaseCharacter()
             end
+            -- [FIX BUG SERVER LIST] Kalau auto hop mati, jangan sentuh UI server lu!
         end
     end
 end)
