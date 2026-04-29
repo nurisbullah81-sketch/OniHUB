@@ -266,18 +266,16 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     for _, toggle in ipairs(AllToggles) do local text = string.lower(toggle.Label.Text); toggle.Btn.Visible = query == "" or string.find(text, query) ~= nil end
 end)
 
--- ==========================================
--- BUILD TABS & ISI KONTEN (BLADE-PROOF UI)
--- ==========================================
+-- Di bagian atas UI lu, tambahin ini biar setting ga nil
 if _G.Cat.Settings.AutoAttack == nil then _G.Cat.Settings.AutoAttack = false end
 if _G.Cat.Settings.WebhookEnabled == nil then _G.Cat.Settings.WebhookEnabled = false end
 if _G.Cat.Settings.WebhookURL == nil then _G.Cat.Settings.WebhookURL = "" end
 
 -- ==========================================
--- BUILD TABS & ISI KONTEN (MODULAR UI)
+-- BUILD TABS & ISI KONTEN (URUTAN BARU)
 -- ==========================================
 local StatusTab = CreateTab("Status", true) 
-local AutoFarmTab = CreateTab("Auto Farm", false) -- TAB BARU
+local AutoFarmTab = CreateTab("Auto Farm", false) -- TAB BARU DI ATAS DEVIL FRUITS
 local DevilFruitsTab = CreateTab("Devil Fruits", false) 
 local MiscTab = CreateTab("Misc", false) 
 
@@ -294,18 +292,18 @@ _G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycl
 _G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
 _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
--- AUTO FARM TAB (MURNI UI)
+-- AUTO FARM TAB (ISINYA COMBAT DOANG)
 CreateSection(AutoFarmTab, "COMBAT SYSTEM")
 CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
 
--- DEVIL FRUITS TAB (MURNI UI)
+-- DEVIL FRUITS TAB (MURNI BUAH)
 CreateSection(DevilFruitsTab, "FRUIT FINDER")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
 CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- MISC TAB (MURNI UI)
+-- MISC TAB (WEBHOOK PINDAH KESINI)
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
 
 CreateSection(MiscTab, "NETWORK SCANNER (MYTHICAL HUNTER)")
