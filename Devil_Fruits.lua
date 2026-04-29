@@ -428,11 +428,16 @@ function _G.Cat.HopServer()
 end
 
 task.spawn(function()
-    while task.wait(3) do
-        if Settings.AutoHop then
+    -- JEDA AMAN AWAL: Kasih waktu 10 detik buat map ngerender buah pas baru join
+    task.wait(10)
+    
+    while task.wait(5) do
+        -- SYARAT MUTLAK: Hanya nge-hop jika fitur nyala, karakter udah spawn, dan udah masuk tim!
+        if Settings.AutoHop and Me.Team ~= nil and Me.Character then
             pcall(function()
                 local fruitCount = 0
                 for f, _ in pairs(Data) do
+                    -- Pastikan hanya menghitung buah yang ada di tanah (Workspace)
                     if f and f.Parent and f.Parent == Workspace then 
                         fruitCount = fruitCount + 1 
                     else
@@ -441,6 +446,7 @@ task.spawn(function()
                 end
                 
                 if fruitCount == 0 then
+                    warn("[CatHUB] No fruits found in map. Initiating server hop...")
                     _G.Cat.HopServer()
                 else
                     isHopping = false
@@ -449,6 +455,7 @@ task.spawn(function()
                 end
             end)
         else
+            -- Kalau belum masuk tim, jangan ngapa-ngapain
             isHopping = false
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             if browser then browser.Enabled = false end
@@ -463,38 +470,41 @@ function _G.Cat.GetFruitsList()
 end
 
 -- ==========================================
--- 6. AUTO SELECT TEAM (MARINES) - 24/7 AFK FIX
+-- 6. AUTO SELECT TEAM (MARINES) - SMART SYNC
 -- ==========================================
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
             local chooseTeam = Me.PlayerGui:FindFirstChild("Main") and Me.PlayerGui.Main:FindFirstChild("ChooseTeam")
             
-            -- Jika lu belum punya tim ATAU layar "PICK A SIDE" muncul nyangkut
-            if Me.Team == nil or (chooseTeam and chooseTeam.Visible) then
-                warn("[CatHUB] Layar Tim Terdeteksi! Memaksa masuk tim Marines...")
+            -- HANYA eksekusi JIKA layar "PICK A SIDE" benar-benar terlihat di layar
+            if chooseTeam and chooseTeam.Visible then
+                warn("[CatHUB] Team screen detected! Waiting for game to stabilize...")
                 
-                -- 1. SPAM API SAMPAI SERVER NYERAH
-                repeat
-                    task.wait(5.5)
-                    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-                until Me.Team and Me.Team.Name == "Marines"
+                -- JEDA PINTAR: Biarkan loading data game selesai (Ga bakal instan nyangkut lagi)
+                task.wait(3) 
                 
-                -- 2. JIKA SERVER UDAH ACC KITA JADI MARINES
-                if Me.Team and Me.Team.Name == "Marines" then
-                    warn("[CatHUB] Sukses masuk Marines! Membersihkan layar & kamera...")
+                if chooseTeam.Visible then
+                    warn("[CatHUB] Forcing Marines team API...")
                     
-                    -- Hilangkan UI paksa
-                    if chooseTeam then chooseTeam.Visible = false end
+                    -- Spam API perlahan sampai server mengiyakan
+                    repeat
+                        task.wait(0.5)
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+                    until Me.Team and Me.Team.Name == "Marines"
                     
-                    -- Tarik kamera lu dari awang-awang balik nempel ke karakter
-                    local cam = workspace.CurrentCamera
-                    cam.CameraType = Enum.CameraType.Custom
-                    if Me.Character and Me.Character:FindFirstChild("Humanoid") then
-                        cam.CameraSubject = Me.Character.Humanoid
+                    if Me.Team and Me.Team.Name == "Marines" then
+                        warn("[CatHUB] Successfully joined Marines! Cleaning up UI...")
+                        chooseTeam.Visible = false
+                        
+                        local cam = workspace.CurrentCamera
+                        cam.CameraType = Enum.CameraType.Custom
+                        if Me.Character and Me.Character:FindFirstChild("Humanoid") then
+                            cam.CameraSubject = Me.Character.Humanoid
+                        end
+                        
+                        task.wait(2)
                     end
-                    
-                    task.wait(15) -- Kasih napas bentar ke game
                 end
             end
         end)
