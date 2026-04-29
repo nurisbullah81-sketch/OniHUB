@@ -17,15 +17,17 @@ local FC = 0
 local SKIP = 10
 
 -- ==========================================
--- 1. THE GUARDIAN V26 (ZERO-BLINK)
+-- 1. GUARDIAN (DIBUNGUS PCALL BIAR GA CRASH)
 -- ==========================================
-GuiService.ErrorMessageChanged:Connect(function()
-    if Settings.AutoHop then
-        pcall(function() GuiService:ClearError() end)
-    end
+pcall(function()
+    GuiService.ErrorMessageChanged:Connect(function()
+        if Settings.AutoHop then
+            pcall(function() GuiService:ClearError() end)
+        end
+    end)
 end)
 
-task.spawn(function()
+pcall(function()
     local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
     if promptGui then
         local overlay = promptGui:WaitForChild("promptOverlay", 5)
@@ -39,7 +41,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 2. ESP SYSTEM (ORIGINAL - TIDAK DIUBAH)
+-- 2. ESP SYSTEM (ORIGINAL)
 -- ==========================================
 local function Pos(f) 
     if not f or not f.Parent then return nil end 
@@ -134,18 +136,16 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. SMART TWEEN V6 - PRECISION SNAP ENGINE
+-- 3. TWEEN DENGAN OVERSHOOT
 -- ==========================================
 local isTweening = false
 local currentTarget = nil
 
--- Cari buah terdekat (exclude buah yang sudah dipegang)
 local function GetNearestFruit()
     local closest, minDist = nil, math.huge
     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
     
-    -- Cek apakah player sedang memegang buah
     local heldFruit = nil
     if Me.Character then
         for _, tool in pairs(Me.Character:GetChildren()) do
@@ -157,7 +157,7 @@ local function GetNearestFruit()
     end
     
     for f, _ in pairs(Data) do
-        if f and f.Parent and f ~= heldFruit then  -- Exclude buah yang dipegang
+        if f and f.Parent and f ~= heldFruit then
             local p = Pos(f)
             if p then
                 local dist = (p - hrp.Position).Magnitude
@@ -170,7 +170,6 @@ local function GetNearestFruit()
     return closest, minDist
 end
 
--- Target scanner (berjalan di task.spawn)
 task.spawn(function()
     while task.wait(0.1) do
         pcall(function()
@@ -182,17 +181,16 @@ task.spawn(function()
             
             local fruit, dist = GetNearestFruit()
             
-            if fruit and dist > 3 then  -- Mulai tween jika jarak > 3 studs
+            if fruit and dist > 3 then
                 currentTarget = fruit
                 isTweening = true
             elseif not fruit or dist <= 3 then
-                -- Sudah dekat atau tidak ada buah
                 if dist and dist <= 3 then
-                    -- Snap ke posisi buah jika sangat dekat
                     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
                     local fruitPos = Pos(fruit)
                     if hrp and fruitPos then
-                        hrp.CFrame = CFrame.new(fruitPos)
+                        local dir = (fruitPos - hrp.Position).Unit
+                        hrp.CFrame = CFrame.new(fruitPos + (dir * 3))
                     end
                 end
                 isTweening = false
@@ -202,7 +200,6 @@ task.spawn(function()
     end
 end)
 
--- Movement engine (berjalan di Heartbeat untuk smooth)
 RunService.Heartbeat:Connect(function(dt)
     if not isTweening or not currentTarget or not currentTarget.Parent then
         isTweening = false
@@ -226,42 +223,33 @@ RunService.Heartbeat:Connect(function(dt)
         local currentPos = hrp.Position
         local dist = (fruitPos - currentPos).Magnitude
         
-        -- SNAP JIKA SUDAH DEKAT (Tidak pake Lerp)
-        if dist < 8 then
-            hrp.CFrame = CFrame.new(fruitPos)
+        if dist < 10 then
+            local dir = (fruitPos - currentPos).Unit
+            hrp.CFrame = CFrame.new(fruitPos + (dir * 3))
             hrp.Velocity = Vector3.zero
             isTweening = false
             currentTarget = nil
             return
         end
         
-        -- NOCLIP
         for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+            if part:IsA("BasePart") then part.CanCollide = false end
         end
         
-        -- RESET VELOCITY (Anti stuck)
         hrp.Velocity = Vector3.zero
         hrp.AssemblyLinearVelocity = Vector3.zero
         
-        -- HITUNG PERGERAKAN
-        local speed = 350  -- Kecepatan tinggi biar cepat sampai
+        local speed = 350
         local moveAmount = math.min(speed * dt, dist)
-        
-        -- ARAH KE BUAH
         local direction = (fruitPos - currentPos).Unit
         local newPos = currentPos + direction * moveAmount
-        
-        -- SMOOTH ROTATION (Lerp cuma buat rotasi, bukan posisi)
         local targetCFrame = CFrame.new(newPos, fruitPos)
         hrp.CFrame = CFrame.new(newPos) * CFrame.Angles(0, targetCFrame.Yaw, 0)
     end)
 end)
 
 -- ==========================================
--- 4. AUTO STORE - EXTORIUS (ORIGINAL - TIDAK DIUBAH)
+-- 4. AUTO STORE (ORIGINAL)
 -- ==========================================
 local StoreBlacklist={}
 local isStoring = false
@@ -334,7 +322,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 5. HOP SERVER - SOVEREIGN V26
+-- 5. HOP SERVER (ORIGINAL + DEBUG)
 -- ==========================================
 local isHopping = false
 
@@ -343,20 +331,18 @@ function _G.Cat.HopServer()
     isHopping = true
     
     task.spawn(function()
-        while Settings.AutoHop and not isHopping == false do
+        while Settings.AutoHop do
             pcall(function()
                 local char = Me.Character
                 local hum = char and char:FindFirstChild("Humanoid")
                 if not char or not char:FindFirstChild("HumanoidRootPart") or (hum and hum.Health <= 0) then
                     task.wait(1)
-                    continue
+                    return
                 end
 
-                -- CEK APAKAH ADA BUAH DI MAP
                 local fruitCount = 0
                 for f, _ in pairs(Data) do
                     if f and f.Parent then
-                        -- Exclude buah yang dipegang player
                         local isHeld = false
                         if Me.Character then
                             for _, tool in pairs(Me.Character:GetChildren()) do
@@ -367,20 +353,19 @@ function _G.Cat.HopServer()
                     end
                 end
 
-                -- JIKA ADA BUAH, TUTUP UI DAN TUNGGU
+                warn("[CatHUB] Buah di map: "..fruitCount)
+
                 if fruitCount > 0 then
                     local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                     if browser and browser.Enabled then
                         browser.Enabled = false
                     end
                     task.wait(3)
-                    continue
+                    return
                 end
 
-                -- JIKA TIDAK ADA BUAH, MULAI HOP
-                warn("[CatHUB] [HOP] Tidak ada buah. Memulai hop...")
+                warn("[CatHUB] Tidak ada buah. Memulai hop...")
                 
-                -- Auto-Open UI
                 local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
                 if not browser or not browser.Enabled then
                     local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
@@ -394,7 +379,7 @@ function _G.Cat.HopServer()
                 end
 
                 browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                if not browser then task.wait(1) continue end
+                if not browser then task.wait(1) return end
 
                 local listArea = browser:FindFirstChild("Inside", true)
                 local count = 0
@@ -408,15 +393,13 @@ function _G.Cat.HopServer()
                     local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                     local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
                     
-                    -- INVISIBLE SCROLL (ANTI-ZOOM)
                     if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                         dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
                         task.wait(1) 
                     end
 
-                    if not scrollFrame then task.wait(1) continue end
+                    if not scrollFrame then task.wait(1) return end
 
-                    -- TARGET ACQUISITION
                     local buttons = {}
                     local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                     for _, v in pairs(listArea:GetDescendants()) do
@@ -427,7 +410,8 @@ function _G.Cat.HopServer()
                         end
                     end
 
-                    -- STRIKE
+                    warn("[CatHUB] Ditemukan "..#buttons.." tombol Join")
+
                     for _, target in pairs(buttons) do
                         if not Settings.AutoHop then break end
                         local bp, bs = target.AbsolutePosition, target.AbsoluteSize
@@ -450,9 +434,9 @@ function _G.Cat.HopServer()
     end)
 end
 
--- Auto Hop Loop
 task.spawn(function()
     while task.wait(5) do
+        warn("[CatHUB] Hop Loop Check - AutoHop: "..tostring(Settings.AutoHop))
         if Settings.AutoHop then
             _G.Cat.HopServer()
         end
