@@ -438,7 +438,7 @@ end
 
 task.spawn(function()
     -- JEDA AMAN AWAL: Kasih waktu 10 detik buat map ngerender buah pas baru join
-    task.wait(10)
+    task.wait(10) 
     
     while task.wait(5) do
         -- SYARAT MUTLAK: Hanya nge-hop jika fitur nyala, karakter udah spawn, dan udah masuk tim!
@@ -459,15 +459,17 @@ task.spawn(function()
                     _G.Cat.HopServer()
                 else
                     isHopping = false
+                    -- Hanya tutup UI kalau lu LAGI AUTO HOP lalu tiba-tiba nemu buah
                     local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                    if browser then browser.Enabled = false end
+                    if browser and browser.Enabled then 
+                        browser.Enabled = false 
+                    end
                 end
             end)
         else
-            -- Kalau belum masuk tim, jangan ngapa-ngapain
+            -- FIXED BUG: Jika AutoHop dimatikan atau belum masuk tim, BOT DIAM. 
+            -- Tidak ada lagi script yang nutup UI manual lu!
             isHopping = false
-            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            if browser then browser.Enabled = false end
         end
     end
 end)
