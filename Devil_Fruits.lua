@@ -468,6 +468,101 @@ function _G.Cat.HopServer()
         
         isHopping = false
     end)
+end-- ==========================================
+-- 6. HOP SERVER - SOVEREIGN V26 (VIM ORIGINAL + ANTI-CRASH FIX)
+-- ==========================================
+local isHopping = false
+
+function _G.Cat.HopServer()
+    if isHopping then return end
+    isHopping = true
+    
+    pcall(function()
+        local ConfigFile = "CatHUB_Config.json"
+        writefile(ConfigFile, HttpService:JSONEncode(Settings))
+    end)
+    
+    task.spawn(function()
+        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine (Original VIM)...")
+        
+        while Settings.AutoHop do 
+            -- [ANTI CRASH FIX] Ambil PlayerGui pakai FindFirstChild biar ga error pas lu mati/lag
+            local pg = Me:FindFirstChild("PlayerGui")
+            if not pg then task.wait(1) continue end
+            
+            local browser = pg:FindFirstChild("ServerBrowser", true)
+            
+            if not browser or not browser.Enabled then
+                local openBtn = pg:FindFirstChild("ServerBrowserButton", true)
+                if openBtn then
+                    local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
+                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
+                    task.wait(0.1)
+                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
+                end
+            end
+
+            browser = pg:FindFirstChild("ServerBrowser", true)
+            if not browser then task.wait(1) continue end
+
+            local listArea = browser:FindFirstChild("Inside", true)
+            local count = 0
+            repeat
+                task.wait(0.5)
+                count = count + 1
+                listArea = browser:FindFirstChild("Inside", true)
+            until (listArea and #listArea:GetChildren() > 5) or count > 20
+
+            if listArea then
+                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
+                local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
+                
+                if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
+                    dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
+                    task.wait(1) 
+                end
+
+                if not scrollFrame then continue end
+
+                local buttons = {}
+                local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                for _, v in pairs(listArea:GetDescendants()) do
+                    if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
+                        if v.AbsolutePosition.Y > sPos.Y and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 30) then
+                            table.insert(buttons, v)
+                        end
+                    end
+                end
+
+                for _, target in pairs(buttons) do
+                    if not Settings.AutoHop then break end 
+                    local bp, bs = target.AbsolutePosition, target.AbsoluteSize
+                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
+                    
+                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    
+                    task.wait(0.05) 
+                    
+                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                    
+                    task.wait(0.1)
+                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+
+                    task.wait(0.5) 
+                end
+            end
+            task.wait(1)
+        end
+        
+        local pg = Me:FindFirstChild("PlayerGui")
+        if pg then
+            local browser = pg:FindFirstChild("ServerBrowser", true)
+            if browser then browser.Enabled = false end
+        end
+        isHopping = false
+    end)
 end
 
 task.spawn(function()
@@ -491,7 +586,7 @@ task.spawn(function()
                     _G.Cat.HopServer()
                 else
                     isHopping = false
-                    -- CARA AMAN BACA PLAYERGUI
+                    -- [ANTI CRASH FIX]
                     local pg = Me:FindFirstChild("PlayerGui")
                     if pg then
                         local browser = pg:FindFirstChild("ServerBrowser", true)
@@ -502,7 +597,7 @@ task.spawn(function()
         else
             if not Settings.AutoHop then
                 isHopping = false
-                -- CARA AMAN BACA PLAYERGUI DI LUAR PCALL
+                -- [ANTI CRASH FIX]
                 local pg = Me:FindFirstChild("PlayerGui")
                 if pg then
                     local browser = pg:FindFirstChild("ServerBrowser", true)
