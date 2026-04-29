@@ -418,7 +418,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. HOP SERVER - SOVEREIGN V26 (MEMORY CLICK / NO VIM)
+-- 6. HOP SERVER - HTTP PREMIUM ENGINE (NO VIM & NO UI CLICK)
 -- ==========================================
 local isHopping = false
 
@@ -432,88 +432,39 @@ function _G.Cat.HopServer()
     end)
     
     task.spawn(function()
-        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine (Memory Click)...")
+        warn("[CatHUB] [HOP] Executing Premium HTTP Hop Engine...")
         
         while Settings.AutoHop do 
-            local pg = Me:FindFirstChild("PlayerGui")
-            if not pg then task.wait(1) continue end
-
-            local browser = pg:FindFirstChild("ServerBrowser", true)
+            local PlaceId = game.PlaceId
+            local JobId = game.JobId
             
-            -- 1. BUKA SERVER BROWSER DARI MEMORI (Bukan pakai VIM)
-            if not browser or not browser.Enabled then
-                local openBtn = pg:FindFirstChild("ServerBrowserButton", true)
-                if openBtn then
-                    pcall(function() openBtn.MouseButton1Click:Fire() end)
-                    pcall(function() openBtn.Activated:Fire() end)
-                    if getconnections then
-                        for _, conn in pairs(getconnections(openBtn.MouseButton1Click)) do pcall(function() conn.Function() end) end
+            -- Tembak API resmi Roblox untuk minta daftar server (Mirip cara ThunderZ)
+            local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+            
+            local success, result = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(url))
+            end)
+
+            if success and result and result.data then
+                for _, server in ipairs(result.data) do
+                    -- Cari server yang playernya belum penuh dan bukan server kita sekarang
+                    if type(server) == "table" and server.playing < server.maxPlayers - 1 and server.id ~= JobId then
+                        warn("[CatHUB] Teleporting to new server: " .. server.id)
+                        
+                        pcall(function()
+                            TeleportService:TeleportToPlaceInstance(PlaceId, server.id, Me)
+                        end)
+                        
+                        task.wait(3) -- Jeda biar teleportnya jalan
                     end
                 end
+            else
+                warn("[CatHUB] HTTP API Timeout. Retrying...")
             end
-
-            browser = pg:FindFirstChild("ServerBrowser", true)
-            if not browser then task.wait(1) continue end
-
-            local listArea = browser:FindFirstChild("Inside", true)
-            local count = 0
-            repeat
-                task.wait(0.5)
-                count = count + 1
-                listArea = browser:FindFirstChild("Inside", true)
-            until (listArea and #listArea:GetChildren() > 5) or count > 20
-
-            if listArea then
-                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
-                local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
-                
-                -- Acak posisi scroll biar dapet server random
-                if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
-                    dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
-                    task.wait(1) 
-                end
-
-                if not scrollFrame then continue end
-
-                local buttons = {}
-                local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
-                
-                -- Kumpulin semua tombol "Join" yang lagi kelihatan di layar (dalam batas scroll)
-                for _, v in pairs(listArea:GetDescendants()) do
-                    if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
-                        if v.AbsolutePosition.Y > sPos.Y and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 30) then
-                            table.insert(buttons, v)
-                        end
-                    end
-                end
-
-                -- 2. EKSEKUSI JOIN DARI MEMORI (Tanpa VIM, ga bakal nabrak UI CatHUB lu)
-                for _, target in pairs(buttons) do
-                    if not Settings.AutoHop then break end 
-                    
-                    warn("[CatHUB] Menembak tombol Join via Internal Trigger...")
-                    pcall(function() target.MouseButton1Click:Fire() end)
-                    pcall(function() target.Activated:Fire() end)
-                    
-                    -- Failsafe buat eksekutor level atas
-                    if getconnections then
-                        for _, conn in pairs(getconnections(target.MouseButton1Click)) do 
-                            pcall(function() conn.Function() end) 
-                        end
-                    end
-                    
-                    task.wait(1.5) -- Kasih jeda napas pas loading pindah server
-                end
-            end
-            task.wait(1)
+            
+            task.wait(2)
         end
         
-        -- Kalau AutoHop dimatiin di tengah jalan, bersih-bersih
-        local pg = Me:FindFirstChild("PlayerGui")
-        if pg then
-            local browser = pg:FindFirstChild("ServerBrowser", true)
-            if browser then browser.Enabled = false end
-        end
         isHopping = false
     end)
 end
