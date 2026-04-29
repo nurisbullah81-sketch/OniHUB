@@ -587,3 +587,45 @@ end)
 
 -- MISC TAB
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
+
+-- ==========================================
+-- 4. CCTV BUAH (AUTO-DETECT DI TANGAN & TAS)
+-- ==========================================
+task.spawn(function()
+    local player = game:GetService("Players").LocalPlayer
+    
+    -- Fungsi buat ngecek item yang baru masuk
+    local function CheckForFruit(item)
+        -- Kalau toggle Webhook di UI lagi mati, cuekin aja
+        if not _G.Cat.Settings.FruitWebhook then return end 
+        
+        -- Cek apakah item itu sebuah Tool dan ada kata "Fruit" di namanya
+        if item:IsA("Tool") and string.find(string.lower(item.Name), "fruit") then
+            warn("[CatHUB] Buah terdeteksi di tangan/tas: " .. item.Name)
+            
+            local jobId = game.JobId
+            if jobId == "" then jobId = "Singleplayer/Test-Server" end
+            
+            -- Panggil mesin Webhook lu
+            _G.Cat.Webhook:Send(
+                item.Name, 
+                jobId, 
+                _G.Cat.Settings.FruitWebhookRarity, 
+                _G.Cat.Settings.FruitWebhookURL
+            )
+        end
+    end
+
+    -- 1. Pasang CCTV di Tas (Backpack)
+    player.Backpack.ChildAdded:Connect(CheckForFruit)
+
+    -- 2. Pasang CCTV di Tangan (Character)
+    if player.Character then
+        player.Character.ChildAdded:Connect(CheckForFruit)
+    end
+    
+    -- Jaga-jaga kalau lu mati dan respawn, CCTV di tangan dipasang ulang
+    player.CharacterAdded:Connect(function(char)
+        char.ChildAdded:Connect(CheckForFruit)
+    end)
+end)
