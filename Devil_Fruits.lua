@@ -22,9 +22,6 @@ local Me = Players.LocalPlayer
 while not _G or not _G.Cat or not _G.Cat.Settings do task.wait(0.1) end
 local Settings = _G.Cat.Settings
 
--- Failsafe kalau UI blum bikin variabelnya
-if Settings.InstantTPFruit == nil then Settings.InstantTPFruit = false end
-
 local Data = {}
 local Mem = {}
 local FC = 0
@@ -34,8 +31,6 @@ local SKIP = 10
 -- 1. MASTER LOCK & ANCHOR SAFETY
 -- ==========================================
 local IsGameReady = false
-
--- [FIX KRITIS] Deklarasiin dulu biar ga nil value crash
 local StopSmartTween = function() end
 
 local function ReleaseCharacter()
@@ -51,10 +46,7 @@ local function UpdateGameState()
     local isReady = (Me.Team ~= nil and Me.Character and Me.Character:FindFirstChild("HumanoidRootPart"))
     if isReady ~= IsGameReady then
         IsGameReady = isReady
-        warn("[CatHUB] System State: " .. (IsGameReady and "UNLOCKED" or "LOCKED"))
-        if not IsGameReady then 
-            StopSmartTween() 
-        end
+        if not IsGameReady then StopSmartTween() end
     end
 end
 
@@ -62,15 +54,9 @@ task.spawn(UpdateGameState)
 Me:GetPropertyChangedSignal("Team"):Connect(UpdateGameState)
 Me.CharacterAdded:Connect(function(char)
     IsGameReady = false
-    task.spawn(function()
-        char:WaitForChild("HumanoidRootPart", 15)
-        UpdateGameState()
-    end)
+    task.spawn(function() char:WaitForChild("HumanoidRootPart", 15) UpdateGameState() end)
 end)
-Me.CharacterRemoving:Connect(function()
-    IsGameReady = false
-    UpdateGameState()
-end)
+Me.CharacterRemoving:Connect(function() IsGameReady = false; UpdateGameState() end)
 
 -- ==========================================
 -- 2. GUARDIAN & ANTI-AFK
@@ -148,9 +134,8 @@ task.spawn(function()
     while task.wait(0.2) do 
         pcall(function() 
             if IsGameReady then 
-                -- PRIORITAS 1: INSTAN TP
                 if Settings.InstantTPFruit then
-                    StopSmartTween() -- Matiin tween kalau ada
+                    StopSmartTween()
                     local nearest = GetNearestFruit() 
                     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
                     if nearest and hrp then 
@@ -161,8 +146,6 @@ task.spawn(function()
                             hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
                         end
                     end
-
-                -- PRIORITAS 2: TWEEN
                 elseif Settings.TweenFruit then 
                     local nearest = GetNearestFruit() 
                     local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
@@ -254,7 +237,7 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. HOP SERVER
+-- 6. HOP SERVER (5K SKY TP + TURBO VIM)
 -- ==========================================
 local isHopping = false
 
@@ -262,13 +245,22 @@ function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
-    pcall(function()
-        local ConfigFile = "CatHUB_Config.json"
-        writefile(ConfigFile, HttpService:JSONEncode(Settings))
-    end)
+    pcall(function() writefile("CatHUB_Config.json", HttpService:JSONEncode(Settings)) end)
     
     task.spawn(function()
-        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine...")
+        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine (Turbo)...")
+        
+        -- [FIX 1] 5K SKY TP: Naik ke langit biar ga dibunuh & nyari server tenang
+        pcall(function()
+            if Me.Character then
+                local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = CFrame.new(hrp.Position.X, 5000, hrp.Position.Z)
+                    hrp.Anchored = true
+                end
+            end
+        end)
+        task.wait(0.3) -- Jeda napas FPS
         
         while Settings.AutoHop do 
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
@@ -278,21 +270,21 @@ function _G.Cat.HopServer()
                 if openBtn then
                     local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
                     VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
-                    task.wait(0.1)
+                    task.wait(0.05) -- Dipotong dari 0.1
                     VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
                 end
             end
 
             browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            if not browser then task.wait(1) continue end
+            if not browser then task.wait(0.5) continue end
 
             local listArea = browser:FindFirstChild("Inside", true)
             local count = 0
             repeat
-                task.wait(0.5)
+                task.wait(0.2) -- Dipotong dari 0.5 biar nunggu list cepet
                 count = count + 1
                 listArea = browser:FindFirstChild("Inside", true)
-            until (listArea and #listArea:GetChildren() > 5) or count > 20
+            until (listArea and #listArea:GetChildren() > 5) or count > 15 -- Dipotong dari 20
 
             if listArea then
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
@@ -300,7 +292,7 @@ function _G.Cat.HopServer()
                 
                 if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                     dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
-                    task.wait(1) 
+                    task.wait(0.5) -- Dipotong dari 1
                 end
 
                 if not scrollFrame then continue end
@@ -325,24 +317,27 @@ function _G.Cat.HopServer()
                     task.wait(0.05) 
                     VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
                     VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                    task.wait(0.1)
+                    task.wait(0.05) -- Dipotong dari 0.1
                     VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                    task.wait(0.5) 
+                    task.wait(0.3) -- Dipotong dari 0.5
                 end
             end
-            task.wait(1)
+            task.wait(0.5) -- Dipotong dari 1
         end
         
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
         if browser then browser.Enabled = false end
+        
+        -- [FIX 2] Lepas jangkar biar ga kunci layar
+        ReleaseCharacter()
         isHopping = false
     end)
 end
 
 task.spawn(function()
-    task.wait(10) 
+    task.wait(5) -- Dipotong dari 10, biar cepet mulai ngecek
     
-    while task.wait(5) do
+    while task.wait(2) do -- [FIX 3] Dipotong dari 5 detik jadi 2 detik biar reaksi hop cepet!
         if Settings.AutoHop and IsGameReady then
             pcall(function()
                 local fruitCount = 0
@@ -355,12 +350,10 @@ task.spawn(function()
                 end
             end)
         else
-            -- [FIX BUG LAYAR KUNCI] Kalau auto hop mati, pastiin jangkar lepas
             if isHopping then
                 isHopping = false
                 ReleaseCharacter()
             end
-            -- [FIX BUG SERVER LIST] Kalau auto hop mati, jangan sentuh UI server lu!
         end
     end
 end)
