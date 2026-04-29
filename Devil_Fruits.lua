@@ -458,42 +458,35 @@ function _G.Cat.GetFruitsList()
 end
 
 -- ==========================================
--- 6. PURE API AUTO TEAM (MARINES) - NO VIM
+-- 6. AUTO SELECT TEAM (MARINES) - CAMERA BYPASS
 -- ==========================================
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            local mainGui = Me.PlayerGui:FindFirstChild("Main")
+            local Player = game:GetService("Players").LocalPlayer
+            local mainGui = Player.PlayerGui:FindFirstChild("Main")
             if not mainGui then return end
             
             local chooseTeam = mainGui:FindFirstChild("ChooseTeam")
             if chooseTeam and chooseTeam.Visible then
-                warn("[CatHUB] Eksekusi Tim Marines (Pure API & Memory)...")
+                warn("[CatHUB] Mengeksekusi Auto-Team Marines (Camera Bypass)...")
                 
-                -- 1. Tembak API Server agar data lu resmi masuk Marines
+                -- 1. Tembak API ke Server (Pilih Marines)
                 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
                 
-                -- 2. GHOST EXECUTION (Menjalankan script internal tombol tanpa klik)
-                local marineFrame = chooseTeam:FindFirstChild("Marines", true)
-                if marineFrame then
-                    local btn = marineFrame:FindFirstChildWhichIsA("TextButton", true)
-                    if btn then
-                        -- A. Gunakan getconnections untuk memicu fungsi asli gamenya
-                        if getconnections then
-                            for _, conn in pairs(getconnections(btn.Activated)) do
-                                pcall(function() conn.Function() end)
-                            end
-                            for _, conn in pairs(getconnections(btn.MouseButton1Click)) do
-                                pcall(function() conn.Function() end)
-                            end
-                        end
-                        
-                        -- B. Fallback internal trigger (menipu engine seolah-olah ditekan)
-                        pcall(function() btn.MouseButton1Click:Fire() end)
-                    end
+                -- 2. Paksa tutup UI
+                chooseTeam.Visible = false
+                
+                -- 3. THE REAL FIX: Kembalikan kamera dari awang-awang ke karakter lu!
+                local cam = workspace.CurrentCamera
+                cam.CameraType = Enum.CameraType.Custom
+                
+                -- Pastikan karakter udah dirender server lalu arahkan kamera ke kepalanya
+                task.wait(0.5)
+                if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+                    cam.CameraSubject = Player.Character.Humanoid
                 end
                 
-                -- Beri jeda agar game memuat karakter lu dengan sempurna
                 task.wait(2)
             end
         end)
