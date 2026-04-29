@@ -59,10 +59,11 @@ end)
 Me.CharacterRemoving:Connect(function() IsGameReady = false; UpdateGameState() end)
 
 -- ==========================================
--- 2. GUARDIAN & ANTI-AFK
+-- 2. THE GUARDIAN V26 (ZERO-BLINK TECHNOLOGY - FIX MANUAL LOCK)
 -- ==========================================
 GuiService.ErrorMessageChanged:Connect(function()
-    if Settings.AutoHop then pcall(function() GuiService:ClearError() end) end
+    -- FIX: Selalu bersihkan error, jangan biarkan invisible wall nge-block UI lu pas main manual!
+    pcall(function() GuiService:ClearError() end)
 end)
 
 task.spawn(function()
@@ -70,9 +71,11 @@ task.spawn(function()
     if promptGui then
         local overlay = promptGui:WaitForChild("promptOverlay", 5)
         if overlay then
-            overlay.Visible = false
+            -- FIX: Selalu tutup overlay kalau dia muncul, biar ga nge-kunci layar
             overlay:GetPropertyChangedSignal("Visible"):Connect(function()
-                if Settings.AutoHop then overlay.Visible = false end
+                if overlay.Visible then
+                    overlay.Visible = false
+                end
             end)
         end
     end
