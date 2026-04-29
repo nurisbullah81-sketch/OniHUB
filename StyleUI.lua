@@ -7,64 +7,99 @@ if CoreGui:FindFirstChild("CatUI") then
     CoreGui.CatUI:Destroy() 
 end
 
+local HttpService = game:GetService("HttpService")
+local ConfigFile = "CatHUB_Config.json"
+
+-- ==========================================
+-- SELF-HEALING CONFIG (MASTER BLUEPRINT)
+-- ==========================================
+local DefaultSettings = {
+    FruitESP = false,
+    TweenFruit = false,
+    InstantTPFruit = false,
+    AutoStoreFruit = false,
+    AutoHop = false,
+    AntiAFK = true,
+    AutoAttack = false,
+    WebhookEnabled = false,
+    WebhookURL = ""
+}
+
+local function LoadSettings()
+    local settings = {}
+    -- 1. Isi dulu dengan default (Master Blueprint)
+    for k, v in pairs(DefaultSettings) do
+        settings[k] = v
+    end
+    
+    -- 2. Timpa dengan data yang tersimpan di file JSON (Smart Loader)
+    pcall(function()
+        if isfile(ConfigFile) then
+            local saved = HttpService:JSONDecode(readfile(ConfigFile))
+            for key, value in pairs(saved) do
+                if settings[key] ~= nil then -- Hanya load jika ada di blueprint
+                    settings[key] = value
+                end
+            end
+        end
+    end)
+    
+    return settings
+end
+
+-- Auto-Sync Function (Nembak save tiap ada perubahan)
+local function SaveSettings()
+    pcall(function()
+        writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
+    end)
+end
+
 if not _G.Cat then
     _G.Cat = {
         Player = game:GetService("Players").LocalPlayer,
-        Settings = { 
-            FruitESP = false, 
-            TweenFruit = false,
-            InstantTPFruit = false, -- TAMBAHIN INI
-            AutoStoreFruit = false,
-            AutoHop = false,
-            AntiAFK = true
-        },
+        Settings = LoadSettings(), -- Langsung pakai Smart Loader
         Labels = {}
     }
 else
     _G.Cat.Player = game:GetService("Players").LocalPlayer
     if not _G.Cat.Labels then _G.Cat.Labels = {} end
-    
-    -- AUTO LOAD CONFIG: Biar settingan ga reset pas pindah server
-    pcall(function()
-        local ConfigFile = "CatHUB_Config.json"
-        if isfile(ConfigFile) then
-            local savedSettings = game:GetService("HttpService"):JSONDecode(readfile(ConfigFile))
-            for key, value in pairs(savedSettings) do
-                _G.Cat.Settings[key] = value
-            end
-        end
-    end)
+    _G.Cat.Settings = LoadSettings() -- Update jika re-execute
 end
 
-local Gui = Instance.new("ScreenGui", CoreGui)
-Gui.Name = "CatUI"
-Gui.ResetOnSpawn = false
-Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- ==========================================
+-- UI BUILDING (BIAR KAGAK RIBET)
+-- ==========================================
+-- ... (Bagian UI lu yang bikin Main, Side, Top, dll tetap disini) ...
+-- ... (Fungsi CreateTab, CreateSection, CreateLabel juga tetap disini) ...
 
-local Theme = {
-    MainBG      = Color3.fromRGB(10, 10, 10),   
-    SideBG      = Color3.fromRGB(14, 14, 16),   
-    TopBG       = Color3.fromRGB(10, 10, 10),
-    TabOn       = Color3.fromRGB(38, 38, 42),   
-    TabOff      = Color3.fromRGB(25, 25, 30), 
-    PageBG      = Color3.fromRGB(17, 18, 22),   
-    CardBG      = Color3.fromRGB(28, 28, 32),   
-    CardHov     = Color3.fromRGB(36, 36, 42),
-    Text        = Color3.fromRGB(250, 250, 250),
-    TextDim     = Color3.fromRGB(140, 140, 145),
-    ToggleOn    = Color3.fromRGB(138, 43, 226), 
-    ToggleOff   = Color3.fromRGB(75, 75, 80),
-    CatPurple   = Color3.fromRGB(160, 100, 255),
-    Gold        = Color3.fromRGB(255, 200, 50), 
-    Accent      = Color3.fromRGB(138, 43, 226), 
-    Line        = Color3.fromRGB(40, 40, 45)    
-}
+-- PENTING: Ganti function CreateToggle lu jadi ini biar auto-save tiap klik:
+local function CreateToggle(parent, text, description, stateRef, callback)
+    local frameHeight = description and 52 or 36
+    local F = Instance.new("TextButton", parent); F.Size = UDim2.new(1, 0, 0, frameHeight); F.BackgroundColor3 = Theme.CardBG; F.BorderSizePixel = 0; F.Text = ""; F.AutoButtonColor = false
+    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6)
+    Instance.new("UIStroke", F).Color = Theme.Line
+    local L = Instance.new("TextLabel", F); L.Size = UDim2.new(1, -60, 0, 20); L.Position = UDim2.new(0, 12, 0, description and 6 or 8); L.Text = text; L.TextColor3 = Theme.Text; L.Font = Enum.Font.GothamMedium; L.TextSize = 12; L.TextXAlignment = Enum.TextXAlignment.Left; L.BackgroundTransparency = 1
+    if description then local D = Instance.new("TextLabel", F); D.Size = UDim2.new(1, -60, 0, 14); D.Position = UDim2.new(0, 12, 0, 26); D.Text = description; D.TextColor3 = Theme.TextDim; D.Font = Enum.Font.Gotham; D.TextSize = 10; D.TextXAlignment = Enum.TextXAlignment.Left; D.BackgroundTransparency = 1 end
+    local Sw = Instance.new("Frame", F); Sw.Size = UDim2.new(0, 36, 0, 18); Sw.Position = UDim2.new(1, -48, 0.5, -9); Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff; Sw.BorderSizePixel = 0
+    Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0) 
+    local Dot = Instance.new("Frame", Sw); Dot.Size = UDim2.new(0, 14, 0, 14); Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7); Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255); Dot.BorderSizePixel = 0
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0) 
+    
+    F.MouseEnter:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardHov}):Play() end)
+    F.MouseLeave:Connect(function() TweenService:Create(F, TweenInfo.new(0.15), {BackgroundColor3 = Theme.CardBG}):Play() end)
+    F.MouseButton1Click:Connect(function()
+        stateRef = not stateRef
+        TweenService:Create(Sw, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play()
+        TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play()
+        if callback then callback(stateRef) end
+        
+        -- [AUTO-SYNC] Langsung simpan ke JSON tiap lu pencet toggle!
+        SaveSettings() 
+    end)
+    table.insert(AllToggles, {Btn = F, Label = L})
+end
 
-local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Size = UDim2.new(0, 70, 0, 40) 
-FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
-FloatCont.BackgroundTransparency = 1
-FloatCont.ZIndex = 99999 
+-- ... (Bagian bawahnya SearchBox, Build Tabs, dll tetap pakai code lu yang kemarin) ...
 
 local FloatBtn = Instance.new("TextButton", FloatCont)
 FloatBtn.Size = UDim2.new(0, 40, 1, 0)
