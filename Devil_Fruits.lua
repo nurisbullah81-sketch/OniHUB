@@ -138,10 +138,10 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. TWEEN SMOOTH (ORIGINAL - JANGAN DIUTAK ATIK)
+-- 3. TWEEN SMOOTH V2 (RUNSERVICE HEARTBEAT - ANAKIN FLY STYLE)
 -- ==========================================
-local fruitTween=nil
-local lastTweenTarget=nil
+local tweenConn = nil
+local isTweening = false
 
 local function GetNearestFruit() 
     local closest,minDist=nil,math.huge 
@@ -161,40 +161,51 @@ local function GetNearestFruit()
     return closest 
 end
 
+local function StopSmoothTween()
+    if tweenConn then
+        tweenConn:Disconnect()
+        tweenConn = nil
+    end
+    isTweening = false
+end
+
 task.spawn(function() 
-    while task.wait(1) do 
-        pcall(function() 
-            if Settings.TweenFruit then 
-                local nearest=GetNearestFruit() 
-                local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-                if nearest and hrp then 
-                    local pos=Pos(nearest) 
-                    if pos then 
-                        local dist=(pos-hrp.Position).Magnitude 
-                        if dist>5 then
-                            if nearest ~= lastTweenTarget or (fruitTween and fruitTween.PlaybackState ~= Enum.PlaybackState.Playing) then
-                                if fruitTween then fruitTween:Cancel() end 
-                                local speed=250 
-                                local timeToTween=dist/speed 
-                                local targetCFrame=CFrame.new(pos+Vector3.new(0,1.5,0)) 
-                                fruitTween=TweenService:Create(hrp,TweenInfo.new(timeToTween,Enum.EasingStyle.Linear),{CFrame=targetCFrame}) 
-                                fruitTween:Play()
-                                lastTweenTarget = nearest
+    while task.wait(0.5) do 
+        if Settings.TweenFruit then 
+            local nearest = GetNearestFruit() 
+            local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+            if nearest and hrp then 
+                local pos = Pos(nearest) 
+                if pos and (pos - hrp.Position).Magnitude > 5 then
+                    if not isTweening then
+                        isTweening = true
+                        tweenConn = RunService.Heartbeat:Connect(function(deltaTime)
+                            if not Settings.TweenFruit or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
+                                StopSmoothTween() return
                             end
-                        else 
-                            if fruitTween then fruitTween:Cancel() fruitTween=nil end 
-                            lastTweenTarget = nil
-                        end 
-                    end 
-                else 
-                    if fruitTween then fruitTween:Cancel() fruitTween=nil end 
-                    lastTweenTarget = nil
+                            local currentPos = Pos(nearest)
+                            if not currentPos then StopSmoothTween() return end
+                            
+                            local dist = (currentPos - hrp.Position).Magnitude
+                            if dist <= 5 then StopSmoothTween() return end
+                            
+                            local direction = (currentPos - hrp.Position).Unit
+                            local speed = 300 * deltaTime -- Kecepatan 300 studs/detik (Sangat cepat & halus)
+                            if speed > dist then speed = dist end
+                            
+                            local newPos = hrp.Position + (direction * speed)
+                            hrp.CFrame = CFrame.new(newPos)
+                        end)
+                    end
+                else
+                    StopSmoothTween()
                 end 
             else 
-                if fruitTween then fruitTween:Cancel() fruitTween=nil end 
-                lastTweenTarget = nil
+                StopSmoothTween()
             end 
-        end) 
+        else 
+            StopSmoothTween()
+        end 
     end 
 end)
 
@@ -361,9 +372,9 @@ function _G.Cat.HopServer()
     end)
 end
 
--- CEK BUAH UNTUK HOP (Gue balikin loop ini karena di kode lu barusan ilang)
+-- CEK BUAH UNTUK HOP (CEPAT 3 DETIK)
 task.spawn(function()
-    while task.wait(10) do
+    while task.wait(3) do -- Gue ubah dari 10 detik jadi 3 detik biar cepat
         if Settings.AutoHop then
             pcall(function()
                 local fruitCount = 0
