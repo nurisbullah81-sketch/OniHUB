@@ -55,11 +55,15 @@ end
 
 _G.Cat = {
     Player = game:GetService("Players").LocalPlayer,
-    Settings = loadSettings(), -- LANGSUNG LOAD DARI FILE!
-    Labels = {},
-    SaveSettings = saveSettings
+    Settings = { 
+        FruitESP = true, 
+        TweenFruit = true,
+        AutoStoreFruit = true,
+        AutoHop = true,
+        AntiAFK = true
+    },
+    Labels = {}
 }
-
 Load("StyleUI.lua")
 Load("Status.lua")
 Load("Devil_Fruits.lua")
