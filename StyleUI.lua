@@ -7,17 +7,22 @@ if CoreGui:FindFirstChild("CatUI") then
     CoreGui.CatUI:Destroy() 
 end
 
-_G.Cat = {
-    Player = game:GetService("Players").LocalPlayer,
-    Settings = { 
-        FruitESP = false, 
-        TweenFruit = false,
-        AutoStoreFruit = false, -- BARU
-        AutoHop = false,        -- BARU
-        AntiAFK = true
-    },
-    Labels = {}
-}
+if not _G.Cat then
+    _G.Cat = {
+        Player = game:GetService("Players").LocalPlayer,
+        Settings = { 
+            FruitESP = false, 
+            TweenFruit = false,
+            AutoStoreFruit = false,
+            AutoHop = false,
+            AntiAFK = true
+        },
+        Labels = {}
+    }
+else
+    _G.Cat.Player = game:GetService("Players").LocalPlayer
+    if not _G.Cat.Labels then _G.Cat.Labels = {} end
+end
 
 local Gui = Instance.new("ScreenGui", CoreGui)
 Gui.Name = "CatUI"
