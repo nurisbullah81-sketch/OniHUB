@@ -458,40 +458,38 @@ function _G.Cat.GetFruitsList()
 end
 
 -- ==========================================
--- 6. AUTO SELECT TEAM (MARINES) - PURE API SPAM
+-- 6. AUTO SELECT TEAM (MARINES) - 24/7 AFK FIX
 -- ==========================================
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(1) do
         pcall(function()
-            local mainGui = Me.PlayerGui:FindFirstChild("Main")
-            if not mainGui then return end
+            local chooseTeam = Me.PlayerGui:FindFirstChild("Main") and Me.PlayerGui.Main:FindFirstChild("ChooseTeam")
             
-            local chooseTeam = mainGui:FindFirstChild("ChooseTeam")
-            if chooseTeam and chooseTeam.Visible then
-                warn("[CatHUB] Menunggu server siap dan memaksa masuk tim Marines...")
+            -- Jika lu belum punya tim ATAU layar "PICK A SIDE" muncul nyangkut
+            if Me.Team == nil or (chooseTeam and chooseTeam.Visible) then
+                warn("[CatHUB] Layar Tim Terdeteksi! Memaksa masuk tim Marines...")
                 
-                -- SPAM API SAMPAI SERVER MENYERAH
-                local maxTries = 20
-                local tries = 0
+                -- 1. SPAM API SAMPAI SERVER NYERAH
                 repeat
                     task.wait(0.5)
-                    tries = tries + 1
                     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-                until (Me.Team and Me.Team.Name == "Marines") or not chooseTeam.Visible or tries > maxTries
+                until Me.Team and Me.Team.Name == "Marines"
                 
-                -- JIKA SERVER SUDAH RESMI MEMASUKKAN KITA KE MARINES
+                -- 2. JIKA SERVER UDAH ACC KITA JADI MARINES
                 if Me.Team and Me.Team.Name == "Marines" then
-                    warn("[CatHUB] Sukses masuk Marines! Membersihkan layar...")
+                    warn("[CatHUB] Sukses masuk Marines! Membersihkan layar & kamera...")
                     
-                    -- 1. Hilangkan UI
-                    chooseTeam.Visible = false
+                    -- Hilangkan UI paksa
+                    if chooseTeam then chooseTeam.Visible = false end
                     
-                    -- 2. Kembalikan kamera dari mode nonton (awang-awang) ke punggung karakter lu
+                    -- Tarik kamera lu dari awang-awang balik nempel ke karakter
                     local cam = workspace.CurrentCamera
                     cam.CameraType = Enum.CameraType.Custom
                     if Me.Character and Me.Character:FindFirstChild("Humanoid") then
                         cam.CameraSubject = Me.Character.Humanoid
                     end
+                    
+                    task.wait(2) -- Kasih napas bentar ke game
                 end
             end
         end)
