@@ -138,11 +138,11 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. NOMEXY PROXY TWEEN V4 (NATURAL GHOST)
+-- 3. SMART TWEEN V5 (BUTTER SMOOTH & NO TOOL TILT)
 -- ==========================================
 local isTweening = false
-local proxyPart = nil
-local noclipConnection = nil
+local tweenNoclip = nil
+local tweenMove = nil
 
 local function GetNearestFruit() 
     local closest,minDist=nil,math.huge 
@@ -162,12 +162,12 @@ local function GetNearestFruit()
     return closest 
 end
 
-local function StopProxyTween()
+local function StopSmartTween()
     if not isTweening then return end
     isTweening = false
     
-    if proxyPart then proxyPart:Destroy(); proxyPart = nil end
-    if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+    if tweenNoclip then tweenNoclip:Disconnect(); tweenNoclip = nil end
+    if tweenMove then tweenMove:Disconnect(); tweenMove = nil end
     
     -- Balikin Collision biar ga jatoh
     pcall(function()
@@ -185,70 +185,54 @@ task.spawn(function()
             
             if nearest and hrp then 
                 local pos = Pos(nearest) 
-                if pos and (pos - hrp.Position).Magnitude > 5 then
+                if pos and (pos - hrp.Position).Magnitude > 8 then
                     if not isTweening then
                         isTweening = true
                         
-                        -- SETUP PROXY PART
-                        local startCFrame = CFrame.lookAt(hrp.Position, pos)
-                        local endCFrame = CFrame.lookAt(pos, pos + startCFrame.LookVector)
-                        
-                        proxyPart = Instance.new("Part")
-                        proxyPart.Name = "CatProxy"
-                        proxyPart.Transparency = 1 
-                        proxyPart.Anchored = true 
-                        proxyPart.CanCollide = false
-                        proxyPart.Size = Vector3.new(1, 1, 1)
-                        proxyPart.CFrame = startCFrame
-                        proxyPart.Parent = workspace
-
-                        -- NOCLIP & SYNC LOOP
-                        noclipConnection = RunService.Stepped:Connect(function()
-                            if isTweening and Me.Character and hrp and proxyPart and proxyPart.Parent then
+                        -- NYALAIN NOCLIP (Tembus Tembok)
+                        tweenNoclip = RunService.Stepped:Connect(function()
+                            if isTweening and Me.Character then
                                 for _, part in pairs(Me.Character:GetDescendants()) do
                                     if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
                                 end
-                                hrp.Velocity = Vector3.zero
-                                hrp.RotVelocity = Vector3.zero
-                                hrp.CFrame = proxyPart.CFrame
-                            else
-                                StopProxyTween()
                             end
                         end)
                         
-                        -- TWEEN PROXY
-                        local distance = (proxyPart.Position - pos).Magnitude
-                        local timeToTravel = distance / 300 -- Kecepatan 300
-                        
-                        local tween = TweenService:Create(proxyPart, TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear), {CFrame = endCFrame})
-                        tween:Play()
-                        
-                        -- WAIT & FAILSAFE
-                        local finished = false
-                        local conn; conn = tween.Completed:Connect(function()
-                            finished = true
-                            if conn then conn:Disconnect() end
-                        end)
-
-                        while not finished and isTweening do
-                            task.wait(0.1)
+                        -- NYALAIN SMOOTH MOVER
+                        tweenMove = RunService.Heartbeat:Connect(function(delta)
+                            if not isTweening or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
+                                StopSmartTween() return
+                            end
+                            
                             local currentPos = Pos(nearest)
-                            -- Berhenti kalau buah ilang/diambil, atau jarak udah dekat
-                            if not currentPos or not nearest.Parent or (currentPos - hrp.Position).Magnitude <= 5 then
-                                break
-                            end
-                        end
-                        
-                        StopProxyTween()
+                            if not currentPos then StopSmartTween() return end
+                            
+                            local dist = (currentPos - hrp.Position).Magnitude
+                            if dist <= 8 then StopSmartTween() return end
+                            
+                            local direction = (currentPos - hrp.Position).Unit
+                            local speed = 350 * delta -- Kecepatan super kencang tapi halus
+                            if speed > dist then speed = dist end
+                            
+                            local newPos = hrp.Position + (direction * speed)
+                            
+                            -- SMART ROTATION: Lerp biar ga miring pas megang buah, muter halus
+                            local targetRotation = CFrame.lookAt(hrp.Position, currentPos)
+                            local smoothRotation = hrp.CFrame.Rotation:Lerp(targetRotation.Rotation, 0.15)
+                            
+                            hrp.CFrame = CFrame.new(newPos) * smoothRotation
+                            hrp.Velocity = Vector3.zero -- Biar ga kena physics glitch
+                            hrp.RotVelocity = Vector3.zero
+                        end)
                     end
                 else
-                    StopProxyTween()
+                    StopSmartTween()
                 end 
             else 
-                StopProxyTween()
+                StopSmartTween()
             end 
         else 
-            StopProxyTween()
+            StopSmartTween()
         end 
     end 
 end)
