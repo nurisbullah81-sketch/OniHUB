@@ -138,23 +138,53 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. SMART TWEEN V5.2 (GROUND LOCKED - NO FLY)
+-- 3. PROXY TWEEN ENGINE (THUNDER Z STYLE - REPLACED Z.AI)
 -- ==========================================
 local isTweening = false
-local tweenNoclip = nil
-local tweenMove = nil
+local currentTarget = nil
+local proxyPart = nil
+local noclipConn = nil
+local currentTween = nil
+
+local TWEEN_SPEED = 300 -- Kecepatan standar executor premium
+
+local function StopSmartTween()
+    if isTweening then
+        isTweening = false
+        currentTarget = nil
+        if currentTween then
+            currentTween:Cancel()
+            currentTween = nil
+        end
+        if noclipConn then
+            noclipConn:Disconnect()
+            noclipConn = nil
+        end
+        if proxyPart then
+            proxyPart:Destroy()
+            proxyPart = nil
+        end
+        pcall(function()
+            if Me.Character then
+                for _, part in pairs(Me.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
+                end
+            end
+        end)
+    end
+end
 
 local function GetNearestFruit() 
-    local closest,minDist=nil,math.huge 
-    local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+    local closest, minDist = nil, math.huge 
+    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
     if not hrp then return nil end 
-    for f,_ in pairs(Data) do 
+    for f, _ in pairs(Data) do 
         if f and f.Parent then 
-            local p=Pos(f) 
+            local p = Pos(f) 
             if p then 
-                local dist=(p-hrp.Position).Magnitude 
-                if dist<minDist then 
-                    closest,minDist=f,dist 
+                local dist = (p - hrp.Position).Magnitude 
+                if dist < minDist then 
+                    closest, minDist = f, dist 
                 end 
             end 
         end 
@@ -162,118 +192,70 @@ local function GetNearestFruit()
     return closest 
 end
 
-local function StopSmartTween()
-    if not isTweening then return end
-    isTweening = false
-    
-    if tweenNoclip then tweenNoclip:Disconnect(); tweenNoclip = nil end
-    if tweenMove then tweenMove:Disconnect(); tweenMove = nil end
-    
-    pcall(function()
-        if Me.Character then
-            for _, part in pairs(Me.Character:GetDescendants()) do
-                if part:IsA("BasePart") then part.CanCollide = true end
-            end
-        end
-    end)
-end
-
--- Raycast buat cek tanah
-local function GetGroundY(pos)
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = {Me.Character}
-    
-    local result = Workspace:Raycast(
-        Vector3.new(pos.X, pos.Y + 100, pos.Z),
-        Vector3.new(0, -200, 0),
-        rayParams
-    )
-    
-    if result then
-        return result.Position.Y + 3 -- Offset biar di atas tanah
-    end
-    return pos.Y
-end
-
 task.spawn(function() 
-    while task.wait(0.5) do 
-        if Settings.TweenFruit then 
-            local nearest = GetNearestFruit() 
-            local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-            
-            if nearest and hrp then 
-                local pos = Pos(nearest) 
-                if pos and (pos - hrp.Position).Magnitude > 4 then
-                    if not isTweening then
-                        isTweening = true
-                        local baseY = hrp.Position.Y -- Y awal lu, biar ga tiba2 terbang
-                        
-                        tweenNoclip = RunService.Stepped:Connect(function()
-                            if isTweening and Me.Character then
-                                for _, part in pairs(Me.Character:GetDescendants()) do
-                                    if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
+    while task.wait(0.2) do 
+        pcall(function() 
+            if Settings.TweenFruit then 
+                local nearest = GetNearestFruit() 
+                local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+                
+                if nearest and hrp then 
+                    local targetPos = Pos(nearest) 
+                    if not targetPos then StopSmartTween() return end
+                    
+                    local dist = (targetPos - hrp.Position).Magnitude 
+                    
+                    if dist < 5 then
+                        -- Udah di atas buah, stop tween biar lu bisa ambil
+                        StopSmartTween()
+                    else
+                        if currentTarget ~= nearest or not isTweening then
+                            StopSmartTween() -- Bersihkan rute lama kalau buah ganti
+                            currentTarget = nearest
+                            isTweening = true
+                            
+                            -- 1. SPAWN GHOST PART
+                            local startCFrame = CFrame.lookAt(hrp.Position, targetPos)
+                            proxyPart = Instance.new("Part")
+                            proxyPart.Name = "NomexyProxy"
+                            proxyPart.Transparency = 1
+                            proxyPart.Anchored = true
+                            proxyPart.CanCollide = false
+                            proxyPart.Size = Vector3.new(1, 1, 1)
+                            proxyPart.CFrame = startCFrame
+                            proxyPart.Parent = workspace
+
+                            -- 2. NOCLIP & SYNC KE GHOST PART
+                            noclipConn = RunService.Stepped:Connect(function()
+                                if isTweening and Me.Character and hrp and proxyPart then
+                                    for _, part in pairs(Me.Character:GetDescendants()) do
+                                        if part:IsA("BasePart") and part.CanCollide then 
+                                            part.CanCollide = false 
+                                        end
+                                    end
+                                    hrp.Velocity = Vector3.zero
+                                    hrp.RotVelocity = Vector3.zero
+                                    hrp.CFrame = proxyPart.CFrame
                                 end
-                            end
-                        end)
-                        
-                        tweenMove = RunService.Heartbeat:Connect(function(delta)
-                            if not isTweening or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
-                                StopSmartTween() return
-                            end
+                            end)
                             
-                            local fruitPos = Pos(nearest)
-                            if not fruitPos then StopSmartTween() return end
+                            -- 3. TWEEN THE GHOST (Mulus nembus apa aja)
+                            local endPos = targetPos + Vector3.new(0, 2, 0) -- Hover 2 meter di atas buah biar pas
+                            local endCFrame = CFrame.lookAt(endPos, endPos + startCFrame.LookVector)
+                            local timeToTravel = dist / TWEEN_SPEED
                             
-                            -- Hitung jarak di XZ plane aja (ignore Y)
-                            local flatDist = Vector3.new(fruitPos.X - hrp.Position.X, 0, fruitPos.Z - hrp.Position.Z).Magnitude
-                            
-                            if flatDist <= 4 then StopSmartTween() return end
-                            
-                            -- Arah gerak cuma XZ
-                            local targetXZ = Vector3.new(fruitPos.X, 0, fruitPos.Z)
-                            local currentXZ = Vector3.new(hrp.Position.X, 0, hrp.Position.Z)
-                            local dirXZ = (targetXZ - currentXZ).Unit
-                            
-                            -- Speed di XZ plane
-                            local speed = 280 * delta
-                            if speed > flatDist then speed = flatDist end
-                            
-                            -- Posisi baru XZ
-                            local newX = hrp.Position.X + (dirXZ.X * speed)
-                            local newZ = hrp.Position.Z + (dirXZ.Z * speed)
-                            
-                            -- Y position: Lerp pelan ke buah, TAPI dengan batas max naik 8 studs dari awal
-                            -- Jadi kalau buah di atas banget, lu ga akan terbang tinggi bodoh
-                            local fruitY = fruitPos.Y
-                            local maxY = baseY + 8 -- MAX NAIK 8 STUDS DOANG COK
-                            
-                            -- Clamp fruitY biar ga kelebihan
-                            local targetY = math.clamp(fruitY, baseY - 5, maxY)
-                            
-                            -- Lerp Y pelan2 biar smooth ga ngeluncur
-                            local newY = hrp.Position.Y + ((targetY - hrp.Position.Y) * 0.08)
-                            
-                            local newPos = Vector3.new(newX, newY, newZ)
-                            
-                            -- CFrame simple: posisi + look at arah buah (horizontal aja)
-                            local lookTarget = Vector3.new(fruitPos.X, newY, fruitPos.Z)
-                            hrp.CFrame = CFrame.new(newPos, lookTarget)
-                            
-                            -- Zero velocity biar ga ngebug
-                            hrp.AssemblyLinearVelocity = Vector3.zero
-                            hrp.AssemblyAngularVelocity = Vector3.zero
-                        end)
-                    end
-                else
+                            local tweenInfo = TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+                            currentTween = TweenService:Create(proxyPart, tweenInfo, {CFrame = endCFrame})
+                            currentTween:Play()
+                        end
+                    end 
+                else 
                     StopSmartTween()
                 end 
             else 
                 StopSmartTween()
             end 
-        else 
-            StopSmartTween()
-        end 
+        end) 
     end 
 end)
 
@@ -365,7 +347,7 @@ function _G.Cat.HopServer()
     end)
     
     task.spawn(function()
-        warn("[CatHUB] [HOP] Menjalankan Sovereign V26...")
+        warn("[CatHUB] [HOP] Executing Sovereign V26 Engine...")
         
         while Settings.AutoHop do
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
