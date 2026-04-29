@@ -109,6 +109,48 @@ function Webhook:Test(webhookURL)
     return false, "Pcall Error"
 end
 
+function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
+    if not webhookURL or webhookURL == "" then return end
+    
+    -- [OBAT 403]: Pakai Proxy Lewisakura
+    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
+    webhookURL = string.gsub(webhookURL, "discord%.com", "webhook.lewisakura.moe")
+    
+    local fruitRarity = GetDynamicRarity(fruitName)
+    local shouldSend = false
+    
+    if raritySetting == "All Fruits" then
+        shouldSend = true
+    elseif raritySetting == "Legendary & Mythical" then
+        if string.find(fruitRarity, "Legendary") or string.find(fruitRarity, "Mythical") then shouldSend = true end
+    elseif raritySetting == "Mythical Only" then
+        if string.find(fruitRarity, "Mythical") then shouldSend = true end
+    end
+    
+    if not shouldSend then return end
+    
+    local embedColor = 16777215
+    if string.find(fruitRarity, "Legendary") then embedColor = 16753920
+    elseif string.find(fruitRarity, "Mythical") then embedColor = 16711935 end
+    
+    local payload = HttpService:JSONEncode({
+        content = "🚨 **FRUIT SPAWN DETECTED** 🚨",
+        embeds = {{
+            title = fruitRarity .. " Fruit: " .. fruitName,
+            description = "**JobID:** `" .. jobId .. "`\n\nUse this JobID to teleport to the server!",
+            color = embedColor,
+            footer = { text = "CatHUB Premium Scanner" }
+        }}
+    })
+    
+    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if req then
+        task.spawn(function()
+            pcall(function() req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) end)
+        end)
+    end
+end
+
 _G.Cat.Webhook = Webhook
 
 -- ==========================================
