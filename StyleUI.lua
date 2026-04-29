@@ -334,10 +334,33 @@ CreateSection(AutoFarmTab, "COMBAT SYSTEM")
 CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
 
 -- ==========================================
--- DEVIL FRUITS TAB (STRUCTURED LAYOUT)
+-- BUILD TABS & ISI KONTEN (UI LAYOUT FIXED)
 -- ==========================================
+local StatusTab = CreateTab("Status", true) 
+local AutoFarmTab = CreateTab("Auto Farm", false) 
+local DevilFruitsTab = CreateTab("Devil Fruits", false) 
+local MiscTab = CreateTab("Misc", false) 
 
--- Kategori 1: FRUIT FINDER
+-- STATUS TAB
+CreateSection(StatusTab, "PLAYER STATUS")
+_G.Cat.Labels.Level = CreateLabel(StatusTab, "Level: ...", "Current level progress")
+_G.Cat.Labels.Money = CreateLabel(StatusTab, "Money: ...", "In-game currency balance")
+_G.Cat.Labels.Fragments = CreateLabel(StatusTab, "Fragments: ...", "Used for awakening")
+_G.Cat.Labels.Bounty = CreateLabel(StatusTab, "Bounty/Honor: ...", "PvP score tracking")
+
+CreateSection(StatusTab, "SERVER STATUS")
+_G.Cat.Labels.Players = CreateLabel(StatusTab, "Players: ...", "Currently in this server")
+_G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycle")
+_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
+_G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
+
+-- AUTO FARM TAB
+CreateSection(AutoFarmTab, "COMBAT SYSTEM")
+CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
+
+-- ==========================================
+-- DEVIL FRUITS TAB (KATEGORI 1: FRUIT FINDER)
+-- ==========================================
 CreateSection(DevilFruitsTab, "FRUIT FINDER")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
 CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
@@ -345,27 +368,54 @@ CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", 
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- Kategori 2: DISCORD WEBHOOK
+-- ==========================================
+-- DEVIL FRUITS TAB (KATEGORI 2: DISCORD WEBHOOK)
+-- ==========================================
 CreateSection(DevilFruitsTab, "DISCORD WEBHOOK")
-
--- 1. Toggle Webhook
 CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alerts to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
 
--- 2. Kotak Teks URL
-local WHURLFrame = Instance.new("Frame", DevilFruitsTab)
-WHURLFrame.Size = UDim2.new(1, 0, 0, 32); WHURLFrame.BackgroundColor3 = Theme.CardBG; WHURLFrame.BorderSizePixel = 0
+-- Container khusus biar kotak URL, Rarity, dan Test ga berantakan
+local WHConfig = Instance.new("Frame", DevilFruitsTab)
+WHConfig.Size = UDim2.new(1, 0, 0, 106)
+WHConfig.BackgroundTransparency = 1
+local WHConfigLayout = Instance.new("UIListLayout", WHConfig)
+WHConfigLayout.Padding = UDim.new(0, 6)
+
+-- 1. URL Box
+local WHURLFrame = Instance.new("Frame", WHConfig)
+WHURLFrame.Size = UDim2.new(1, 0, 0, 32)
+WHURLFrame.BackgroundColor3 = Theme.CardBG
+WHURLFrame.BorderSizePixel = 0
 Instance.new("UICorner", WHURLFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHURLFrame).Color = Theme.Line
-local WHURLBox = Instance.new("TextBox", WHURLFrame)
-WHURLBox.Size = UDim2.new(1, -16, 1, 0); WHURLBox.Position = UDim2.new(0, 8, 0, 0); WHURLBox.BackgroundTransparency = 1
-WHURLBox.Text = _G.Cat.Settings.FruitWebhookURL ~= "" and _G.Cat.Settings.FruitWebhookURL or "Paste Discord Webhook URL here..."
-WHURLBox.TextColor3 = Theme.Text; WHURLBox.PlaceholderText = "Paste Discord Webhook URL here..."; WHURLBox.PlaceholderColor3 = Theme.TextDim
-WHURLBox.Font = Enum.Font.GothamMedium; WHURLBox.TextSize = 11; WHURLBox.TextXAlignment = Enum.TextXAlignment.Left; WHURLBox.ClearTextOnFocus = false
-WHURLBox.FocusLost:Connect(function() _G.Cat.Settings.FruitWebhookURL = WHURLBox.Text SaveSettings() end)
 
--- 3. Tombol Rarity Cycle
-local WHRarityBtn = Instance.new("TextButton", DevilFruitsTab)
-WHRarityBtn.Size = UDim2.new(1, 0, 0, 28); WHRarityBtn.BackgroundColor3 = Theme.SideBG; WHRarityBtn.BorderSizePixel = 0; WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHRarityBtn.TextColor3 = Theme.Text; WHRarityBtn.Font = Enum.Font.GothamMedium; WHRarityBtn.TextSize = 11; WHRarityBtn.AutoButtonColor = false
+local WHURLBox = Instance.new("TextBox", WHURLFrame)
+WHURLBox.Size = UDim2.new(1, -16, 1, 0)
+WHURLBox.Position = UDim2.new(0, 8, 0, 0)
+WHURLBox.BackgroundTransparency = 1
+WHURLBox.Text = _G.Cat.Settings.FruitWebhookURL ~= "" and _G.Cat.Settings.FruitWebhookURL or ""
+WHURLBox.TextColor3 = Theme.Text
+WHURLBox.PlaceholderText = "Paste Discord Webhook URL here..."
+WHURLBox.PlaceholderColor3 = Theme.TextDim
+WHURLBox.Font = Enum.Font.GothamMedium
+WHURLBox.TextSize = 11
+WHURLBox.TextXAlignment = Enum.TextXAlignment.Left
+WHURLBox.ClearTextOnFocus = false
+WHURLBox.FocusLost:Connect(function() 
+    _G.Cat.Settings.FruitWebhookURL = WHURLBox.Text 
+    SaveSettings() 
+end)
+
+-- 2. Rarity Cycle Button
+local WHRarityBtn = Instance.new("TextButton", WHConfig)
+WHRarityBtn.Size = UDim2.new(1, 0, 0, 28)
+WHRarityBtn.BackgroundColor3 = Theme.SideBG
+WHRarityBtn.BorderSizePixel = 0
+WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity
+WHRarityBtn.TextColor3 = Theme.Text
+WHRarityBtn.Font = Enum.Font.GothamMedium
+WHRarityBtn.TextSize = 11
+WHRarityBtn.AutoButtonColor = false
 Instance.new("UICorner", WHRarityBtn).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHRarityBtn).Color = Theme.Line
 
@@ -374,18 +424,29 @@ WHRarityBtn.MouseButton1Click:Connect(function()
     local current = _G.Cat.Settings.FruitWebhookRarity
     local nextIndex = 1
     for i, v in ipairs(rarityOptions) do
-        if v == current then nextIndex = (i % #rarityOptions) + 1 break end
+        if v == current then 
+            nextIndex = (i % #rarityOptions) + 1 
+            break 
+        end
     end
     _G.Cat.Settings.FruitWebhookRarity = rarityOptions[nextIndex]
     WHRarityBtn.Text = "Rarity: " .. rarityOptions[nextIndex]
     SaveSettings()
 end)
 
--- 4. Tombol Test Webhook (Warna Beda)
-local WHTestBtn = Instance.new("TextButton", DevilFruitsTab)
-WHTestBtn.Size = UDim2.new(1, 0, 0, 28); WHTestBtn.BackgroundColor3 = Theme.CardBG; WHTestBtn.BorderSizePixel = 0; WHTestBtn.Text = "Test Webhook"; WHTestBtn.TextColor3 = Theme.CatPurple; WHTestBtn.Font = Enum.Font.GothamBold; WHTestBtn.TextSize = 11; WHTestBtn.AutoButtonColor = false
+-- 3. Test Webhook Button
+local WHTestBtn = Instance.new("TextButton", WHConfig)
+WHTestBtn.Size = UDim2.new(1, 0, 0, 28)
+WHTestBtn.BackgroundColor3 = Theme.SideBG
+WHTestBtn.BorderSizePixel = 0
+WHTestBtn.Text = "Test Webhook"
+WHTestBtn.TextColor3 = Theme.CatPurple
+WHTestBtn.Font = Enum.Font.GothamBold
+WHTestBtn.TextSize = 11
+WHTestBtn.AutoButtonColor = false
 Instance.new("UICorner", WHTestBtn).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", WHTestBtn).Color = Theme.CatPurple -- Warna unik biar keliatan beda
+Instance.new("UIStroke", WHTestBtn).Color = Theme.Line
+
 WHTestBtn.MouseButton1Click:Connect(function()
     WHTestBtn.Text = "Sending..."
     if _G.Cat.Webhook then
@@ -393,14 +454,16 @@ WHTestBtn.MouseButton1Click:Connect(function()
         if ok then
             WHTestBtn.Text = "Test Sent!"
         else
-            WHTestBtn.Text = "Fail: " .. string.sub(tostring(err), 1, 25)
+            WHTestBtn.Text = "Failed! Check URL"
         end
     else
         WHTestBtn.Text = "Module Missing!"
     end
-    task.wait(3)
+    task.wait(2)
     WHTestBtn.Text = "Test Webhook"
 end)
 
+-- ==========================================
 -- MISC TAB
+-- ==========================================
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
