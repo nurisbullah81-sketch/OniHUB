@@ -1,5 +1,5 @@
 -- ==========================================
--- CATHUB PREMIUM: FULL FUSION (UI + WEBHOOK ENGINE)
+-- CATHUB PREMIUM: FULL FUSION (UI + WEBHOOK PROXY)
 -- ==========================================
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -9,7 +9,9 @@ local RS = game:GetService("ReplicatedStorage")
 
 if CoreGui:FindFirstChild("CatUI") then CoreGui.CatUI:Destroy() end
 
+-- ==========================================
 -- 1. SETUP CONFIG & _G
+-- ==========================================
 local ConfigFile = "CatHUB_Config.json"
 local DefaultSettings = {
     FruitESP = false, TweenFruit = false, InstantTPFruit = false,
@@ -101,10 +103,48 @@ function Webhook:Test(webhookURL)
     return false, "Pcall Error"
 end
 
+function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
+    if not webhookURL or webhookURL == "" then return end
+    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") 
+    webhookURL = string.gsub(webhookURL, "discord.com", "hooks.hyra.io")
+    
+    local fruitRarity = GetDynamicRarity(fruitName)
+    local shouldSend = false
+    
+    if raritySetting == "All Fruits" then shouldSend = true
+    elseif raritySetting == "Legendary & Mythical" then
+        if string.find(fruitRarity, "Legendary") or string.find(fruitRarity, "Mythical") then shouldSend = true end
+    elseif raritySetting == "Mythical Only" then
+        if string.find(fruitRarity, "Mythical") then shouldSend = true end
+    end
+    
+    if not shouldSend then return end
+    
+    local embedColor = 16777215
+    if string.find(fruitRarity, "Legendary") then embedColor = 16753920
+    elseif string.find(fruitRarity, "Mythical") then embedColor = 16711935 end
+    
+    local payload = HttpService:JSONEncode({
+        content = "🚨 **FRUIT SPAWN DETECTED** 🚨",
+        embeds = {{
+            title = fruitRarity .. " Fruit: " .. fruitName,
+            description = "**JobID:** `" .. jobId .. "`\n\nUse this JobID to teleport to the server!",
+            color = embedColor,
+            footer = { text = "CatHUB Premium Scanner" }
+        }}
+    })
+    
+    local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+    if req then
+        task.spawn(function()
+            pcall(function() req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) end)
+        end)
+    end
+end
 _G.Cat.Webhook = Webhook
 
 -- ==========================================
--- 3. UI RENDERING 
+-- 3. UI RENDERING (FULL BACKUP VER)
 -- ==========================================
 local Gui = Instance.new("ScreenGui", CoreGui); Gui.Name = "CatUI"; Gui.ResetOnSpawn = false; Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local Theme = { MainBG = Color3.fromRGB(10, 10, 10), SideBG = Color3.fromRGB(14, 14, 16), TopBG = Color3.fromRGB(10, 10, 10), TabOn = Color3.fromRGB(38, 38, 42), TabOff = Color3.fromRGB(25, 25, 30), PageBG = Color3.fromRGB(17, 18, 22), CardBG = Color3.fromRGB(28, 28, 32), CardHov = Color3.fromRGB(36, 36, 42), Text = Color3.fromRGB(250, 250, 250), TextDim = Color3.fromRGB(140, 140, 145), ToggleOn = Color3.fromRGB(138, 43, 226), ToggleOff = Color3.fromRGB(75, 75, 80), CatPurple = Color3.fromRGB(160, 100, 255), Gold = Color3.fromRGB(255, 200, 50), Accent = Color3.fromRGB(138, 43, 226), Line = Color3.fromRGB(40, 40, 45) }
@@ -195,10 +235,18 @@ local AutoFarmTab = CreateTab("Auto Farm", false)
 local DevilFruitsTab = CreateTab("Devil Fruits", false) 
 local MiscTab = CreateTab("Misc", false) 
 
--- STATUS
+-- STATUS TAB (FULL RESTORED DARI BACKUP)
 CreateSection(StatusTab, "PLAYER STATUS")
 _G.Cat.Labels.Level = CreateLabel(StatusTab, "Level: ...", "Current level progress")
 _G.Cat.Labels.Money = CreateLabel(StatusTab, "Money: ...", "In-game currency balance")
+_G.Cat.Labels.Fragments = CreateLabel(StatusTab, "Fragments: ...", "Used for awakening")
+_G.Cat.Labels.Bounty = CreateLabel(StatusTab, "Bounty/Honor: ...", "PvP score tracking")
+
+CreateSection(StatusTab, "SERVER STATUS")
+_G.Cat.Labels.Players = CreateLabel(StatusTab, "Players: ...", "Currently in this server")
+_G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycle")
+_G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
+_G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
 -- FARM
 CreateSection(AutoFarmTab, "COMBAT SYSTEM")
