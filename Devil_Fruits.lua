@@ -471,7 +471,7 @@ task.spawn(function()
                 
                 -- 1. SPAM API SAMPAI SERVER NYERAH
                 repeat
-                    task.wait(0.5)
+                    task.wait(5.5)
                     game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", "Marines")
                 until Me.Team and Me.Team.Name == "Marines"
                 
