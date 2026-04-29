@@ -5,6 +5,8 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VIM = game:GetService("VirtualInputManager")
+
+-- SERVICES UNTUK SOVEREIGN V26
 local GuiService = game:GetService("GuiService")
 local CoreGui = game:GetService("CoreGui")
 
@@ -17,31 +19,27 @@ local FC = 0
 local SKIP = 10
 
 -- ==========================================
--- 1. GUARDIAN (PCALL KETAT BIAR GA ERROR)
+-- 1. THE GUARDIAN V26 (ZERO-BLINK TECHNOLOGY)
 -- ==========================================
-pcall(function()
-    GuiService.ErrorMessageChanged:Connect(function()
-        if Settings.AutoHop then
-            pcall(function() GuiService:ClearError() end)
-        end
-    end)
+GuiService.ErrorMessageChanged:Connect(function()
+    if Settings.AutoHop then
+        pcall(function() GuiService:ClearError() end)
+    end
 end)
 
-pcall(function()
-    task.spawn(function()
-        local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
-        if promptGui then
-            local overlay = promptGui:WaitForChild("promptOverlay", 5)
-            if overlay then
-                overlay.Visible = false
-                pcall(function()
-                    overlay:GetPropertyChangedSignal("Visible"):Connect(function()
-                        if Settings.AutoHop then overlay.Visible = false end
-                    end)
-                end)
-            end
+task.spawn(function()
+    local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
+    if promptGui then
+        local overlay = promptGui:WaitForChild("promptOverlay", 5)
+        if overlay then
+            overlay.Visible = false
+            overlay:GetPropertyChangedSignal("Visible"):Connect(function()
+                if Settings.AutoHop then
+                    overlay.Visible = false
+                end
+            end)
         end
-    end)
+    end
 end)
 
 -- ==========================================
@@ -140,120 +138,105 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. TWEEN DENGAN OVERSHOOT
+-- 3. SMART TWEEN V5.1 (PRECISION FIX - ANAKIN STYLE)
 -- ==========================================
 local isTweening = false
-local currentTarget = nil
+local tweenNoclip = nil
+local tweenMove = nil
 
-local function GetNearestFruit()
-    local closest, minDist = nil, math.huge
-    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    
-    local heldFruit = nil
-    if Me.Character then
-        for _, tool in pairs(Me.Character:GetChildren()) do
-            if tool:IsA("Tool") and tool:FindFirstChild("Fruit") then
-                heldFruit = tool
-                break
-            end
-        end
-    end
-    
-    for f, _ in pairs(Data) do
-        if f and f.Parent and f ~= heldFruit then
-            local p = Pos(f)
-            if p then
-                local dist = (p - hrp.Position).Magnitude
-                if dist < minDist then
-                    closest, minDist = f, dist
-                end
-            end
-        end
-    end
-    return closest, minDist
+local function GetNearestFruit() 
+    local closest,minDist=nil,math.huge 
+    local hrp=Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+    if not hrp then return nil end 
+    for f,_ in pairs(Data) do 
+        if f and f.Parent then 
+            local p=Pos(f) 
+            if p then 
+                local dist=(p-hrp.Position).Magnitude 
+                if dist<minDist then 
+                    closest,minDist=f,dist 
+                end 
+            end 
+        end 
+    end 
+    return closest 
 end
 
-task.spawn(function()
-    while task.wait(0.1) do
-        pcall(function()
-            if not Settings.TweenFruit then
-                isTweening = false
-                currentTarget = nil
-                return
-            end
-            
-            local fruit, dist = GetNearestFruit()
-            
-            if fruit and dist > 3 then
-                currentTarget = fruit
-                isTweening = true
-            elseif not fruit or dist <= 3 then
-                if dist and dist <= 3 then
-                    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart")
-                    local fruitPos = Pos(fruit)
-                    if hrp and fruitPos then
-                        local dir = (fruitPos - hrp.Position).Unit
-                        hrp.CFrame = CFrame.new(fruitPos + (dir * 3))
-                    end
-                end
-                isTweening = false
-                currentTarget = nil
-            end
-        end)
-    end
-end)
-
-RunService.Heartbeat:Connect(function(dt)
-    if not isTweening or not currentTarget or not currentTarget.Parent then
-        isTweening = false
-        currentTarget = nil
-        return
-    end
+local function StopSmartTween()
+    if not isTweening then return end
+    isTweening = false
+    
+    if tweenNoclip then tweenNoclip:Disconnect(); tweenNoclip = nil end
+    if tweenMove then tweenMove:Disconnect(); tweenMove = nil end
     
     pcall(function()
-        local char = Me.Character
-        if not char then isTweening = false return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then isTweening = false return end
-        
-        local fruitPos = Pos(currentTarget)
-        if not fruitPos then
-            isTweening = false
-            currentTarget = nil
-            return
+        for _, part in pairs(Me.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = true end
         end
-        
-        local currentPos = hrp.Position
-        local dist = (fruitPos - currentPos).Magnitude
-        
-        if dist < 10 then
-            local dir = (fruitPos - currentPos).Unit
-            hrp.CFrame = CFrame.new(fruitPos + (dir * 3))
-            hrp.Velocity = Vector3.zero
-            isTweening = false
-            currentTarget = nil
-            return
-        end
-        
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-        
-        hrp.Velocity = Vector3.zero
-        hrp.AssemblyLinearVelocity = Vector3.zero
-        
-        local speed = 350
-        local moveAmount = math.min(speed * dt, dist)
-        local direction = (fruitPos - currentPos).Unit
-        local newPos = currentPos + direction * moveAmount
-        local targetCFrame = CFrame.new(newPos, fruitPos)
-        hrp.CFrame = CFrame.new(newPos) * CFrame.Angles(0, targetCFrame.Yaw, 0)
     end)
+end
+
+task.spawn(function() 
+    while task.wait(0.5) do 
+        if Settings.TweenFruit then 
+            local nearest = GetNearestFruit() 
+            local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+            
+            if nearest and hrp then 
+                local pos = Pos(nearest) 
+                -- FIX: Jarak start diturunin jadi 3 studs. Jadi kalau buahnya ada di sebelah lu, lu tetep maju sekedarnya buat ngambil.
+                if pos and (pos - hrp.Position).Magnitude > 3 then
+                    if not isTweening then
+                        isTweening = true
+                        
+                        tweenNoclip = RunService.Stepped:Connect(function()
+                            if isTweening and Me.Character then
+                                for _, part in pairs(Me.Character:GetDescendants()) do
+                                    if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
+                                end
+                            end
+                        end)
+                        
+                        tweenMove = RunService.Heartbeat:Connect(function(delta)
+                            if not isTweening or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
+                                StopSmartTween() return
+                            end
+                            
+                            local currentPos = Pos(nearest)
+                            if not currentPos then StopSmartTween() return end
+                            
+                            local dist = (currentPos - hrp.Position).Magnitude
+                            -- FIX: Jarak stop diturunin jadi 3 studs biar pas nyampe di atas buahnya, ga jauh di sebelahnya.
+                            if dist <= 3 then StopSmartTween() return end
+                            
+                            local direction = (currentPos - hrp.Position).Unit
+                            local speed = 350 * delta 
+                            if speed > dist then speed = dist end
+                            
+                            local newPos = hrp.Position + (direction * speed)
+                            
+                            local targetRotation = CFrame.lookAt(hrp.Position, currentPos)
+                            local smoothRotation = hrp.CFrame.Rotation:Lerp(targetRotation.Rotation, 0.15)
+                            
+                            hrp.CFrame = CFrame.new(newPos) * smoothRotation
+                            hrp.Velocity = Vector3.zero 
+                            hrp.RotVelocity = Vector3.zero
+                        end)
+                    end
+                else
+                    StopSmartTween()
+                end 
+            else 
+                StopSmartTween()
+            end 
+        else 
+            StopSmartTween()
+        end 
+    end 
 end)
 
 -- ==========================================
--- 4. AUTO STORE (ORIGINAL)
+-- 4. AUTO STORE - EXTORIUS LOGIC (ORIGINAL)
 -- ==========================================
 local StoreBlacklist={}
 local isStoring = false
@@ -326,89 +309,121 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 5. HOP SERVER - NOMEXY V26 MENTAHAN 100%
+-- 5. HOP SERVER - SOVEREIGN V26 (ZERO BLINK)
 -- ==========================================
+local isHopping = false
 
--- FUNGSI HOP (DIPANGGIL OLEH MAIN.lua ATAU MANUAL)
 function _G.Cat.HopServer()
-    -- Aktifkan hop sementara
-    Settings.AutoHop = true
-    warn("[CatHUB] Hop Server diaktifkan!")
-end
+    if isHopping then return end
+    isHopping = true
+    
+    pcall(function()
+        local ConfigFile = "CatHUB_Config.json"
+        writefile(ConfigFile, HttpService:JSONEncode(Settings))
+    end)
+    
+    task.spawn(function()
+        warn("[CatHUB] [HOP] Menjalankan Sovereign V26...")
+        
+        while Settings.AutoHop do
+            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            
+            if not browser or not browser.Enabled then
+                local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
+                if openBtn then
+                    local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
+                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
+                    task.wait(0.1)
+                    VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
+                end
+            end
 
--- ENGINE HOP V26 (JALAN TERUS DI BACKGROUND)
-task.spawn(function()
-    while task.wait(1) do
-        if Settings.AutoHop then
-            pcall(function()
-                local LP = Me
-                local browser = LP.PlayerGui:FindFirstChild("ServerBrowser", true)
+            browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            if not browser then task.wait(1) continue end
+
+            local listArea = browser:FindFirstChild("Inside", true)
+            local count = 0
+            repeat
+                task.wait(0.5)
+                count = count + 1
+                listArea = browser:FindFirstChild("Inside", true)
+            until (listArea and #listArea:GetChildren() > 5) or count > 20
+
+            if listArea then
+                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
+                local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
                 
-                -- AUTO-OPEN UI
-                if not browser or not browser.Enabled then
-                    local openBtn = LP.PlayerGui:FindFirstChild("ServerBrowserButton", true)
-                    if openBtn then
-                        local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, true, game, 0)
-                        task.wait(0.1)
-                        VIM:SendMouseButtonEvent(p.X + (s.X/2), p.Y + (s.Y/2) + 58, 0, false, game, 0)
-                    end
+                if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
+                    dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
+                    task.wait(1) 
                 end
 
-                browser = LP.PlayerGui:FindFirstChild("ServerBrowser", true)
-                if not browser then task.wait(1) continue end
+                if not scrollFrame then task.wait(1) continue end
 
-                local listArea = browser:FindFirstChild("Inside", true)
-                local count = 0
-                repeat
-                    task.wait(0.5)
-                    count = count + 1
-                    listArea = browser:FindFirstChild("Inside", true)
-                until (listArea and #listArea:GetChildren() > 5) or count > 20
-
-                if listArea then
-                    local scrollFrame = browser:FindFirstChild("FakeScroll", true)
-                    local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
-                    
-                    -- INVISIBLE SCROLL (ANTI-ZOOM)
-                    if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
-                        dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
-                        task.wait(1) 
-                    end
-
-                    if not scrollFrame then continue end
-
-                    -- TARGET ACQUISITION
-                    local buttons = {}
-                    local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
-                    for _, v in pairs(listArea:GetDescendants()) do
-                        if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
-                            if v.AbsolutePosition.Y > sPos.Y and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 30) then
-                                table.insert(buttons, v)
-                            end
+                local buttons = {}
+                local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                for _, v in pairs(listArea:GetDescendants()) do
+                    if v:IsA("TextButton") and v.Name == "Join" and v.Visible then 
+                        if v.AbsolutePosition.Y > sPos.Y and v.AbsolutePosition.Y < (sPos.Y + sSize.Y - 30) then
+                            table.insert(buttons, v)
                         end
                     end
+                end
 
-                    -- STRIKE & FAILSAFE
-                    for _, target in pairs(buttons) do
-                        if not Settings.AutoHop then break end
-                        local bp, bs = target.AbsolutePosition, target.AbsoluteSize
-                        local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
-                        
-                        VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                        VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                        task.wait(0.05) 
-                        VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                        VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                        task.wait(0.1)
-                        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                        task.wait(0.5) 
+                for _, target in pairs(buttons) do
+                    if not Settings.AutoHop then break end
+                    local bp, bs = target.AbsolutePosition, target.AbsoluteSize
+                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
+                    
+                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    
+                    task.wait(0.05) 
+                    
+                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                    
+                    task.wait(0.1)
+                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+
+                    task.wait(0.5) 
+                end
+            end
+            task.wait(1)
+        end
+        
+        local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+        if browser then browser.Enabled = false end
+        isHopping = false
+    end)
+end
+
+-- CEK BUAH UNTUK HOP (CEPAT 3 DETIK)
+task.spawn(function()
+    while task.wait(3) do
+        if Settings.AutoHop then
+            pcall(function()
+                local fruitCount = 0
+                for f, _ in pairs(Data) do
+                    if f and f.Parent and f.Parent == Workspace then 
+                        fruitCount = fruitCount + 1 
+                    else
+                        Rem(f)
                     end
                 end
-                task.wait(1)
+                
+                if fruitCount == 0 then
+                    _G.Cat.HopServer()
+                else
+                    isHopping = false
+                    local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                    if browser then browser.Enabled = false end
+                end
             end)
         else
-            task.wait(2)
+            isHopping = false
+            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            if browser then browser.Enabled = false end
         end
     end
 end)
