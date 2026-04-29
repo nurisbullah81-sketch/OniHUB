@@ -341,10 +341,10 @@ CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", 
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- WEBHOOK SYSTEM
+-- DISCORD WEBHOOK SECTION (KATEGORI TERPISAH)
 CreateSection(DevilFruitsTab, "DISCORD WEBHOOK")
+CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alert to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
 
--- 1. URL Box
 local WHURLFrame = Instance.new("Frame", DevilFruitsTab)
 WHURLFrame.Size = UDim2.new(1, 0, 0, 36); WHURLFrame.BackgroundColor3 = Theme.CardBG; WHURLFrame.BorderSizePixel = 0
 Instance.new("UICorner", WHURLFrame).CornerRadius = UDim.new(0, 6)
@@ -356,21 +356,6 @@ WHURLBox.TextColor3 = Theme.Text; WHURLBox.PlaceholderText = "Paste Discord Webh
 WHURLBox.Font = Enum.Font.GothamMedium; WHURLBox.TextSize = 11; WHURLBox.TextXAlignment = Enum.TextXAlignment.Left; WHURLBox.ClearTextOnFocus = false
 WHURLBox.FocusLost:Connect(function() _G.Cat.Settings.FruitWebhookURL = WHURLBox.Text SaveSettings() end)
 
--- 2. Test Webhook Button
-local WHTestBtn = Instance.new("TextButton", DevilFruitsTab)
-WHTestBtn.Size = UDim2.new(1, 0, 0, 30); WHTestBtn.BackgroundColor3 = Theme.SideBG; WHTestBtn.BorderSizePixel = 0; WHTestBtn.Text = "Test Webhook"; WHTestBtn.TextColor3 = Theme.CatPurple; WHTestBtn.Font = Enum.Font.GothamBold; WHTestBtn.TextSize = 11; WHTestBtn.AutoButtonColor = false
-Instance.new("UICorner", WHTestBtn).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", WHTestBtn).Color = Theme.Line
-WHTestBtn.MouseButton1Click:Connect(function()
-    if _G.Cat.Webhook then
-        local ok = _G.Cat.Webhook:Test(_G.Cat.Settings.FruitWebhookURL)
-        WHTestBtn.Text = ok and "Test Sent!" or "Test Failed!"
-        task.wait(2)
-        WHTestBtn.Text = "Test Webhook"
-    end
-end)
-
--- 3. Rarity Cycle Button
 local WHRarityBtn = Instance.new("TextButton", DevilFruitsTab)
 WHRarityBtn.Size = UDim2.new(1, 0, 0, 30); WHRarityBtn.BackgroundColor3 = Theme.SideBG; WHRarityBtn.BorderSizePixel = 0; WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHRarityBtn.TextColor3 = Theme.Text; WHRarityBtn.Font = Enum.Font.GothamMedium; WHRarityBtn.TextSize = 11; WHRarityBtn.AutoButtonColor = false
 Instance.new("UICorner", WHRarityBtn).CornerRadius = UDim.new(0, 6)
@@ -388,8 +373,23 @@ WHRarityBtn.MouseButton1Click:Connect(function()
     SaveSettings()
 end)
 
--- 4. Toggle Webhook
-CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alert to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
+local WHTestBtn = Instance.new("TextButton", DevilFruitsTab)
+WHTestBtn.Size = UDim2.new(1, 0, 0, 30); WHTestBtn.BackgroundColor3 = Theme.SideBG; WHTestBtn.BorderSizePixel = 0; WHTestBtn.Text = "Test Webhook"; WHTestBtn.TextColor3 = Theme.CatPurple; WHTestBtn.Font = Enum.Font.GothamBold; WHTestBtn.TextSize = 11; WHTestBtn.AutoButtonColor = false
+Instance.new("UICorner", WHTestBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", WHTestBtn).Color = Theme.Line
+WHTestBtn.MouseButton1Click:Connect(function()
+    if _G.Cat.Webhook then
+        WHTestBtn.Text = "Sending..."
+        local ok, err = _G.Cat.Webhook:Test(_G.Cat.Settings.FruitWebhookURL)
+        if ok then
+            WHTestBtn.Text = "Test Sent!"
+        else
+            WHTestBtn.Text = "Failed! Check Executor"
+        end
+        task.wait(2)
+        WHTestBtn.Text = "Test Webhook"
+    end
+end)
 
 -- MISC TAB
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
