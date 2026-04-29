@@ -1,3 +1,8 @@
+-- ==========================================
+-- THE SHIELD (ANTI AUTO-EXECUTE CRASH)
+-- ==========================================
+if not game:IsLoaded() then game.Loaded:Wait() end
+
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -5,13 +10,16 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VIM = game:GetService("VirtualInputManager")
-
--- SERVICES UNTUK SOVEREIGN V26
 local GuiService = game:GetService("GuiService")
 local CoreGui = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser") 
 
-local Me = _G.Cat.Player
+local Players = game:GetService("Players")
+while not Players.LocalPlayer do task.wait(0.1) end
+local Me = Players.LocalPlayer
+
+-- Tunggu sampai _G.Cat siap (kalau pakai sistem Modular)
+while not _G or not _G.Cat or not _G.Cat.Settings do task.wait(0.1) end
 local Settings = _G.Cat.Settings
 
 local Data = {}
@@ -42,8 +50,10 @@ task.spawn(UpdateGameState)
 Me:GetPropertyChangedSignal("Team"):Connect(UpdateGameState)
 Me.CharacterAdded:Connect(function(char)
     IsGameReady = false
-    local hrp = char:WaitForChild("HumanoidRootPart", 15)
-    UpdateGameState()
+    task.spawn(function()
+        char:WaitForChild("HumanoidRootPart", 15)
+        UpdateGameState()
+    end)
 end)
 Me.CharacterRemoving:Connect(function()
     IsGameReady = false
@@ -520,17 +530,23 @@ task.spawn(function()
                     _G.Cat.HopServer()
                 else
                     isHopping = false
-                    local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                    if browser and browser.Enabled then 
-                        browser.Enabled = false 
+                    -- CARA AMAN BACA PLAYERGUI
+                    local pg = Me:FindFirstChild("PlayerGui")
+                    if pg then
+                        local browser = pg:FindFirstChild("ServerBrowser", true)
+                        if browser and browser.Enabled then browser.Enabled = false end
                     end
                 end
             end)
         else
             if not Settings.AutoHop then
                 isHopping = false
-                local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                if browser then browser.Enabled = false end
+                -- CARA AMAN BACA PLAYERGUI DI LUAR PCALL
+                local pg = Me:FindFirstChild("PlayerGui")
+                if pg then
+                    local browser = pg:FindFirstChild("ServerBrowser", true)
+                    if browser then browser.Enabled = false end
+                end
             end
         end
     end
