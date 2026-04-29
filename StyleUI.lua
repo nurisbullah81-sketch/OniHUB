@@ -267,14 +267,17 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- ==========================================
--- BUILD TABS & ISI KONTEN (UPDATED)
+-- BUILD TABS & ISI KONTEN (BLADE-PROOF UI)
 -- ==========================================
--- Tambahin AutoAttack & WebhookEnabled ke Settings awal biar ga error nil
 if _G.Cat.Settings.AutoAttack == nil then _G.Cat.Settings.AutoAttack = false end
 if _G.Cat.Settings.WebhookEnabled == nil then _G.Cat.Settings.WebhookEnabled = false end
+if _G.Cat.Settings.WebhookURL == nil then _G.Cat.Settings.WebhookURL = "" end
 
+-- ==========================================
+-- BUILD TABS & ISI KONTEN (MODULAR UI)
+-- ==========================================
 local StatusTab = CreateTab("Status", true) 
-local AutoFarmTab = CreateTab("Auto Farm", false) -- TAB BARU DI ATAS DEVIL FRUITS
+local AutoFarmTab = CreateTab("Auto Farm", false) -- TAB BARU
 local DevilFruitsTab = CreateTab("Devil Fruits", false) 
 local MiscTab = CreateTab("Misc", false) 
 
@@ -291,18 +294,31 @@ _G.Cat.Labels.Time = CreateLabel(StatusTab, "Time: ...", "In-game day/night cycl
 _G.Cat.Labels.Moon = CreateLabel(StatusTab, "Moon: ...", "Affects certain bosses & events")
 _G.Cat.Labels.Fruits = CreateLabel(StatusTab, "Spawned Fruits: 0", "Devil fruits on the map")
 
--- AUTO FARM TAB (TAB BARU)
+-- AUTO FARM TAB (MURNI UI)
 CreateSection(AutoFarmTab, "COMBAT SYSTEM")
 CreateToggle(AutoFarmTab, "Auto Attack", "Automatically swing weapon / fight", _G.Cat.Settings.AutoAttack, function(state) _G.Cat.Settings.AutoAttack = state end)
 
-CreateSection(AutoFarmTab, "NETWORK SCANNER (LIKE NAT HUB)")
-CreateToggle(AutoFarmTab, "Mythical Webhook", "Send JobID to Discord when found", _G.Cat.Settings.WebhookEnabled, function(state) _G.Cat.Settings.WebhookEnabled = state end)
-
--- DEVIL FRUITS TAB
+-- DEVIL FRUITS TAB (MURNI UI)
+CreateSection(DevilFruitsTab, "FRUIT FINDER")
 CreateToggle(DevilFruitsTab, "Fruit ESP", "Show text on any spawned fruits", _G.Cat.Settings.FruitESP, function(state) _G.Cat.Settings.FruitESP = state end)
 CreateToggle(DevilFruitsTab, "Tween to Fruits", "Smoothly fly to collect fruits", _G.Cat.Settings.TweenFruit, function(state) _G.Cat.Settings.TweenFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- MISC TAB
+-- MISC TAB (MURNI UI)
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
+
+CreateSection(MiscTab, "NETWORK SCANNER (MYTHICAL HUNTER)")
+CreateToggle(MiscTab, "Mythical Webhook", "Send JobID to Discord when found", _G.Cat.Settings.WebhookEnabled, function(state) _G.Cat.Settings.WebhookEnabled = state end)
+
+-- Input Box Webhook URL
+local WebhookFrame = Instance.new("Frame", MiscTab)
+WebhookFrame.Size = UDim2.new(1, 0, 0, 36); WebhookFrame.BackgroundColor3 = Theme.CardBG; WebhookFrame.BorderSizePixel = 0
+Instance.new("UICorner", WebhookFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", WebhookFrame).Color = Theme.Line
+local WebhookBox = Instance.new("TextBox", WebhookFrame)
+WebhookBox.Size = UDim2.new(1, -16, 1, 0); WebhookBox.Position = UDim2.new(0, 8, 0, 0); WebhookBox.BackgroundTransparency = 1
+WebhookBox.Text = _G.Cat.Settings.WebhookURL ~= "" and _G.Cat.Settings.WebhookURL or "Paste Discord Webhook URL here..."
+WebhookBox.TextColor3 = Theme.Text; WebhookBox.PlaceholderText = "Paste Discord Webhook URL here..."; WebhookBox.PlaceholderColor3 = Theme.TextDim
+WebhookBox.Font = Enum.Font.GothamMedium; WebhookBox.TextSize = 11; WebhookBox.TextXAlignment = Enum.TextXAlignment.Left; WebhookBox.ClearTextOnFocus = false
+WebhookBox.FocusLost:Connect(function() _G.Cat.Settings.WebhookURL = WebhookBox.Text end)
