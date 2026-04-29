@@ -341,12 +341,20 @@ CreateToggle(DevilFruitsTab, "TP Fruits", "Instant teleport to spawned fruits", 
 CreateToggle(DevilFruitsTab, "Auto Store Fruits", "Store collected fruits to inventory", _G.Cat.Settings.AutoStoreFruit, function(state) _G.Cat.Settings.AutoStoreFruit = state end)
 CreateToggle(DevilFruitsTab, "Auto Hop Server", "Hop if no fruits or inventory full", _G.Cat.Settings.AutoHop, function(state) _G.Cat.Settings.AutoHop = state end)
 
--- DISCORD WEBHOOK SECTION (KATEGORI TERPISAH)
+-- DISCORD WEBHOOK SECTION (RAPI & PREMIUM)
 CreateSection(DevilFruitsTab, "DISCORD WEBHOOK")
-CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alert to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
+CreateToggle(DevilFruitsTab, "Fruit Webhook", "Send alerts to Discord on spawn", _G.Cat.Settings.FruitWebhook, function(state) _G.Cat.Settings.FruitWebhook = state end)
 
-local WHURLFrame = Instance.new("Frame", DevilFruitsTab)
-WHURLFrame.Size = UDim2.new(1, 0, 0, 36); WHURLFrame.BackgroundColor3 = Theme.CardBG; WHURLFrame.BorderSizePixel = 0
+-- Webhook Container Frame (Biar sejajar dan ga berantakan)
+local WHConfig = Instance.new("Frame", DevilFruitsTab)
+WHConfig.Size = UDim2.new(1, 0, 0, 106)
+WHConfig.BackgroundTransparency = 1
+local WHConfigLayout = Instance.new("UIListLayout", WHConfig)
+WHConfigLayout.Padding = UDim.new(0, 6)
+
+-- 1. URL Box
+local WHURLFrame = Instance.new("Frame", WHConfig)
+WHURLFrame.Size = UDim2.new(1, 0, 0, 32); WHURLFrame.BackgroundColor3 = Theme.CardBG; WHURLFrame.BorderSizePixel = 0
 Instance.new("UICorner", WHURLFrame).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHURLFrame).Color = Theme.Line
 local WHURLBox = Instance.new("TextBox", WHURLFrame)
@@ -356,8 +364,9 @@ WHURLBox.TextColor3 = Theme.Text; WHURLBox.PlaceholderText = "Paste Discord Webh
 WHURLBox.Font = Enum.Font.GothamMedium; WHURLBox.TextSize = 11; WHURLBox.TextXAlignment = Enum.TextXAlignment.Left; WHURLBox.ClearTextOnFocus = false
 WHURLBox.FocusLost:Connect(function() _G.Cat.Settings.FruitWebhookURL = WHURLBox.Text SaveSettings() end)
 
-local WHRarityBtn = Instance.new("TextButton", DevilFruitsTab)
-WHRarityBtn.Size = UDim2.new(1, 0, 0, 30); WHRarityBtn.BackgroundColor3 = Theme.SideBG; WHRarityBtn.BorderSizePixel = 0; WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHRarityBtn.TextColor3 = Theme.Text; WHRarityBtn.Font = Enum.Font.GothamMedium; WHRarityBtn.TextSize = 11; WHRarityBtn.AutoButtonColor = false
+-- 2. Rarity Cycle Button
+local WHRarityBtn = Instance.new("TextButton", WHConfig)
+WHRarityBtn.Size = UDim2.new(1, 0, 0, 28); WHRarityBtn.BackgroundColor3 = Theme.SideBG; WHRarityBtn.BorderSizePixel = 0; WHRarityBtn.Text = "Rarity: " .. _G.Cat.Settings.FruitWebhookRarity; WHRarityBtn.TextColor3 = Theme.Text; WHRarityBtn.Font = Enum.Font.GothamMedium; WHRarityBtn.TextSize = 11; WHRarityBtn.AutoButtonColor = false
 Instance.new("UICorner", WHRarityBtn).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHRarityBtn).Color = Theme.Line
 
@@ -373,22 +382,25 @@ WHRarityBtn.MouseButton1Click:Connect(function()
     SaveSettings()
 end)
 
-local WHTestBtn = Instance.new("TextButton", DevilFruitsTab)
-WHTestBtn.Size = UDim2.new(1, 0, 0, 30); WHTestBtn.BackgroundColor3 = Theme.SideBG; WHTestBtn.BorderSizePixel = 0; WHTestBtn.Text = "Test Webhook"; WHTestBtn.TextColor3 = Theme.CatPurple; WHTestBtn.Font = Enum.Font.GothamBold; WHTestBtn.TextSize = 11; WHTestBtn.AutoButtonColor = false
+-- 3. Test Webhook Button
+local WHTestBtn = Instance.new("TextButton", WHConfig)
+WHTestBtn.Size = UDim2.new(1, 0, 0, 28); WHTestBtn.BackgroundColor3 = Theme.SideBG; WHTestBtn.BorderSizePixel = 0; WHTestBtn.Text = "Test Webhook"; WHTestBtn.TextColor3 = Theme.CatPurple; WHTestBtn.Font = Enum.Font.GothamBold; WHTestBtn.TextSize = 11; WHTestBtn.AutoButtonColor = false
 Instance.new("UICorner", WHTestBtn).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", WHTestBtn).Color = Theme.Line
 WHTestBtn.MouseButton1Click:Connect(function()
+    WHTestBtn.Text = "Sending..."
     if _G.Cat.Webhook then
-        WHTestBtn.Text = "Sending..."
         local ok, err = _G.Cat.Webhook:Test(_G.Cat.Settings.FruitWebhookURL)
         if ok then
             WHTestBtn.Text = "Test Sent!"
         else
-            WHTestBtn.Text = "Failed! Check Executor"
+            WHTestBtn.Text = "Failed! Check URL"
         end
-        task.wait(2)
-        WHTestBtn.Text = "Test Webhook"
+    else
+        WHTestBtn.Text = "Module Missing!"
     end
+    task.wait(2)
+    WHTestBtn.Text = "Test Webhook"
 end)
 
 -- MISC TAB
