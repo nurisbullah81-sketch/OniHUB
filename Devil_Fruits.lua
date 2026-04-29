@@ -95,7 +95,17 @@ local function Add(f) if not f or not f.Parent or Data[f] then return end pcall(
 local function Rem(f) if Data[f] then pcall(function() if Data[f].bb and Data[f].bb.Parent then Data[f].bb:Destroy() end end) Data[f]=nil Mem[f]=nil end end
 
 for _, o in pairs(Workspace:GetChildren()) do if IsF(o) then Add(o) end end
-Workspace.ChildAdded:Connect(function(o) task.wait(0.5) if IsF(o) then Add(o) end end)
+Workspace.ChildAdded:Connect(function(o) 
+    task.wait(0.5) 
+    if IsF(o) then 
+        Add(o) 
+        
+        -- [WEBHOOK TRIGGER] Cek kalau webhook nyala
+        if Settings.FruitWebhook and _G.Cat.Webhook and IsGameReady then
+            _G.Cat.Webhook:Send(o.Name, game.JobId, Settings.FruitWebhookRarity, Settings.FruitWebhookURL)
+        end
+    end 
+end)
 Workspace.ChildRemoved:Connect(function(o) Rem(o) end)
 
 RunService.RenderStepped:Connect(function() FC=FC+1 if FC%SKIP~=0 then return end pcall(function() if not Settings.FruitESP then for _,d in pairs(Data) do if d and d.bb then d.bb.Enabled=false end end return end local c=Me.Character if not c then return end local r=c:FindFirstChild("HumanoidRootPart") if not r then return end local mp=r.Position for f,d in pairs(Data) do if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end local p=Pos(f) if not p then d.bb.Enabled=false continue end local dx,dy,dz=p.X-mp.X,p.Y-mp.Y,p.Z-mp.Z local m=math.floor(math.sqrt(dx*dx+dy*dy+dz*dz)) if math.abs(m-(Mem[f]or-1))>5 then Mem[f]=m d.txt.Text=f.Name.." ["..m.."m]" end d.bb.Enabled=true end end) end)
