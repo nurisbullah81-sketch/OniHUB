@@ -138,11 +138,11 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. TWEEN SMOOTH V2 + NOCLIP (TEMBUS TEMBOK)
+-- 3. NOMEXY PROXY TWEEN V4 (NATURAL GHOST)
 -- ==========================================
-local tweenConn = nil
-local noclipConn = nil
 local isTweening = false
+local proxyPart = nil
+local noclipConnection = nil
 
 local function GetNearestFruit() 
     local closest,minDist=nil,math.huge 
@@ -162,24 +162,17 @@ local function GetNearestFruit()
     return closest 
 end
 
-local function StopSmoothTween()
-    if tweenConn then
-        tweenConn:Disconnect()
-        tweenConn = nil
-    end
+local function StopProxyTween()
+    if not isTweening then return end
     isTweening = false
     
-    -- MATIIN NOCLIP PAS BERHENTI
-    if noclipConn then
-        noclipConn:Disconnect()
-        noclipConn = nil
-    end
-    -- Balikin collision biar ga jatoh ke bawah tanah
+    if proxyPart then proxyPart:Destroy(); proxyPart = nil end
+    if noclipConnection then noclipConnection:Disconnect(); noclipConnection = nil end
+    
+    -- Balikin Collision biar ga jatoh
     pcall(function()
         for _, part in pairs(Me.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
+            if part:IsA("BasePart") then part.CanCollide = true end
         end
     end)
 end
@@ -189,50 +182,73 @@ task.spawn(function()
         if Settings.TweenFruit then 
             local nearest = GetNearestFruit() 
             local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+            
             if nearest and hrp then 
                 local pos = Pos(nearest) 
                 if pos and (pos - hrp.Position).Magnitude > 5 then
                     if not isTweening then
                         isTweening = true
                         
-                        -- NYALAIN NOCLIP (TEMBUS TEMBOK)
-                        noclipConn = RunService.Stepped:Connect(function()
-                            if isTweening and Me.Character then
+                        -- SETUP PROXY PART
+                        local startCFrame = CFrame.lookAt(hrp.Position, pos)
+                        local endCFrame = CFrame.lookAt(pos, pos + startCFrame.LookVector)
+                        
+                        proxyPart = Instance.new("Part")
+                        proxyPart.Name = "CatProxy"
+                        proxyPart.Transparency = 1 
+                        proxyPart.Anchored = true 
+                        proxyPart.CanCollide = false
+                        proxyPart.Size = Vector3.new(1, 1, 1)
+                        proxyPart.CFrame = startCFrame
+                        proxyPart.Parent = workspace
+
+                        -- NOCLIP & SYNC LOOP
+                        noclipConnection = RunService.Stepped:Connect(function()
+                            if isTweening and Me.Character and hrp and proxyPart and proxyPart.Parent then
                                 for _, part in pairs(Me.Character:GetDescendants()) do
-                                    if part:IsA("BasePart") then
-                                        part.CanCollide = false
-                                    end
+                                    if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
                                 end
+                                hrp.Velocity = Vector3.zero
+                                hrp.RotVelocity = Vector3.zero
+                                hrp.CFrame = proxyPart.CFrame
+                            else
+                                StopProxyTween()
                             end
                         end)
                         
-                        -- NYALAIN TWEEN HALUS
-                        tweenConn = RunService.Heartbeat:Connect(function(deltaTime)
-                            if not Settings.TweenFruit or not nearest or not nearest.Parent or not hrp or not hrp.Parent then
-                                StopSmoothTween() return
-                            end
-                            local currentPos = Pos(nearest)
-                            if not currentPos then StopSmoothTween() return end
-                            
-                            local dist = (currentPos - hrp.Position).Magnitude
-                            if dist <= 5 then StopSmoothTween() return end
-                            
-                            local direction = (currentPos - hrp.Position).Unit
-                            local speed = 300 * deltaTime 
-                            if speed > dist then speed = dist end
-                            
-                            local newPos = hrp.Position + (direction * speed)
-                            hrp.CFrame = CFrame.new(newPos)
+                        -- TWEEN PROXY
+                        local distance = (proxyPart.Position - pos).Magnitude
+                        local timeToTravel = distance / 300 -- Kecepatan 300
+                        
+                        local tween = TweenService:Create(proxyPart, TweenInfo.new(timeToTravel, Enum.EasingStyle.Linear), {CFrame = endCFrame})
+                        tween:Play()
+                        
+                        -- WAIT & FAILSAFE
+                        local finished = false
+                        local conn; conn = tween.Completed:Connect(function()
+                            finished = true
+                            if conn then conn:Disconnect() end
                         end)
+
+                        while not finished and isTweening do
+                            task.wait(0.1)
+                            local currentPos = Pos(nearest)
+                            -- Berhenti kalau buah ilang/diambil, atau jarak udah dekat
+                            if not currentPos or not nearest.Parent or (currentPos - hrp.Position).Magnitude <= 5 then
+                                break
+                            end
+                        end
+                        
+                        StopProxyTween()
                     end
                 else
-                    StopSmoothTween()
+                    StopProxyTween()
                 end 
             else 
-                StopSmoothTween()
+                StopProxyTween()
             end 
         else 
-            StopSmoothTween()
+            StopProxyTween()
         end 
     end 
 end)
