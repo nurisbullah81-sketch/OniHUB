@@ -138,26 +138,24 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==========================================
--- 3. 3-PHASE GHOST FLY (ANTI-AIR & PERFECT LANDING)
+-- 3. DYNAMIC HOVER GLIDE TWEEN (ANTI-AIR & NPEL)
 -- ==========================================
 local isTweening = false
 local currentTarget = nil
 local noclipConn = nil
-local flightPhase = "Idle" -- Idle, Ascend, Transit, Descend
 
-local SAFE_HEIGHT = 800 -- Ketinggian aman di atas awam/pulau
-local TWEEN_SPEED = 400 -- Super cepat
+local SAFE_WATER_Y = 50 -- Ketinggian minimal di atas permukaan air
+local LANDING_DISTANCE = 40 -- Jarak mulai turun ke buah
+local TWEEN_SPEED = 350
 
 local function StopSmartTween()
     if isTweening then
         isTweening = false
         currentTarget = nil
-        flightPhase = "Idle"
         if noclipConn then
             noclipConn:Disconnect()
             noclipConn = nil
         end
-        -- Matikan noclip pas berhenti
         pcall(function()
             if Me.Character then
                 for _, part in pairs(Me.Character:GetDescendants()) do
@@ -186,7 +184,7 @@ local function GetNearestFruit()
     return closest 
 end
 
--- Logic Pemilih Fase (Decision Maker)
+-- Decision Maker
 task.spawn(function() 
     while task.wait(0.5) do 
         pcall(function() 
@@ -199,16 +197,13 @@ task.spawn(function()
                     if pos then 
                         local dist = (pos - hrp.Position).Magnitude 
                         
-                        -- Jarak 1 stud baru berhenti (Nempel persis)
-                        if dist < 1 then
+                        if dist < 3 then
                             StopSmartTween()
                         else
                             if not isTweening then
                                 isTweening = true
                                 currentTarget = nearest
-                                flightPhase = "Ascend" -- Mulai dari naik dulu
                                 
-                                -- Noclip Connection
                                 noclipConn = RunService.Stepped:Connect(function()
                                     if isTweening and Me.Character then
                                         for _, part in pairs(Me.Character:GetDescendants()) do
@@ -218,10 +213,8 @@ task.spawn(function()
                                 end)
                             end
                             
-                            -- Pindah target jika ada buah yang lebih dekat
                             if currentTarget ~= nearest then
                                 currentTarget = nearest
-                                flightPhase = "Ascend" -- Reset fase ke naik
                             end
                         end 
                     else 
@@ -237,7 +230,7 @@ task.spawn(function()
     end 
 end)
 
--- Loop Penggerak Fisik (Heartbeat biar halus & tembus)
+-- Physical Mover
 RunService.Heartbeat:Connect(function(dt)
     if isTweening and currentTarget and currentTarget.Parent and Me.Character then
         local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
@@ -248,43 +241,36 @@ RunService.Heartbeat:Connect(function(dt)
             hrp.RotVelocity = Vector3.zero
             
             local currentPos = hrp.Position
+            local dist = (fruitPos - currentPos).Magnitude
             local targetPos
             
-            -- KALKULASI FASE PENERBANGAN
-            if flightPhase == "Ascend" then
-                -- Target: Naik ke atas tepat di posisi X,Z karakter sekarang
-                targetPos = Vector3.new(currentPos.X, SAFE_HEIGHT, currentPos.Z)
-                if math.abs(currentPos.Y - SAFE_HEIGHT) < 10 then
-                    flightPhase = "Transit" -- Udah sampe atas, ganti ke mode geser
-                end
-            elseif flightPhase == "Transit" then
-                -- Target: Geser di ketinggian aman menuju X,Z buah
-                targetPos = Vector3.new(fruitPos.X, SAFE_HEIGHT, fruitPos.Z)
-                local distXZ = Vector3.new(currentPos.X - fruitPos.X, 0, currentPos.Z - fruitPos.Z).Magnitude
-                if distXZ < 15 then
-                    flightPhase = "Descend" -- Udah di atas buah, ganti ke mode turun
-                end
-            elseif flightPhase == "Descend" then
-                -- Target: Turun tepat di atas buah (+3 Y biar nginjek dari atas)
-                targetPos = Vector3.new(fruitPos.X, fruitPos.Y + 3, fruitPos.Z)
-                local dist = (currentPos - targetPos).Magnitude
-                if dist < 2 then
-                    StopSmartTween()
-                    return
-                end
+            -- KALKULASI TARGET POSISI (HOVER GLIDE LOGIC)
+            if dist > LANDING_DISTANCE then
+                -- MODE TERBANG: Geser mendatar, pastikan Y ga nyelam ke air
+                local hoverY = math.max(fruitPos.Y, SAFE_WATER_Y)
+                targetPos = Vector3.new(fruitPos.X, hoverY, fruitPos.Z)
+            else
+                -- MODE LANDING: Tembak lurus ke buah (+2 Y biar nginjek dari atas)
+                targetPos = Vector3.new(fruitPos.X, fruitPos.Y + 2, fruitPos.Z)
             end
             
-            -- EKSEKUSI PERGERAKAN
+            -- Perhitungan gerakan
             local direction = (targetPos - currentPos).Unit
-            local moveVector = direction * math.min(TWEEN_SPEED * dt, (targetPos - currentPos).Magnitude)
-            
+            local moveDistance = math.min(TWEEN_SPEED * dt, (targetPos - currentPos).Magnitude)
+            local moveVector = direction * moveDistance
             local newPos = currentPos + moveVector
-            local lookDirection = Vector3.new(direction.X, 0, direction.Z)
             
+            -- Rotasi (Anti Miring)
+            local lookDirection = Vector3.new(direction.X, 0, direction.Z)
             if lookDirection.Magnitude > 0.01 then
                 hrp.CFrame = CFrame.new(newPos, newPos + lookDirection)
             else
                 hrp.CFrame = CFrame.new(newPos)
+            end
+            
+            -- Matiin tween kalau udah nempel
+            if dist < 3 then
+                StopSmartTween()
             end
         else
             StopSmartTween()
@@ -374,7 +360,6 @@ function _G.Cat.HopServer()
     if isHopping then return end
     isHopping = true
     
-    -- SAVE CONFIG SEBELUM HOP BIAR GA ILANG
     pcall(function()
         local ConfigFile = "CatHUB_Config.json"
         writefile(ConfigFile, HttpService:JSONEncode(Settings))
@@ -386,7 +371,6 @@ function _G.Cat.HopServer()
         while Settings.AutoHop do
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             
-            -- AUTO-OPEN UI
             if not browser or not browser.Enabled then
                 local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                 if openBtn then
@@ -412,7 +396,6 @@ function _G.Cat.HopServer()
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                 local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
                 
-                -- INVISIBLE SCROLL (ANTI-ZOOM)
                 if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                     dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
                     task.wait(1) 
@@ -420,7 +403,6 @@ function _G.Cat.HopServer()
 
                 if not scrollFrame then continue end
 
-                -- TARGET ACQUISITION
                 local buttons = {}
                 local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                 for _, v in pairs(listArea:GetDescendants()) do
@@ -431,7 +413,6 @@ function _G.Cat.HopServer()
                     end
                 end
 
-                -- STRIKE & FAILSAFE
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
@@ -460,7 +441,6 @@ function _G.Cat.HopServer()
     end)
 end
 
--- CEK BUAH UNTUK HOP (CEPAT 3 DETIK)
 task.spawn(function()
     while task.wait(3) do
         if Settings.AutoHop then
