@@ -64,6 +64,32 @@ _G.Cat = {
     },
     Labels = {}
 }
+
+-- LOAD CONFIG DARI FILE PC (BIAR GA RESET PAS HOP)
+local ConfigFile = "CatHUB_Config.json"
+local HttpService = game:GetService("HttpService")
+
+pcall(function()
+    if isfile(ConfigFile) then
+        local SavedSettings = HttpService:JSONDecode(readfile(ConfigFile))
+        for k, v in pairs(SavedSettings) do
+            if _G.Cat.Settings[k] ~= nil then
+                _G.Cat.Settings[k] = v
+            end
+        end
+        warn("[CatHUB] Config loaded dari file!")
+    end
+end)
+
+-- SAVE CONFIG SETIAP ADA YANG BERUBAH DI UI
+task.spawn(function()
+    while task.wait(2) do
+        pcall(function()
+            writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
+        end)
+    end
+end)
+
 Load("StyleUI.lua")
 Load("Status.lua")
 Load("Devil_Fruits.lua")
