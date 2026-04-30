@@ -1,5 +1,5 @@
 -- [[ ==========================================
---      MODULE: DEVIL FRUIT TELEPORTATION (STABLE FIX)
+--      MODULE: DEVIL FRUIT TELEPORTATION (HARD LOCK EDITION)
 --    ========================================== ]]
 
 local RunService   = game:GetService("RunService")
@@ -21,7 +21,7 @@ if type(Settings.InstantTPFruit) ~= "boolean" then Settings.InstantTPFruit = fal
 local Page = UI.CreateTab("Devil Fruits", false)
 UI.CreateSection(Page, "MOVEMENT SYSTEM")
 
-UI.CreateToggle(Page, "Tween to Fruits", "Smooth fly (Anti-Stuck)", Settings.TweenFruit, function(state) Settings.TweenFruit = state end)
+UI.CreateToggle(Page, "Tween to Fruits", "Smooth fly (Anti-Fly Bug)", Settings.TweenFruit, function(state) Settings.TweenFruit = state end)
 UI.CreateToggle(Page, "TP Fruits", "Instant teleport", Settings.InstantTPFruit, function(state) Settings.InstantTPFruit = state end)
 
 -- ==========================================
@@ -33,7 +33,7 @@ local currentTween = nil
 local noclipConn = nil
 local isTweening = false
 
--- PROXY PART (Reusable)
+-- PROXY PART
 local ProxyPart = workspace:FindFirstChild("CatHub_Proxy")
 if not ProxyPart then
     ProxyPart = Instance.new("Part")
@@ -53,20 +53,29 @@ local function StopSmartTween()
     if currentTween then currentTween:Cancel(); currentTween = nil end
     if noclipConn then noclipConn:Disconnect(); noclipConn = nil end
     
-    -- Restore Physics
+    -- FIX UTAMA: HARD RESET PHYSICS
     local char = Me.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
+    local hum = char and char:FindFirstChild("Humanoid")
+    
+    if hrp and hum then
+        -- 1. Stop semua kecepatan
         hrp.AssemblyLinearVelocity = Vector3.zero
         hrp.AssemblyAngularVelocity = Vector3.zero
+        
+        -- 2. Trik "Anchor Lock" biar nggak gerak sendiri
+        hrp.Anchored = true
+        task.wait(0.05) -- Tunggu 0.05 detik biar physics "nyangkut"
+        hrp.Anchored = false
+        
+        -- 3. Paksa Humanoid berhenti
+        hum:ChangeState(Enum.HumanoidStateType.GettingUp) -- Reset state
     end
     
-    -- FIX NYANGKUT: Pastikan collision balik normal
+    -- Restore Collision
     pcall(function()
         for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then 
-                part.CanCollide = true -- Balikin ke normal
-            end
+            if part:IsA("BasePart") then part.CanCollide = true end
         end
     end)
 end
@@ -77,7 +86,7 @@ State.StopSmartTween = StopSmartTween
 -- SMART MOVEMENT HANDLER
 -- ==========================================
 task.spawn(function() 
-    while task.wait(0.1) do -- Loop utama santai
+    while task.wait(0.2) do -- Sedikit diperlambat biar nggak kebablasan
         if not State.IsGameReady or (not Settings.TweenFruit and not Settings.InstantTPFruit) then 
             StopSmartTween()
             continue 
@@ -94,7 +103,7 @@ task.spawn(function()
         if not targetPos then StopSmartTween(); continue end
 
         local dist = (targetPos - hrp.Position).Magnitude
-        local endPos = targetPos + Vector3.new(0, 2, 0)
+        local endPos = targetPos + Vector3.new(0, 3, 0) -- Naikin dikit biar aman
 
         -- INSTANT LOGIC
         if Settings.InstantTPFruit then
@@ -109,42 +118,29 @@ task.spawn(function()
             if dist < 5 then 
                 StopSmartTween()
             else
-                -- Deteksi kalau target berubah atau tween belum jalan
                 if currentTarget ~= nearest or not isTweening then
-                    StopSmartTween() -- Clean up dulu
+                    StopSmartTween() 
                     
                     currentTarget = nearest
                     isTweening = true
                     
-                    -- Setup Proxy
                     local startCF = CFrame.lookAt(hrp.Position, endPos)
                     ProxyPart.CFrame = startCF
 
-                    -- FIX NOCLIP: Pake loop Stepped TAPI dengan cache parts
-                    -- Ini penting biar bisa tembus tembok tanpa lag
+                    -- NoClip Connection (Cuma jalan kalau tweening)
                     noclipConn = RunService.Stepped:Connect(function()
                         if not isTweening or not char then return end
-                        
-                        -- Langsung set property tanpa loop 'GetDescendants' baru
-                        -- Ini cara paling efisien nge-force noclip
                         for _, part in ipairs(char:GetChildren()) do
-                            if part:IsA("BasePart") then
-                                part.CanCollide = false
-                            end
+                            if part:IsA("BasePart") then part.CanCollide = false end
                         end
-                        
-                        -- Kunci posisi ke Proxy
                         if hrp then
                             hrp.AssemblyLinearVelocity = Vector3.zero
                             hrp.CFrame = ProxyPart.CFrame
                         end
                     end)
                     
-                    -- Play Tween
                     local tweenInfo = TweenInfo.new(dist / TWEEN_SPEED, Enum.EasingStyle.Linear)
-                    local lookCF = CFrame.lookAt(endPos, endPos + startCF.LookVector)
-
-                    currentTween = TweenService:Create(ProxyPart, tweenInfo, {CFrame = lookCF})
+                    currentTween = TweenService:Create(ProxyPart, tweenInfo, {CFrame = CFrame.lookAt(endPos, endPos + startCF.LookVector)})
                     currentTween:Play()
                 end
             end 
