@@ -152,12 +152,23 @@ function _G.Cat.HopServer()
 end
 
 -- ==========================================
--- 3. TRIGGER LOOP: AUTO SCAN & HOP
+-- 3. TRIGGER LOOP: AUTO SCAN & HOP (PINTER & ANTI-STUCK)
 -- ==========================================
 task.spawn(function()
-    task.wait(5) -- Initial wait on join
+    task.wait(10) -- Jeda awal pas baru inject script, biar game stabil
     
     while task.wait(2) do
+        -- KALO LAGI LOADING / MATI / LAG, SCRIPT TIDUR TOTAL DI SINI!
+        -- Dia kagak bakal ngulik data ESP atau apapun yang bikin FPS drop.
+        if not State.IsGameReady then
+            _G.Cat.WaitUntilReady() -- Tunggu sampai game beneran aman (Ada Team, HRD, Health > 0)
+            
+            -- [OBAT STUCK HOP] Setelah game ready (misal baru selesai milih team), 
+            -- kasih jeda 10 detik biar server stabil & buah sempat spawn ke workspace.
+            -- Ini ngebunuh bug "langsung hop lagi pas baru masuk server"
+            task.wait(10) 
+        end
+        
         if Settings.AutoHop and State.IsGameReady then
             pcall(function()
                 local fruitCount = 0
@@ -176,7 +187,7 @@ task.spawn(function()
             end)
         else
             -- Reset state if toggle turned off during hopping
-            if isHopping then
+            if isHopping and not Settings.AutoHop then
                 isHopping = false
                 if _G.Cat.ReleaseCharacter then 
                     _G.Cat.ReleaseCharacter() 
