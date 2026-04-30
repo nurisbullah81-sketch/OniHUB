@@ -303,84 +303,66 @@ WHTestBtn.MouseButton1Click:Connect(function()
 end)
 
 -- [[ ==========================================
---      3. CCTV TITANIUM V5 (INSTANCE TRACKER)
+--      3. CCTV TITANIUM V6 (NEAT & ANTI-SPAM)
 --    ========================================== ]]
 task.spawn(function()
     local player = Players.LocalPlayer or Players.PlayerAdded:Wait() 
     
-    -- // Variables & Anti-Spam Memory
-    local seenTools      = {} 
-    local ignoreNewTools = true 
+    while not player do 
+        task.wait(0.5) 
+        player = Players.LocalPlayer 
+    end
     
-    -- // Grace period to ignore existing inventory items on spawn
-    task.delay(7, function() 
-        ignoreNewTools = false 
-    end)
+    -- // Variables & Anti-Spam Memory (Berbasis Nama, Bukan Fisik)
+    local fruitCooldowns = {} 
     
     -- // Function: Core Fruit Identification Logic
     local function CheckForFruit(item)
         if not item:IsA("Tool") then return end 
         
-        -- Anti-Spam: Skip if this specific instance has been scanned before
-        if seenTools[item] then return end 
-        seenTools[item] = true 
+        -- // Validation Gate
+        if not Settings.FruitWebhook then return end 
         
-        -- Validation Gates
-        if ignoreNewTools or not Settings.FruitWebhook then return end 
+        local rawName   = item.Name
+        local lowerName = string.lower(rawName)
         
-        local isFruit   = false 
-        local fruitName = item.Name 
+        -- // FILTER 1: Distinguish Physical Fruit vs Ability
+        -- Buah fisik PASTI punya kata "Fruit" atau tanda hubung "-"
+        local hasFruitWord = string.find(lowerName, "fruit")
+        local hasHyphen    = string.find(lowerName, "-")
         
-        -- // PATTERN 1: Symmetrical Names (e.g., "Kitsune-Kitsune")
-        local nameLen = string.len(item.Name) 
-        local half    = math.floor(nameLen / 2)
-        
-        if half > 0 then 
-            local part1 = string.sub(item.Name, 1, half) 
-            local part2 = string.sub(item.Name, half + 2, nameLen) 
-            local mid   = string.sub(item.Name, half + 1, half + 1) 
-            
-            if mid == "-" and part1 == part2 then 
-                isFruit   = true
-                fruitName = part1 
-            end 
+        if not (hasFruitWord or hasHyphen) then 
+            return -- Ini kekuatan/ability lu (misal "Kitsune" doang), buang!
         end
         
-        -- // PATTERN 2: Classic Naming (e.g., "Ghost Fruit")
-        if not isFruit and string.find(string.lower(item.Name), "fruit") then 
-            isFruit   = true
-            fruitName = string.gsub(item.Name, " Fruit", "") 
-        end
+        -- // FILTER 2: Clean the Fruit Name
+        local cleanFruitName = rawName
         
-        -- // PATTERN 3: Emergency Fallback (Keyword Match)
-        local fruitList = {
-            "kitsune", "tiger", "leopard", "dragon", "venom", "dough", 
-            "t-rex", "trex", "mammoth", "spirit", "control", "gravity", 
-            "blizzard", "portal", "lightning", "rumble", "pain", "buddha", 
-            "quake", "sound", "spider", "string", "love", "phoenix", 
-            "ghost", "magma", "light", "rubber", "barrier", "dark", 
-            "sand", "ice", "falcon", "flame", "spike", "smoke", 
-            "bomb", "spring", "chop", "spin", "rocket"
-        }
-        
-        if not isFruit then
-            local cleanName = string.lower(fruitName)
-            for _, name in ipairs(fruitList) do
-                if cleanName == name then
-                    isFruit   = true
-                    fruitName = item.Name
-                    break
-                end
+        if hasHyphen then
+            local split = string.split(rawName, "-")
+            if #split >= 2 and split[1] == split[2] then
+                cleanFruitName = split[1]
             end
+        elseif hasFruitWord then
+            cleanFruitName = string.gsub(rawName, "(%s?)[Ff][Rr][Uu][Ii][Tt]", "")
         end
+        
+        -- // FILTER 3: Name-Based Cooldown (Anti 3x Notification)
+        -- Kalau buah ini udah dikirim, tahan 15 detik biar sistem game ga ngespam cloning
+        if fruitCooldowns[cleanFruitName] then return end 
+        fruitCooldowns[cleanFruitName] = true 
+        
+        task.delay(15, function() 
+            fruitCooldowns[cleanFruitName] = nil 
+        end)
         
         -- // EXECUTION: Trigger Webhook
-        if isFruit and _G.Cat.Webhook then 
+        if _G.Cat.Webhook then 
             local jobId = game.JobId 
             if jobId == "" then jobId = "Local-Server/Studio" end 
             
             _G.Cat.Webhook:Send(
-                fruitName, 
+                cleanFruitName, 
                 jobId, 
                 Settings.FruitWebhookRarity, 
                 Settings.FruitWebhookURL
@@ -390,9 +372,6 @@ task.spawn(function()
     
     -- // 3.1: Event Listeners (Backpack & Character)
     local function ConnectListeners(char)
-        ignoreNewTools = true
-        task.delay(7, function() ignoreNewTools = false end)
-        
         -- Track items added to character (Equipped)
         char.ChildAdded:Connect(CheckForFruit) 
         
@@ -405,25 +384,8 @@ task.spawn(function()
     
     player.CharacterAdded:Connect(ConnectListeners)
     
-    -- Initial connection for current session
+    -- // Initial connection for current session
     if player.Character then 
         ConnectListeners(player.Character) 
-    end
-    
-    -- // 3.2: Initial Memory Population
-    -- Mark all existing tools as "seen" to prevent spam on inject
-    local currentChar = player.Character
-    local currentBP   = player:FindFirstChild("Backpack")
-    
-    if currentChar then
-        for _, v in ipairs(currentChar:GetChildren()) do 
-            if v:IsA("Tool") then seenTools[v] = true end 
-        end
-    end
-    
-    if currentBP then
-        for _, v in ipairs(currentBP:GetChildren()) do 
-            if v:IsA("Tool") then seenTools[v] = true end 
-        end
     end
 end)
