@@ -5,16 +5,10 @@
 
 local Lighting   = game:GetService("Lighting")
 local Workspace  = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
 
 while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings do task.wait(0.1) end
 local UI       = _G.Cat.UI
 local Settings = _G.Cat.Settings
-
--- OBAT UI HILANG: Kalau Main.lua lupa define, kita define manual di sini!
-if Settings.FPSBoost == nil then 
-    Settings.FPSBoost = false 
-end
 
 local Page = UI.CreateTab("Misc", false)
 UI.CreateSection(Page, "EXTREME OPTIMIZATION")
@@ -46,7 +40,6 @@ if Terrain then
     OrigTerrain.WaterReflectance = Terrain.WaterReflectance
 end
 
--- Koneksi untuk auto-optimize part baru
 local optimizationConnection = nil
 
 UI.CreateToggle(
@@ -84,12 +77,10 @@ UI.CreateToggle(
             pcall(function() Workspace.StreamingIntegrityEnabled = false end)
 
             -- 3. SMART CLEANER (Ini Rahasianya biar kagak freeze)
-            -- Gue pake cara pelan tapi pasti beres di background.
             -- Gemini pake 1000 per detik (berat), gue pake 200 per 0.1 detik (halus)
             task.spawn(function()
                 local count = 0
                 for _, obj in ipairs(Workspace:GetDescendants()) do
-                    -- Kalau di-off-in di tengah jalan, langsung berhenti
                     if not Settings.FPSBoost then break end 
                     
                     if obj:IsA("BasePart") then
@@ -102,7 +93,7 @@ UI.CreateToggle(
                     count = count + 1
                     if count >= 200 then 
                         count = 0 
-                        task.wait(0.1) -- Jeda micro biar FPS kagak drop pas proses
+                        task.wait(0.1)
                     end 
                 end
             end)
@@ -145,11 +136,11 @@ UI.CreateToggle(
                 optimizationConnection = nil
             end
 
-            -- Balikin part ke semula (Juga diurus pelan-pelan di background)
+            -- Balikin part ke semula
             task.spawn(function()
                 local count = 0
                 for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if Settings.FPSBoost then break end -- Berhenti kalo di-ON balik
+                    if Settings.FPSBoost then break end
                     if obj:IsA("BasePart") then
                         obj.CastShadow = true
                         if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
