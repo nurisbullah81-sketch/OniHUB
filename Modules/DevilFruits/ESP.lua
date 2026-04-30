@@ -187,68 +187,109 @@ _G.Cat.ESP = {
 }
 
 -- [[ ==========================================
---      5. SMART SCANNER & UPDATE LOOP (ANTI-PING SPIKE)
+--      5. SMART CCTV & ZERO-LAG DISTANCE UPDATER
 --    ========================================== ]]
 
-task.spawn(function()
-    local scanTimer = 0
+local RunService = game:GetService("RunService")
+local distanceLoop = nil
+
+-- // Fungsi buat update jarak (Cuma jalan kalau ada buah!)
+local function StartDistanceLoop()
+    if distanceLoop then return end -- Kalo udah nyala, biarin aja
     
-    while task.wait(0.5) do
-        -- 1. Kalau ESP mati, sembunyiin UI
-        if not Settings.FruitESP then 
-            for _, entry in pairs(Data) do 
-                if entry and entry.bb then entry.bb.Enabled = false end 
-            end 
-            continue 
-        end
-        
-        local char  = Me.Character 
-        local hrp   = char and char:FindFirstChild("HumanoidRootPart")
-        local myPos = hrp and hrp.Position
-        if not myPos then continue end 
-        
-        -- 2. SMART SCANNER (Jalanin absen buah cuma setiap 3 detik sekali)
-        scanTimer = scanTimer + 0.5
-        if scanTimer >= 3 then
-            scanTimer = 0
-            for _, obj in ipairs(Workspace:GetChildren()) do 
-                if IsFruit(obj) and not Data[obj] then 
-                    AddESP(obj) 
-                    
-                    if Settings.FruitWebhook and _G.Cat.Webhook then
-                        _G.Cat.Webhook:Send(
-                            obj.Name, 
-                            game.JobId, 
-                            Settings.FruitWebhookRarity, 
-                            Settings.FruitWebhookURL
-                        )
-                    end
-                end 
+    distanceLoop = RunService.Heartbeat:Connect(function()
+        -- Kalau toggle ESP dimatiin di UI, umpetin teksnya
+        if not Settings.FruitESP then
+            for _, entry in pairs(Data) do
+                if entry and entry.bb then entry.bb.Enabled = false end
             end
+            return
         end
-        
-        -- 3. UPDATE JARAK INSTAN & PEMBERSIHAN
-        for fruit, entry in pairs(Data) do 
-            if not fruit or not fruit.Parent or not entry.bb or not entry.bb.Parent then 
-                RemoveESP(fruit) 
-                continue 
-            end 
+
+        local char  = Me.Character
+        local hrp   = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local myPos = hrp.Position
+        local hasFruits = false
+
+        for fruit, entry in pairs(Data) do
+            hasFruits = true
             
-            local fruitPos = GetPosition(fruit) 
+            -- Kalau buah ilang / udah dimakan, hapus dari memori
+            if not fruit or not fruit.Parent or fruit.Parent ~= Workspace then
+                RemoveESP(fruit)
+                continue
+            end
+
+            local fruitPos = GetPosition(fruit)
             if not fruitPos then 
                 entry.bb.Enabled = false
-                continue 
-            end 
-            
-            local dist = math.floor((fruitPos - myPos).Magnitude) 
-            
+                continue
+            end
+
+            local dist = math.floor((fruitPos - myPos).Magnitude)
             local lastDist = Mem[fruit] or -1
-            if math.abs(dist - lastDist) > 5 then 
-                Mem[fruit] = dist 
-                entry.txt.Text = string.format("%s [%dm]", fruit.Name, dist) 
-            end 
-            
-            entry.bb.Enabled = true 
+
+            -- Update text cuma kalau lu jalan lebih dari 5 meter (Biar UI kaga kedut-kedut)
+            if math.abs(dist - lastDist) > 5 then
+                Mem[fruit] = dist
+                entry.txt.Text = string.format("%s [%dm]", fruit.Name, dist)
+            end
+
+            entry.bb.Enabled = true
         end
+
+        -- MATIIN MESIN OTOMATIS KALAU UDAH KAGA ADA BUAH DI MAP! (0% CPU Idle)
+        if not hasFruits then
+            distanceLoop:Disconnect()
+            distanceLoop = nil
+        end
+    end)
+end
+
+-- // Fungsi CCTV buat ngawasin langit (Kaga pake loop!)
+local function OnItemSpawned(obj)
+    -- Filter super cepat: Cek apakah benda yang jatuh namanya ada tulisan "Fruit"
+    if typeof(obj.Name) == "string" and string.match(obj.Name, "Fruit$") then
+        task.delay(0.5, function() -- Kasih jeda 0.5 detik biar game selesai ngerender modelnya
+            if IsFruit(obj) and not Data[obj] then
+                AddESP(obj)
+                StartDistanceLoop() -- WANGUNIN MESIN PENGHITUNG JARAK!
+                
+                -- Webhook Discord tetep jalan 100%
+                if Settings.FruitWebhook and _G.Cat.Webhook then
+                    _G.Cat.Webhook:Send(
+                        obj.Name, 
+                        game.JobId, 
+                        Settings.FruitWebhookRarity, 
+                        Settings.FruitWebhookURL
+                    )
+                end
+            end
+        end)
+    end
+end
+
+-- // Pasang CCTV di Workspace
+Workspace.ChildAdded:Connect(OnItemSpawned)
+
+-- // Pasang CCTV buat buah yang ilang/diambil orang
+Workspace.ChildRemoved:Connect(function(obj)
+    if Data[obj] then
+        RemoveESP(obj)
+    end
+end)
+
+-- // Sapu bersih 1x doang pas script baru di-execute
+task.spawn(function()
+    for _, obj in ipairs(Workspace:GetChildren()) do
+        if IsFruit(obj) and not Data[obj] then
+            AddESP(obj)
+        end
+    end
+    -- Kalau dari hasil scan awal ternyata ada buah, langsung nyalain mesin jaraknya
+    if next(Data) ~= nil then
+        StartDistanceLoop()
     end
 end)
