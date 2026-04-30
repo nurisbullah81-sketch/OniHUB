@@ -31,7 +31,7 @@ Workspace.ChildAdded:Connect(function(o)
     task.wait(0.5) 
     if IsF(o) then 
         Add(o) 
-        if Settings.FruitWebhook and _G.Cat.Webhook and State.IsGameReady then
+        if Settings.FruitWebhook and _G.Cat.Webhook then
             _G.Cat.Webhook:Send(o.Name, game.JobId, Settings.FruitWebhookRarity, Settings.FruitWebhookURL)
         end
     end 
