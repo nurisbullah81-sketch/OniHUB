@@ -45,14 +45,19 @@ local Webhook = {}
 
 local function GetDynamicRarity(rawFruitName)
     local cleanName = string.lower(string.gsub(rawFruitName, " Fruit", ""))
-    local foundRarity = "Common"
-    pcall(function()
-        local targets = { RS:FindFirstChild("FruitInfo"), RS:FindFirstChild("Modules") and RS.Modules:FindFirstChild("Asset") and RS.Modules.Asset:FindFirstChild("ItemData"), RS:FindFirstChild("Modules") and RS.Modules:FindFirstChild("Asset") and RS.Modules.Asset:FindFirstChild("ItemData") and RS.Modules.Asset.ItemData:FindFirstChild("Demon Fruit") }
-        for _, mod in pairs(targets) do
-            if mod and mod:IsA("ModuleScript") then local dict = require(mod) if type(dict) == "table" then for internalName, data in pairs(dict) do if type(internalName) == "string" and string.find(string.lower(internalName), cleanName) then if type(data) == "table" then if data.Rarity then foundRarity = tostring(data.Rarity); return elseif data.Price or data.Cost then local price = data.Price or data.Cost if price >= 2000000 then foundRarity = "Mythical"; return end if price >= 1000000 then foundRarity = "Legendary"; return end end end end end end end
-        end
-    end)
-    return foundRarity
+    
+    -- Hardcoded list (Kagak bisa diblokir executor, 100% jalan)
+    local mythical = {"kitsune", "tiger", "leopard", "dragon", "venom", "dough", "t-rex", "trex", "mammoth", "spirit", "control", "gravity"}
+    local legendary = {"blizzard", "portal", "lightning", "rumble", "pain", "buddha", "quake", "sound", "spider", "string", "love", "phoenix"}
+    
+    for _, kw in pairs(mythical) do 
+        if string.find(cleanName, kw) then return "Mythical" end 
+    end
+    for _, kw in pairs(legendary) do 
+        if string.find(cleanName, kw) then return "Legendary" end 
+    end
+    
+    return "Common"
 end
 
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
