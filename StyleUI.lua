@@ -18,45 +18,9 @@ local Players = game:GetService("Players")
 
 -- Variables
 local ConfigFile = "CatHUB_Config.json"
-local DefaultSettings = {
-    FruitESP           = false,
-    TweenFruit         = false,
-    InstantTPFruit     = false,
-    AutoStoreFruit     = false,
-    AutoHop            = false,
-    AntiAFK            = true,
-    AutoAttack         = false,
-    FruitWebhook       = false,
-    FruitWebhookURL    = "",
-    FruitWebhookRarity = "Mythical Only",
-}
 
 -- Functions
-local function LoadSettings()
-    local settings = {}
-    
-    -- Clone default settings
-    for key, value in pairs(DefaultSettings) do 
-        settings[key] = value 
-    end
-
-    -- Attempt to load saved data
-    pcall(function()
-        if isfile(ConfigFile) then
-            local content = readfile(ConfigFile)
-            local saved = HttpService:JSONDecode(content)
-            
-            for key, value in pairs(saved) do 
-                if settings[key] ~= nil then 
-                    settings[key] = value 
-                end 
-            end
-        end
-    end)
-
-    return settings
-end
-
+-- [HAPUS LoadSettings] -> Main.lua sudah handle ini. StyleUI cuma boleh Save, kagak boleh Load ulang nanti nimpa.
 local function SaveSettings()
     pcall(function() 
         local data = HttpService:JSONEncode(_G.Cat.Settings)
@@ -68,7 +32,12 @@ end
 _G.Cat = _G.Cat or {}
 _G.Cat.Player = Players.LocalPlayer
 _G.Cat.Labels = _G.Cat.Labels or {}
-_G.Cat.Settings = LoadSettings()
+
+-- PENTING: Cek kalau Settings belum ada (misal load tanpa Main.lua), baru bikin kosong.
+-- Kalau udah ada (dari Main.lua), BIARKAN JANGAN DITIMPA!
+if not _G.Cat.Settings then
+    _G.Cat.Settings = {}
+end
 
 -- ==========================================
 -- 2. WEBHOOK ENGINE (PROXY LEWISAKURA)
@@ -643,55 +612,239 @@ local function CreateTab(name, isFirst)
     local IndicatorCorner = Instance.new("UICorner", Indicator)
     IndicatorCorner.CornerRadius = UDim.new(1, 0)
 
-    -- Return logic akan lanjut di part selanjutnya (pembentukan Page-nya)
-    
+-- ==========================================
+    -- PAGE CREATION (Scrolling Area)
+    -- ==========================================
     local Page = Instance.new("ScrollingFrame", ContentArea)
-    Page.Size = UDim2.new(1, -16, 1, -16); Page.Position = UDim2.new(0, 8, 0, 8); Page.BackgroundColor3 = Theme.PageBG; Page.BackgroundTransparency = 0; 
-    Page.ScrollBarThickness = 2; Page.ScrollBarImageColor3 = Theme.TextDim; Page.Visible = isFirst; Page.BorderSizePixel = 0
-    Instance.new("UICorner", Page).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", Page).Color = Theme.Line
-    local List = Instance.new("UIListLayout", Page) List.Padding = UDim.new(0, 6) List.SortOrder = Enum.SortOrder.LayoutOrder
-    local Pad = Instance.new("UIPadding", Page) Pad.PaddingTop = UDim.new(0, 10); Pad.PaddingLeft = UDim.new(0, 10); Pad.PaddingRight = UDim.new(0, 14); Pad.PaddingBottom = UDim.new(0, 10)
+    Page.Name = name .. "_Page"
+    Page.Size = UDim2.new(1, -16, 1, -16)
+    Page.Position = UDim2.new(0, 8, 0, 8)
+    Page.BackgroundColor3 = Theme.PageBG
+    Page.BackgroundTransparency = 0
+    Page.ScrollBarThickness = 2
+    Page.ScrollBarImageColor3 = Theme.TextDim
+    Page.Visible = isFirst
+    Page.BorderSizePixel = 0
+
+    -- Page Decorations
+    local PageCorner = Instance.new("UICorner", Page)
+    PageCorner.CornerRadius = UDim.new(0, 6)
+
+    local PageStroke = Instance.new("UIStroke", Page)
+    PageStroke.Color = Theme.Line
+
+    -- Layout & Padding
+    local List = Instance.new("UIListLayout", Page)
+    List.Padding = UDim.new(0, 6)
+    List.SortOrder = Enum.SortOrder.LayoutOrder
+
+    local Pad = Instance.new("UIPadding", Page)
+    Pad.PaddingTop = UDim.new(0, 10)
+    Pad.PaddingLeft = UDim.new(0, 10)
+    Pad.PaddingRight = UDim.new(0, 14)
+    Pad.PaddingBottom = UDim.new(0, 10)
     
-    Pages[name] = {Btn = Btn, Page = Page, Ind = Indicator, Stroke = BtnStroke}
+    -- Store Data for Management
+    Pages[name] = {
+        Btn = Btn, 
+        Page = Page, 
+        Ind = Indicator, 
+        Stroke = BtnStroke
+    }
+
+    -- ==========================================
+    -- TAB SWITCHING LOGIC
+    -- ==========================================
     Btn.MouseButton1Click:Connect(function()
         for tName, data in pairs(Pages) do 
             local active = (tName == name)
-            data.Page.Visible = active; data.Ind.Visible = active
-            TweenService:Create(data.Btn, TweenInfo.new(0.15), {BackgroundColor3 = active and Theme.TabOn or Theme.TabOff, TextColor3 = active and Theme.Text or Theme.TextDim}):Play()
-            TweenService:Create(data.Stroke, TweenInfo.new(0.15), {Transparency = active and 0 or 0.3}):Play()
+            
+            -- Visibility Toggle
+            data.Page.Visible = active
+            data.Ind.Visible = active
+            
+            -- Color Transition (Tweens)
+            TweenService:Create(data.Btn, TweenInfo.new(0.15), {
+                BackgroundColor3 = active and Theme.TabOn or Theme.TabOff, 
+                TextColor3 = active and Theme.Text or Theme.TextDim
+            }):Play()
+
+            -- Stroke Transparency Transition
+            TweenService:Create(data.Stroke, TweenInfo.new(0.15), {
+                Transparency = active and 0 or 0.3
+            }):Play()
         end
     end)
+
     return Page
 end
 
+-- ==========================================
+-- 8. UI COMPONENTS (SECTION, TOGGLE, LABEL)
+-- ==========================================
+
+-- Function: Create Section Header
 local function CreateSection(parent, text)
-    local F = Instance.new("Frame", parent) F.LayoutOrder = #parent:GetChildren() F.Size = UDim2.new(1, 0, 0, 36) F.BackgroundTransparency = 1
-    local L = Instance.new("TextLabel", F) L.Size = UDim2.new(1, 0, 0, 14) L.Position = UDim2.new(0, 4, 0, 16) L.Text = text L.TextColor3 = Theme.TextDim L.Font = Enum.Font.GothamBold L.TextSize = 11 L.TextXAlignment = Enum.TextXAlignment.Left L.BackgroundTransparency = 1
+    local F = Instance.new("Frame", parent)
+    F.Name = "Section_" .. text
+    F.LayoutOrder = #parent:GetChildren()
+    F.Size = UDim2.new(1, 0, 0, 36)
+    F.BackgroundTransparency = 1
+
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, 0, 0, 14)
+    L.Position = UDim2.new(0, 4, 0, 16)
+    L.Text = text
+    L.TextColor3 = Theme.TextDim
+    L.Font = Enum.Font.GothamBold
+    L.TextSize = 11
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
 end
 
+-- Function: Create Toggle Switch
 local function CreateToggle(parent, text, description, stateRef, callback)
     local frameHeight = description and 52 or 36
-    local F = Instance.new("TextButton", parent) F.LayoutOrder = #parent:GetChildren() F.Size = UDim2.new(1, 0, 0, frameHeight) F.BackgroundColor3 = Theme.CardBG F.BorderSizePixel = 0 F.Text = "" F.AutoButtonColor = false
-    Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", F).Color = Theme.Line
-    local L = Instance.new("TextLabel", F) L.Size = UDim2.new(1, -60, 0, 20) L.Position = UDim2.new(0, 12, 0, description and 6 or 8) L.Text = text L.TextColor3 = Theme.Text L.Font = Enum.Font.GothamMedium L.TextSize = 12 L.TextXAlignment = Enum.TextXAlignment.Left L.BackgroundTransparency = 1
-    if description then local D = Instance.new("TextLabel", F) D.Size = UDim2.new(1, -60, 0, 14) D.Position = UDim2.new(0, 12, 0, 26) D.Text = description D.TextColor3 = Theme.TextDim D.Font = Enum.Font.Gotham D.TextSize = 10 D.TextXAlignment = Enum.TextXAlignment.Left D.BackgroundTransparency = 1 end
-    local Sw = Instance.new("Frame", F) Sw.Size = UDim2.new(0, 36, 0, 18) Sw.Position = UDim2.new(1, -48, 0.5, -9) Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff Sw.BorderSizePixel = 0 Instance.new("UICorner", Sw).CornerRadius = UDim.new(1, 0) 
-    local Dot = Instance.new("Frame", Sw) Dot.Size = UDim2.new(0, 14, 0, 14) Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7) Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255) Dot.BorderSizePixel = 0 Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0) 
-    F.MouseButton1Click:Connect(function() stateRef = not stateRef TweenService:Create(Sw, TweenInfo.new(0.2), {BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff}):Play() TweenService:Create(Dot, TweenInfo.new(0.25), {Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)}):Play() if callback then callback(stateRef) end SaveSettings() end)
+    
+    local F = Instance.new("TextButton", parent)
+    F.Name = text .. "_Toggle"
+    F.LayoutOrder = #parent:GetChildren()
+    F.Size = UDim2.new(1, 0, 0, frameHeight)
+    F.BackgroundColor3 = Theme.CardBG
+    F.BorderSizePixel = 0
+    F.Text = ""
+    F.AutoButtonColor = false
+
+    local FCorner = Instance.new("UICorner", F)
+    FCorner.CornerRadius = UDim.new(0, 6)
+
+    local FStroke = Instance.new("UIStroke", F)
+    FStroke.Color = Theme.Line
+
+    -- Toggle Title
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, -60, 0, 20)
+    L.Position = UDim2.new(0, 12, 0, description and 6 or 8)
+    L.Text = text
+    L.TextColor3 = Theme.Text
+    L.Font = Enum.Font.GothamMedium
+    L.TextSize = 12
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
+
+    -- Toggle Description (If exists)
+    if description then 
+        local D = Instance.new("TextLabel", F)
+        D.Size = UDim2.new(1, -60, 0, 14)
+        D.Position = UDim2.new(0, 12, 0, 26)
+        D.Text = description
+        D.TextColor3 = Theme.TextDim
+        D.Font = Enum.Font.Gotham
+        D.TextSize = 10
+        D.TextXAlignment = Enum.TextXAlignment.Left
+        D.BackgroundTransparency = 1 
+    end
+
+    -- Switch Background
+    local Sw = Instance.new("Frame", F)
+    Sw.Size = UDim2.new(0, 36, 0, 18)
+    Sw.Position = UDim2.new(1, -48, 0.5, -9)
+    Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
+    Sw.BorderSizePixel = 0
+    
+    local SwCorner = Instance.new("UICorner", Sw)
+    SwCorner.CornerRadius = UDim.new(1, 0) 
+
+    -- Switch Dot (Circle)
+    local Dot = Instance.new("Frame", Sw)
+    Dot.Size = UDim2.new(0, 14, 0, 14)
+    Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Dot.BorderSizePixel = 0
+    
+    local DotCorner = Instance.new("UICorner", Dot)
+    DotCorner.CornerRadius = UDim.new(1, 0) 
+
+    -- Toggle Click Logic
+    F.MouseButton1Click:Connect(function() 
+        stateRef = not stateRef 
+        
+        -- Animate Switch Background
+        TweenService:Create(Sw, TweenInfo.new(0.2), {
+            BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
+        }):Play() 
+        
+        -- Animate Dot Position
+        TweenService:Create(Dot, TweenInfo.new(0.25), {
+            Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+        }):Play() 
+        
+        if callback then 
+            callback(stateRef) 
+        end 
+        
+        SaveSettings() 
+    end)
+
+    -- Register for Search Feature
     table.insert(AllToggles, {Btn = F, Label = L})
 end
 
+-- Function: Create Information Label
 local function CreateLabel(parent, text, description)
     local frameHeight = description and 45 or 30
-    local F = Instance.new("Frame", parent) F.LayoutOrder = #parent:GetChildren() F.Size = UDim2.new(1, 0, 0, frameHeight) F.BackgroundColor3 = Theme.CardBG F.BorderSizePixel = 0 Instance.new("UICorner", F).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", F).Color = Theme.Line
-    local L = Instance.new("TextLabel", F) L.Size = UDim2.new(1, -20, 0, 20) L.Position = UDim2.new(0, 12, 0, description and 4 or 5) L.Text = text L.TextColor3 = Theme.Text L.Font = Enum.Font.GothamMedium L.TextSize = 12 L.TextXAlignment = Enum.TextXAlignment.Left L.BackgroundTransparency = 1
-    if description then local D = Instance.new("TextLabel", F) D.Size = UDim2.new(1, -20, 0, 14) D.Position = UDim2.new(0, 12, 0, 22) D.Text = description D.TextColor3 = Theme.TextDim D.Font = Enum.Font.Gotham D.TextSize = 10 D.TextXAlignment = Enum.TextXAlignment.Left D.BackgroundTransparency = 1 end
+    
+    local F = Instance.new("Frame", parent)
+    F.LayoutOrder = #parent:GetChildren()
+    F.Size = UDim2.new(1, 0, 0, frameHeight)
+    F.BackgroundColor3 = Theme.CardBG
+    F.BorderSizePixel = 0
+    
+    local FCorner = Instance.new("UICorner", F)
+    FCorner.CornerRadius = UDim.new(0, 6)
+
+    local FStroke = Instance.new("UIStroke", F)
+    FStroke.Color = Theme.Line
+
+    -- Label Main Text
+    local L = Instance.new("TextLabel", F)
+    L.Size = UDim2.new(1, -20, 0, 20)
+    L.Position = UDim2.new(0, 12, 0, description and 4 or 5)
+    L.Text = text
+    L.TextColor3 = Theme.Text
+    L.Font = Enum.Font.GothamMedium
+    L.TextSize = 12
+    L.TextXAlignment = Enum.TextXAlignment.Left
+    L.BackgroundTransparency = 1
+
+    -- Label Description (If exists)
+    if description then 
+        local D = Instance.new("TextLabel", F)
+        D.Size = UDim2.new(1, -20, 0, 14)
+        D.Position = UDim2.new(0, 12, 0, 22)
+        D.Text = description
+        D.TextColor3 = Theme.TextDim
+        D.Font = Enum.Font.Gotham
+        D.TextSize = 10
+        D.TextXAlignment = Enum.TextXAlignment.Left
+        D.BackgroundTransparency = 1 
+    end
+    
     return L
 end
 
+-- ==========================================
+-- SEARCH ENGINE LOGIC
+-- ==========================================
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
     local query = string.lower(SearchBox.Text)
-    for _, toggle in ipairs(AllToggles) do local text = string.lower(toggle.Label.Text) toggle.Btn.Visible = query == "" or string.find(text, query) ~= nil end 
+    
+    for _, toggle in ipairs(AllToggles) do 
+        local text = string.lower(toggle.Label.Text)
+        
+        -- Filter visibility based on query
+        toggle.Btn.Visible = (query == "") or (string.find(text, query) ~= nil)
+    end 
 end)
 
 -- ==========================================
