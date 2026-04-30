@@ -1,38 +1,57 @@
 -- [[ CatHUB MAIN LOADER & AUTO SAVE ENGINE ]] --
-local _ENV = (getgenv or getrenv or getfenv)()
 
+-- Environment Setup
+local _ENV = (getgenv or getrenv or getfenv)()
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+
+-- Prevent Re-execution
 if _ENV.Cat_Executed then return end
 _ENV.Cat_Executed = true
 
+-- Teleport Handler (Auto Execute after Server Hop)
 local executor = syn or fluxus
 local queueteleport = queue_on_teleport or (executor and executor.queue_on_teleport)
+
 if type(queueteleport) == "function" then
     local scriptUrl = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/Main.lua"))()'
     pcall(queueteleport, scriptUrl)
 end
 
-local HttpService = game:GetService("HttpService")
 local ConfigFile = "CatHUB_Config.json"
 
--- 1. MASTER DEFAULT SETTINGS (Semua harus ada di sini)
+-- ==========================================
+-- 1. MASTER DEFAULT SETTINGS
+-- ==========================================
 _G.Cat = {
-    Player = game:GetService("Players").LocalPlayer,
+    Player = Players.LocalPlayer,
     Settings = { 
-        FruitESP = false, TweenFruit = false, InstantTPFruit = false,
-        AutoStoreFruit = false, AutoHop = false, AntiAFK = true, 
-        AutoAttack = false, FruitWebhook = false, FruitWebhookURL = "", 
-        FruitWebhookRarity = "Mythical Only", AutoTeam = false
+        FruitESP           = false,
+        TweenFruit         = false,
+        InstantTPFruit     = false,
+        AutoStoreFruit     = false,
+        AutoHop            = false,
+        AntiAFK            = true, 
+        AutoAttack         = false,
+        AutoTeam           = false,
+        FruitWebhook       = false,
+        FruitWebhookURL    = "", 
+        FruitWebhookRarity = "Mythical Only"
     },
     Labels = {}
 }
 
--- 2. LOAD SYSTEM (Membaca file dari PC lu jika ada)
+-- ==========================================
+-- 2. LOAD SYSTEM (Read Saved Config)
+-- ==========================================
 if isfile and isfile(ConfigFile) then
     local ok, data = pcall(function()
         return HttpService:JSONDecode(readfile(ConfigFile))
     end)
+    
     if ok and type(data) == "table" then
         for key, value in pairs(data) do
+            -- Hanya update jika key tersebut ada di default settings
             if _G.Cat.Settings[key] ~= nil then
                 _G.Cat.Settings[key] = value
             end
@@ -40,30 +59,50 @@ if isfile and isfile(ConfigFile) then
     end
 end
 
--- 3. AUTO-SAVE SYSTEM
+-- ==========================================
+-- 3. AUTO-SAVE SYSTEM (Every 3 Seconds)
+-- ==========================================
 task.spawn(function()
     while task.wait(3) do
         if writefile then
-            pcall(function() writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings)) end)
+            pcall(function() 
+                local encoded = HttpService:JSONEncode(_G.Cat.Settings)
+                writefile(ConfigFile, encoded) 
+            end)
         end
     end
 end)
 
--- 4. MODULE LOADER
+-- ==========================================
+-- 4. MODULE LOADER FUNCTION
+-- ==========================================
 local function Load(file)
-    local url = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/" .. file .. "?v=" .. tostring(math.random(1000, 9999))
-    local ok, r = pcall(function() return loadstring(game:HttpGet(url))() end)
-    if not ok then warn("[CatHUB] Gagal meload: " .. file .. " | Error: " .. tostring(r)) end
+    -- Cache-busting URL with random version
+    local baseUrl = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/"
+    local version = tostring(math.random(1000, 9999))
+    local url = baseUrl .. file .. "?v=" .. version
+    
+    local ok, r = pcall(function() 
+        return loadstring(game:HttpGet(url))() 
+    end)
+    
+    if not ok then 
+        warn("[CatHUB] Gagal meload: " .. file .. " | Error: " .. tostring(r)) 
+    end
+    
     return r
 end
 
-Load("StyleUI.lua")                     
-Load("Core.lua")                        
-Load("Modules/Status/Status.lua")       
-Load("Modules/AutoFarm/AutoFarm.lua")   
-Load("Modules/DevilFruits/ESP.lua")     
-Load("Modules/DevilFruits/FruitTP.lua") 
-Load("Modules/DevilFruits/AutoStore.lua")
-Load("Modules/DevilFruits/AutoHop.lua") 
-Load("Modules/DevilFruits/Webhook.lua") 
-Load("Modules/Misc/AntiAFK.lua")           
+-- ==========================================
+-- 5. EXECUTION ORDER
+-- ==========================================
+Load("StyleUI.lua")                     -- UI Framework
+Load("Core.lua")                        -- Hub Logic
+Load("Modules/Status/Status.lua")       -- Player Status
+Load("Modules/AutoFarm/AutoFarm.lua")   -- Farming Logic
+Load("Modules/DevilFruits/ESP.lua")     -- Visuals
+Load("Modules/DevilFruits/FruitTP.lua") -- Teleportation
+Load("Modules/DevilFruits/AutoStore.lua")-- Inventory Management
+Load("Modules/DevilFruits/AutoHop.lua")  -- Server Hopping
+Load("Modules/DevilFruits/Webhook.lua")  -- Discord Integration
+Load("Modules/Misc/AntiAFK.lua")        -- Anti Idle
