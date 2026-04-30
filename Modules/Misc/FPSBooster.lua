@@ -1,95 +1,104 @@
 -- [[ ==========================================
 --      MODULE: FPS BOOSTER (PVP MODE)
---      Engine: Native Roblox Rendering Killer
+--      Status: Sedikit Burik, FPS Rata Kanan!
 --    ========================================== ]]
 
-local Lighting  = game:GetService("Lighting")
+local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
+local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
-while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings do task.wait(0.1) end
-local UI       = _G.Cat.UI
-local Settings = _G.Cat.Settings
+repeat task.wait(0.1) until _G.Cat and _G.Cat.UI
 
--- INI OBATNYA: Kalau Main.lua lupa define, kita define sendiri biar kagak hilang!
-if Settings.FPSBoost == nil then
-    Settings.FPSBoost = false
-end
-
-local Page = UI.CreateTab("Misc", false)
-UI.CreateSection(Page, "EXTREME OPTIMIZATION")
+local Page = _G.Cat.UI.CreateTab("Misc", false)
+_G.Cat.UI.CreateSection(Page, "EXTREME OPTIMIZATION")
 
 -- Simpan settingan awal biar bisa di-Off-in
 local Orig = {
     Diffuse = Lighting.EnvironmentDiffuseScale,
     Specular = Lighting.EnvironmentSpecularScale,
-    Shadows = Lighting.GlobalShadows,
-    FogEnd = Lighting.FogEnd,
-    PostEffects = {}
+    Decoration = Terrain and Terrain.Decoration or true
 }
 
-for _, v in pairs(Lighting:GetChildren()) do
-    if v:IsA("PostEffect") then
-        Orig.PostEffects[v] = v.Enabled
-    end
-end
-
-local Terrain = Workspace:FindFirstChildOfClass("Terrain")
-if Terrain then
-    Orig.Decoration = Terrain.Decoration
-    Orig.WaterWaveSize = Terrain.WaterWaveSize
-    Orig.WaterWaveSpeed = Terrain.WaterWaveSpeed
-    Orig.WaterReflectance = Terrain.WaterReflectance
-end
-
-UI.CreateToggle(
+_G.Cat.UI.CreateToggle(
     Page,
-    "PvP FPS Boost",
-    "Matikan grafik berat, hilangkan lag PVP!",
-    Settings.FPSBoost,
+    "PvP FPS Boost (Medium)",
+    "Grafik agak datar, rumput dicukur, FPS tembus langit!",
+    false,
     function(state)
-        Settings.FPSBoost = state
-        
         if state then
-            -- ON: MODE PVP
-            pcall(function() settings().Rendering.QualityLevel = 1 end)
-            Lighting.GlobalShadows = false
+            -- =====================================
+            -- ON: MODE PVP (SEDITIK BURIK TAPI LANCAR)
+            -- =====================================
             
+            -- 1. Botakin Rumput 3D & Ratain Air
             if Terrain then
-                Terrain.Decoration = false
+                Terrain.Decoration = false -- Rumput 3D ILANG! (Boost Tergede)
                 Terrain.WaterWaveSize = 0
                 Terrain.WaterWaveSpeed = 0
                 Terrain.WaterReflectance = 0
             end
 
+            -- 2. Bikin Lighting Datar / Matte (Kaga ada pantulan HD)
+            Lighting.GlobalShadows = false
             Lighting.EnvironmentDiffuseScale = 0
             Lighting.EnvironmentSpecularScale = 0
             Lighting.FogEnd = 9e9
 
+            -- 3. Matiin Efek Silau
             for _, v in pairs(Lighting:GetChildren()) do
                 if v:IsA("PostEffect") and not v:IsA("ColorCorrectionEffect") then
                     v.Enabled = false
                 end
             end
 
+            -- 4. Optimasi CPU (Matiin Bayangan & Sensor Sentuh Benda Mati)
+            task.spawn(function()
+                local count = 0
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") then
+                        obj.CastShadow = false
+                        if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
+                            obj.CanTouch = false
+                            obj.CanQuery = false
+                        end
+                    end
+                    count = count + 1
+                    if count >= 1000 then count = 0 task.wait() end
+                end
+                warn("✅ [CatHUB] PvP Boost ON! Siap Bantai-Bantai!")
+            end)
+
         else
+            -- =====================================
             -- OFF: BALIK KE GRAFIK BAWAAN
-            pcall(function() settings().Rendering.QualityLevel = 3 end) 
-            Lighting.GlobalShadows = Orig.Shadows
-            
+            -- =====================================
             if Terrain then
                 Terrain.Decoration = Orig.Decoration
-                Terrain.WaterWaveSize = Orig.WaterWaveSize
-                Terrain.WaterWaveSpeed = Orig.WaterWaveSpeed
-                Terrain.WaterReflectance = Orig.WaterReflectance
             end
 
+            Lighting.GlobalShadows = true
             Lighting.EnvironmentDiffuseScale = Orig.Diffuse
             Lighting.EnvironmentSpecularScale = Orig.Specular
-            Lighting.FogEnd = Orig.FogEnd
+            Lighting.FogEnd = 2000
 
-            for v, origState in pairs(Orig.PostEffects) do
-                if v and v.Parent then v.Enabled = origState end
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("PostEffect") then v.Enabled = true end
             end
+
+            task.spawn(function()
+                local count = 0
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if obj:IsA("BasePart") then
+                        obj.CastShadow = true
+                        if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
+                            obj.CanTouch = true
+                            obj.CanQuery = true
+                        end
+                    end
+                    count = count + 1
+                    if count >= 1000 then count = 0 task.wait() end
+                end
+            end)
         end
     end
 )
