@@ -384,57 +384,266 @@ local function CreateTitlePart(text, color, font)
     label.AutomaticSize = Enum.AutomaticSize.XY 
 end
 
--- Render Titles
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
-CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium) 
-CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium)
+-- ==========================================
+-- 5. WINDOW CONTROLS & DRAGGING
+-- ==========================================
 
-local BtnX = Instance.new("TextButton", Top) BtnX.Size = UDim2.new(0, 35, 0, 35); BtnX.Position = UDim2.new(1, -35, 0, 0); BtnX.Text = "X"; BtnX.TextColor3 = Theme.TextDim; BtnX.BackgroundTransparency = 1; BtnX.Font = Enum.Font.Gotham; BtnX.TextSize = 15; BtnX.AutoButtonColor = false
-local BtnM = Instance.new("TextButton", Top) BtnM.Size = UDim2.new(0, 35, 0, 35); BtnM.Position = UDim2.new(1, -70, 0, 0); BtnM.Text = "—"; BtnM.TextColor3 = Theme.TextDim; BtnM.BackgroundTransparency = 1; BtnM.Font = Enum.Font.GothamBold; BtnM.TextSize = 13; BtnM.AutoButtonColor = false
-BtnX.MouseButton1Click:Connect(function() Main.Visible = false end)
-local isMin = false local lastSize = Main.Size
-BtnM.MouseButton1Click:Connect(function() isMin = not isMin if isMin then lastSize = Main.Size; TweenService:Create(Main, TweenInfo.new(0.3), {Size = UDim2.new(0, Main.Size.X.Offset, 0, 35)}):Play() else TweenService:Create(Main, TweenInfo.new(0.3), {Size = lastSize}):Play() end end)
+-- Close Button (X)
+local BtnX = Instance.new("TextButton", Top)
+BtnX.Name = "CloseBtn"
+BtnX.Size = UDim2.new(0, 35, 0, 35)
+BtnX.Position = UDim2.new(1, -35, 0, 0)
+BtnX.Text = "X"
+BtnX.TextColor3 = Theme.TextDim
+BtnX.BackgroundTransparency = 1
+BtnX.Font = Enum.Font.Gotham
+BtnX.TextSize = 15
+BtnX.AutoButtonColor = false
+
+-- Minimize Button (—)
+local BtnM = Instance.new("TextButton", Top)
+BtnM.Name = "MinBtn"
+BtnM.Size = UDim2.new(0, 35, 0, 35)
+BtnM.Position = UDim2.new(1, -70, 0, 0)
+BtnM.Text = "—"
+BtnM.TextColor3 = Theme.TextDim
+BtnM.BackgroundTransparency = 1
+BtnM.Font = Enum.Font.GothamBold
+BtnM.TextSize = 13
+BtnM.AutoButtonColor = false
+
+-- Close Logic
+BtnX.MouseButton1Click:Connect(function() 
+    Main.Visible = false 
+end)
+
+-- Minimize Logic
+local isMin = false 
+local lastSize = Main.Size
+
+BtnM.MouseButton1Click:Connect(function() 
+    isMin = not isMin 
+    
+    if isMin then 
+        lastSize = Main.Size
+        TweenService:Create(Main, TweenInfo.new(0.3), {
+            Size = UDim2.new(0, Main.Size.X.Offset, 0, 35)
+        }):Play() 
+    else 
+        TweenService:Create(Main, TweenInfo.new(0.3), {
+            Size = lastSize
+        }):Play() 
+    end 
+end)
+
+-- Main Frame Dragging Logic (Using Top Bar as Handle)
 local draggingMain, dragStartMain, startPosMain
-Top.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingMain = true; dragStartMain = input.Position; startPosMain = Main.Position end end)
-Top.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingMain = false end end)
-UserInput.InputChanged:Connect(function(input) if draggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then local delta = input.Position - dragStartMain; Main.Position = UDim2.new(startPosMain.X.Scale, startPosMain.X.Offset + delta.X, startPosMain.Y.Scale, startPosMain.Y.Offset + delta.Y) end end)
 
--- Resizer (Sama persis)
-local Resizer = Instance.new("TextButton", Main) Resizer.Size = UDim2.new(0, 35, 0, 35) Resizer.Position = UDim2.new(1, -35, 1, -35) Resizer.BackgroundTransparency = 1 Resizer.Text = "⌟" Resizer.TextColor3 = Theme.CatPurple Resizer.TextSize = 25 Resizer.Font = Enum.Font.Gotham Resizer.ZIndex = 99999 Resizer.AutoButtonColor = false
+Top.InputBegan:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        draggingMain = true
+        dragStartMain = input.Position
+        startPosMain = Main.Position 
+    end 
+end)
+
+Top.InputEnded:Connect(function(input) 
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+        draggingMain = false 
+    end 
+end)
+
+UserInput.InputChanged:Connect(function(input) 
+    if draggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then 
+        local delta = input.Position - dragStartMain
+        
+        Main.Position = UDim2.new(
+            startPosMain.X.Scale, 
+            startPosMain.X.Offset + delta.X, 
+            startPosMain.Y.Scale, 
+            startPosMain.Y.Offset + delta.Y
+        ) 
+    end 
+end)
+
+-- ==========================================
+-- 6. WINDOW RESIZER
+-- ==========================================
+
+local Resizer = Instance.new("TextButton", Main)
+Resizer.Name = "WindowResizer"
+Resizer.Size = UDim2.new(0, 35, 0, 35)
+Resizer.Position = UDim2.new(1, -35, 1, -35)
+Resizer.BackgroundTransparency = 1
+Resizer.Text = "⌟"
+Resizer.TextColor3 = Theme.CatPurple
+Resizer.TextSize = 25
+Resizer.Font = Enum.Font.Gotham
+Resizer.ZIndex = 99999
+Resizer.AutoButtonColor = false
+
+-- Resizing State Variables
 local isResizing, resizeStartPos, startSizeR
-Resizer.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then isResizing = true resizeStartPos = UserInput:GetMouseLocation() startSizeR = Main.Size end end)
-UserInput.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then isResizing = false end end)
-UserInput.InputChanged:Connect(function(input) if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then local delta = UserInput:GetMouseLocation() - resizeStartPos Main.Size = UDim2.new(0, math.clamp(startSizeR.X.Offset + delta.X, 350, 900), 0, math.clamp(startSizeR.Y.Offset + delta.Y, 220, 700)) lastSize = Main.Size end end)
 
-local ContentContainer = Instance.new("Frame", Main) ContentContainer.Size = UDim2.new(1, 0, 1, -35); ContentContainer.Position = UDim2.new(0, 0, 0, 35); ContentContainer.BackgroundTransparency = 1
-local Side = Instance.new("Frame", ContentContainer) Side.Size = UDim2.new(0.28, 0, 1, 0); Side.BackgroundColor3 = Theme.SideBG; Side.BorderSizePixel = 0
-local SideLine = Instance.new("Frame", Side) SideLine.Size = UDim2.new(0, 1, 1, 0); SideLine.Position = UDim2.new(1, -1, 0, 0); SideLine.BackgroundColor3 = Theme.Line; SideLine.BorderSizePixel = 0
-local SearchFrame = Instance.new("Frame", Side) SearchFrame.Size = UDim2.new(1, -16, 0, 30); SearchFrame.Position = UDim2.new(0, 8, 0, 10); SearchFrame.BackgroundColor3 = Theme.CardBG; SearchFrame.BorderSizePixel = 0
-Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", SearchFrame).Color = Theme.Line
-local SearchBox = Instance.new("TextBox", SearchFrame) SearchBox.Size = UDim2.new(1, -16, 1, 0); SearchBox.Position = UDim2.new(0, 8, 0, 0); SearchBox.BackgroundTransparency = 1; SearchBox.Text = ""; SearchBox.PlaceholderText = "Search..."; SearchBox.TextColor3 = Theme.Text; SearchBox.PlaceholderColor3 = Theme.TextDim; SearchBox.Font = Enum.Font.GothamMedium; SearchBox.TextSize = 12; SearchBox.TextXAlignment = Enum.TextXAlignment.Left
-local SideScroll = Instance.new("ScrollingFrame", Side) SideScroll.Size = UDim2.new(1, 0, 1, -50); SideScroll.Position = UDim2.new(0, 0, 0, 50); SideScroll.BackgroundTransparency = 1; SideScroll.ScrollBarThickness = 0; SideScroll.BorderSizePixel = 0
-local SideList = Instance.new("UIListLayout", SideScroll); SideList.Padding = UDim.new(0, 4)
-local SidePad = Instance.new("UIPadding", SideScroll); SidePad.PaddingLeft = UDim.new(0, 8); SidePad.PaddingRight = UDim.new(0, 8)
-local ContentArea = Instance.new("Frame", ContentContainer) ContentArea.Size = UDim2.new(0.72, 0, 1, 0); ContentArea.Position = UDim2.new(0.28, 0, 0, 0); ContentArea.BackgroundTransparency = 1
+-- Start Resizing
+Resizer.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then
+        isResizing = true
+        resizeStartPos = UserInput:GetMouseLocation()
+        startSizeR = Main.Size
+    end
+end)
+
+-- End Resizing
+UserInput.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isResizing = false
+    end
+end)
+
+-- Resizing Logic
+UserInput.InputChanged:Connect(function(input)
+    if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = UserInput:GetMouseLocation() - resizeStartPos
+        
+        -- Update Main Size with Clamping (Min: 350x220, Max: 900x700)
+        Main.Size = UDim2.new(
+            0, math.clamp(startSizeR.X.Offset + delta.X, 350, 900), 
+            0, math.clamp(startSizeR.Y.Offset + delta.Y, 220, 700)
+        )
+        
+        -- Update lastSize for Minimize/Restore logic
+        lastSize = Main.Size
+    end
+end)
+
+-- ==========================================
+-- 7. CONTENT CONTAINER & SIDEBAR
+-- ==========================================
+-- Wrapper for Sidebar and Content Area
+local ContentContainer = Instance.new("Frame", Main)
+ContentContainer.Name = "ContentContainer"
+ContentContainer.Size = UDim2.new(1, 0, 1, -35)
+ContentContainer.Position = UDim2.new(0, 0, 0, 35)
+ContentContainer.BackgroundTransparency = 1
+
+-- Sidebar Background
+local Side = Instance.new("Frame", ContentContainer)
+Side.Name = "Sidebar"
+Side.Size = UDim2.new(0.28, 0, 1, 0)
+Side.BackgroundColor3 = Theme.SideBG
+Side.BorderSizePixel = 0
+
+-- Vertical Line Separator
+local SideLine = Instance.new("Frame", Side)
+SideLine.Name = "SideLine"
+SideLine.Size = UDim2.new(0, 1, 1, 0)
+SideLine.Position = UDim2.new(1, -1, 0, 0)
+SideLine.BackgroundColor3 = Theme.Line
+SideLine.BorderSizePixel = 0
+
+-- Search Bar Frame
+local SearchFrame = Instance.new("Frame", Side)
+SearchFrame.Name = "SearchFrame"
+SearchFrame.Size = UDim2.new(1, -16, 0, 30)
+SearchFrame.Position = UDim2.new(0, 8, 0, 10)
+SearchFrame.BackgroundColor3 = Theme.CardBG
+SearchFrame.BorderSizePixel = 0
+
+local SearchCorner = Instance.new("UICorner", SearchFrame)
+SearchCorner.CornerRadius = UDim.new(0, 6)
+
+local SearchStroke = Instance.new("UIStroke", SearchFrame)
+SearchStroke.Color = Theme.Line
+
+-- Actual Search Input
+local SearchBox = Instance.new("TextBox", SearchFrame)
+SearchBox.Name = "SearchBox"
+SearchBox.Size = UDim2.new(1, -16, 1, 0)
+SearchBox.Position = UDim2.new(0, 8, 0, 0)
+SearchBox.BackgroundTransparency = 1
+SearchBox.Text = ""
+SearchBox.PlaceholderText = "Search..."
+SearchBox.TextColor3 = Theme.Text
+SearchBox.PlaceholderColor3 = Theme.TextDim
+SearchBox.Font = Enum.Font.GothamMedium
+SearchBox.TextSize = 12
+SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Sidebar Scrolling Container
+local SideScroll = Instance.new("ScrollingFrame", Side)
+SideScroll.Name = "SideScroll"
+SideScroll.Size = UDim2.new(1, 0, 1, -50)
+SideScroll.Position = UDim2.new(0, 0, 0, 50)
+SideScroll.BackgroundTransparency = 1
+SideScroll.ScrollBarThickness = 0
+SideScroll.BorderSizePixel = 0
+
+-- Sidebar Layouts
+local SideList = Instance.new("UIListLayout", SideScroll)
+SideList.Padding = UDim.new(0, 4)
+
+local SidePad = Instance.new("UIPadding", SideScroll)
+SidePad.PaddingLeft = UDim.new(0, 8)
+SidePad.PaddingRight = UDim.new(0, 8)
+
+-- Main Content Area (Where the pages are)
+local ContentArea = Instance.new("Frame", ContentContainer)
+ContentArea.Name = "ContentArea"
+ContentArea.Size = UDim2.new(0.72, 0, 1, 0)
+ContentArea.Position = UDim2.new(0.28, 0, 0, 0)
+ContentArea.BackgroundTransparency = 1
 
 -- ==========================================
 -- PERKAKAS UI (UNTUK DIPAKE FILE LOGIC)
 -- ==========================================
+
 local Pages = {}
 local AllToggles = {}
 
 local function CreateTab(name, isFirst)
     -- PENCEGAH DUPLIKAT: Kalau tab nya udah ada, cukup return Page nya doang
-    if Pages[name] then return Pages[name].Page end
+    if Pages[name] then 
+        return Pages[name].Page 
+    end
     
+    -- Tab Button
     local Btn = Instance.new("TextButton", SideScroll)
-    Btn.Size = UDim2.new(1, 0, 0, 32); Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff; Btn.Text = "    " .. name; 
-    Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim; Btn.Font = Enum.Font.GothamMedium; Btn.TextSize = 12; Btn.BorderSizePixel = 0; 
-    Btn.TextXAlignment = Enum.TextXAlignment.Left; Btn.AutoButtonColor = false
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
-    local BtnStroke = Instance.new("UIStroke", Btn) BtnStroke.Color = Color3.fromRGB(65, 65, 70); BtnStroke.Thickness = 1; BtnStroke.Transparency = isFirst and 0 or 0.3 
-    local Indicator = Instance.new("Frame", Btn) Indicator.Size = UDim2.new(0, 3, 0, 14); Indicator.Position = UDim2.new(0, 4, 0.5, -7); Indicator.BackgroundColor3 = Theme.Accent; Indicator.BorderSizePixel = 0
-    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(1, 0); Indicator.Visible = isFirst
+    Btn.Name = name .. "_TabBtn"
+    Btn.Size = UDim2.new(1, 0, 0, 32)
+    Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff
+    Btn.Text = "    " .. name 
+    Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim
+    Btn.Font = Enum.Font.GothamMedium
+    Btn.TextSize = 12
+    Btn.BorderSizePixel = 0
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Btn.AutoButtonColor = false
+    
+    -- Button Corner
+    local BtnCorner = Instance.new("UICorner", Btn)
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+    
+    -- Button Stroke
+    local BtnStroke = Instance.new("UIStroke", Btn)
+    BtnStroke.Name = "TabStroke"
+    BtnStroke.Color = Color3.fromRGB(65, 65, 70)
+    BtnStroke.Thickness = 1
+    BtnStroke.Transparency = isFirst and 0 or 0.3 
+    
+    -- Selection Indicator (Garis kecil di samping kiri)
+    local Indicator = Instance.new("Frame", Btn)
+    Indicator.Name = "Indicator"
+    Indicator.Size = UDim2.new(0, 3, 0, 14)
+    Indicator.Position = UDim2.new(0, 4, 0.5, -7)
+    Indicator.BackgroundColor3 = Theme.Accent
+    Indicator.BorderSizePixel = 0
+    Indicator.Visible = isFirst
+
+    local IndicatorCorner = Instance.new("UICorner", Indicator)
+    IndicatorCorner.CornerRadius = UDim.new(1, 0)
+
+    -- Return logic akan lanjut di part selanjutnya (pembentukan Page-nya)
     
     local Page = Instance.new("ScrollingFrame", ContentArea)
     Page.Size = UDim2.new(1, -16, 1, -16); Page.Position = UDim2.new(0, 8, 0, 8); Page.BackgroundColor3 = Theme.PageBG; Page.BackgroundTransparency = 0; 
