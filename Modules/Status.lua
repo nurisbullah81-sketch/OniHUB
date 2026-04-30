@@ -236,12 +236,12 @@ task.spawn(function()
 end)
 
 -- [[ ==========================================
---      MODULE: LIVE PLAYER SCANNER (FULL X-RAY)
---      Status: Bypass UI Library Crash
+--      MODULE: LIVE PLAYER SCANNER (X-RAY)
+--      Status: Clean Vertical UI & Smart DB
 --    ========================================== ]]
 local Players = game:GetService("Players")
 
--- Pastikan variabel Page ini sesuai sama nama tab lu di atas
+-- 🔥 Pastikan variabel ini sesuai sama nama tab lu di atas!
 local TabKita = Page 
 
 -- // 1. Trik Aman Tarik Tema UI
@@ -255,7 +255,7 @@ local cText = Theme.Text or Color3.fromRGB(240, 240, 240)
 local cDim  = Theme.TextDim or Color3.fromRGB(150, 150, 150)
 local cPurp = Theme.CatPurple or Color3.fromRGB(170, 85, 255)
 
--- // 2. BIKIN JUDUL MANUAL (BYPASS ERROR CREATE SECTION)
+-- // 2. BIKIN JUDUL MANUAL
 local SectionTitle = Instance.new("TextLabel", TabKita)
 SectionTitle.LayoutOrder = #TabKita:GetChildren()
 SectionTitle.Size = UDim2.new(1, 0, 0, 25)
@@ -266,7 +266,7 @@ SectionTitle.Font = Enum.Font.GothamBold
 SectionTitle.TextSize = 11
 SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- // 3. Bikin Komponen UI Utama
+-- // 3. Komponen UI Utama (Wadah List)
 local RefreshBtn = Instance.new("TextButton", TabKita)
 RefreshBtn.LayoutOrder = #TabKita:GetChildren()
 RefreshBtn.Size = UDim2.new(1, 0, 0, 28)
@@ -282,7 +282,7 @@ Instance.new("UIStroke", RefreshBtn).Color = cLine
 
 local ListContainer = Instance.new("Frame", TabKita)
 ListContainer.LayoutOrder = #TabKita:GetChildren()
-ListContainer.Size = UDim2.new(1, 0, 0, 220)
+ListContainer.Size = UDim2.new(1, 0, 0, 280) -- Ditinggiin dikit biar enak nge-scrollnya
 ListContainer.BackgroundColor3 = cCard
 ListContainer.BorderSizePixel = 0
 ListContainer.ClipsDescendants = true
@@ -303,7 +303,7 @@ local ListLayout = Instance.new("UIListLayout", ScrollList)
 ListLayout.Padding = UDim.new(0, 6)
 ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- // 4. Mesin Inti Pembongkar Tas (Tanpa Emoji)
+-- // 4. Mesin Inti X-Ray (Udah di-upgrade anti-miss)
 local function ScanSenjata(folder, eq)
     if not folder then return end
     for _, item in ipairs(folder:GetChildren()) do
@@ -311,19 +311,30 @@ local function ScanSenjata(folder, eq)
             local name = item.Name
             local lower = string.lower(name)
             
+            -- Filter sampah
             if string.find(lower, "awaken") or string.find(lower, "summon") or string.find(lower, "ribbon") then continue end
             if string.find(lower, "fruit") or string.find(lower, "-") then continue end
             
             local tType = ""
-            pcall(function() tType = item.ToolTip end)
+            -- Cek ToolTip yang bentuknya StringValue
+            local ttObj = item:FindFirstChild("ToolTip")
+            if ttObj and ttObj:IsA("StringValue") then
+                tType = ttObj.Value
+            else
+                -- Fallback cek ToolTip biasa
+                pcall(function() tType = item.ToolTip end)
+            end
             
+            -- Kamus Super Lengkap Blox Fruits (Kalau ToolTip disensor)
             if type(tType) ~= "string" or tType == "" then
-                if string.find(lower, "gun") or string.find(lower, "rifle") or string.find(lower, "bow") or string.find(lower, "guitar") or string.find(lower, "kabucha") or string.find(lower, "cannon") then 
+                if string.find(lower, "gun") or string.find(lower, "rifle") or string.find(lower, "bow") or string.find(lower, "guitar") or string.find(lower, "kabucha") or string.find(lower, "cannon") or string.find(lower, "slingshot") or string.find(lower, "musket") or string.find(lower, "flintlock") then 
                     tType = "Gun"
-                elseif string.find(lower, "sword") or string.find(lower, "blade") or string.find(lower, "katana") or string.find(lower, "saber") or string.find(lower, "anchor") or string.find(lower, "tushita") or string.find(lower, "yama") then 
+                elseif string.find(lower, "sword") or string.find(lower, "blade") or string.find(lower, "katana") or string.find(lower, "saber") or string.find(lower, "anchor") or string.find(lower, "tushita") or string.find(lower, "yama") or string.find(lower, "dagger") or string.find(lower, "bisento") or string.find(lower, "pole") or string.find(lower, "trident") or string.find(lower, "mace") or string.find(lower, "canvander") or string.find(lower, "jitte") or string.find(lower, "warden") then 
                     tType = "Sword"
+                elseif string.find(lower, "human") or string.find(lower, "claw") or string.find(lower, "talon") or string.find(lower, "karate") or string.find(lower, "step") or string.find(lower, "breath") or string.find(lower, "combat") or string.find(lower, "art") then
+                    tType = "Melee"
                 else 
-                    tType = "Melee" 
+                    tType = "Melee" -- Default terburuk
                 end
             end
             
@@ -347,6 +358,7 @@ local function RefreshList()
         local eatenFruit = "None"
         local eq = { Melee = "None", Sword = "None", Gun = "None" }
         
+        -- Bongkar folder rahasia lambung (Buah & Ras)
         pcall(function()
             if target:FindFirstChild("Data") then
                 if target.Data:FindFirstChild("Race") then
@@ -358,14 +370,16 @@ local function RefreshList()
             end
         end)
         
+        -- Bongkar Tas & Tangan instan
         pcall(function()
             ScanSenjata(target:FindFirstChild("Backpack"), eq)
             ScanSenjata(target.Character, eq)
         end)
         
+        -- // BIKIN KARTU VERTIKAL (Tinggi 110 biar muat 6 baris)
         local Card = Instance.new("Frame", ScrollList)
         Card.LayoutOrder = i
-        Card.Size = UDim2.new(1, -8, 0, 56)
+        Card.Size = UDim2.new(1, -8, 0, 115) 
         Card.BackgroundColor3 = cSide
         Card.BorderSizePixel = 0
         Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
@@ -375,22 +389,26 @@ local function RefreshList()
         CardLayout.VerticalAlignment = Enum.VerticalAlignment.Center
         
         local UIPad = Instance.new("UIPadding", Card)
-        UIPad.PaddingLeft = UDim.new(0, 8)
+        UIPad.PaddingLeft = UDim.new(0, 10)
         
-        local function MakeText(txt, font, color)
+        local function MakeText(txt, font, color, isTitle)
             local lbl = Instance.new("TextLabel", Card)
-            lbl.Size = UDim2.new(1, -10, 0, 14)
+            lbl.Size = UDim2.new(1, -10, 0, isTitle and 16 or 14)
             lbl.BackgroundTransparency = 1
             lbl.Text = txt
             lbl.TextColor3 = color
             lbl.Font = font
-            lbl.TextSize = 10
+            lbl.TextSize = isTitle and 11 or 10
             lbl.TextXAlignment = Enum.TextXAlignment.Left
         end
         
-        MakeText(target.DisplayName .. " (@" .. target.Name .. ")", Enum.Font.GothamBold, cPurp)
-        MakeText("Race: " .. cleanRace .. "  |  Melee: " .. eq.Melee, Enum.Font.GothamMedium, cText)
-        MakeText("Fruit: " .. eatenFruit .. "  |  Sword: " .. eq.Sword .. "  |  Gun: " .. eq.Gun, Enum.Font.Gotham, cDim)
+        -- URUTAN TEKS SESUAI REQUEST LU (VERTIKAL & RAPIH)
+        MakeText(target.DisplayName, Enum.Font.GothamBold, cPurp, true) -- Murni DisplayName
+        MakeText("Race : " .. cleanRace, Enum.Font.Gotham, cText, false)
+        MakeText("Fruit : " .. eatenFruit, Enum.Font.Gotham, cText, false)
+        MakeText("FightingStyle : " .. eq.Melee, Enum.Font.Gotham, cText, false)
+        MakeText("Sword : " .. eq.Sword, Enum.Font.Gotham, cText, false)
+        MakeText("Gun : " .. eq.Gun, Enum.Font.Gotham, cText, false)
     end
     
     task.wait(0.2)
