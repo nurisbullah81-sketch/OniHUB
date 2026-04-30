@@ -50,7 +50,7 @@ function _G.Cat.HopServer()
     end)
     
     task.spawn(function()
-        -- STEP 1: SKY TP (Safety measure to prevent dying/lag during hop)
+        -- STEP 1: 5K SKY TP (Safety measure)
         pcall(function()
             if Me.Character then 
                 local hrp = Me.Character:FindFirstChild("HumanoidRootPart") 
@@ -62,11 +62,11 @@ function _G.Cat.HopServer()
         end)
         task.wait(0.3) 
         
-        -- MAIN LOOP: Finding a new server
+        -- MAIN HOP LOOP
         while Settings.AutoHop do 
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
             
-            -- Open Browser if not visible
+            -- Open Browser if hidden
             if not browser or not browser.Enabled then
                 local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                 
@@ -86,7 +86,7 @@ function _G.Cat.HopServer()
                 continue 
             end
 
-            -- Wait for server list to load
+            -- Wait for list loading
             local listArea = browser:FindFirstChild("Inside", true)
             local count = 0
             
@@ -100,7 +100,7 @@ function _G.Cat.HopServer()
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                 local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
                 
-                -- Randomize Scroll Position
+                -- Randomize Scroll
                 if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                     dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
                     task.wait(0.5)
@@ -108,29 +108,25 @@ function _G.Cat.HopServer()
 
                 if not scrollFrame then continue end
 
-                -- Scan for "Join" buttons within viewport
                 local buttons = {}
                 local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
                 
                 for _, v in pairs(listArea:GetDescendants()) do
                     if v:IsA("TextButton") and v.Name == "Join" and v.Visible then
                         local vy = v.AbsolutePosition.Y
-                        
-                        -- Only click buttons that are actually visible on screen
                         if vy > sPos.Y and vy < (sPos.Y + sSize.Y - 30) then
                             table.insert(buttons, v)
                         end
                     end
                 end
 
-                -- Attempt to Join
+                -- Attempt to Join buttons
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end
                     
                     local bp, bs = target.AbsolutePosition, target.AbsoluteSize
                     local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
                     
-                    -- Click and Confirm (Return Key)
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
                     task.wait(0.05)
@@ -146,16 +142,46 @@ function _G.Cat.HopServer()
             task.wait(0.5)
         end
         
-        -- Cleanup if hopping is cancelled
+        -- Cleanup
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-        if browser then 
-            browser.Enabled = false 
-        end
+        if browser then browser.Enabled = false end
         
-        if _G.Cat.ReleaseCharacter then 
-            _G.Cat.ReleaseCharacter() 
-        end
-        
+        if _G.Cat.ReleaseCharacter then _G.Cat.ReleaseCharacter() end
         isHopping = false
     end)
 end
+
+-- ==========================================
+-- 3. TRIGGER LOOP: AUTO SCAN & HOP
+-- ==========================================
+task.spawn(function()
+    task.wait(5) -- Initial wait on join
+    
+    while task.wait(2) do
+        if Settings.AutoHop and State.IsGameReady then
+            pcall(function()
+                local fruitCount = 0
+                
+                -- Count active fruits from ESP Data
+                for f, _ in pairs(ESP.Data) do
+                    if f and f.Parent and f.Parent == workspace then
+                        fruitCount = fruitCount + 1
+                    end
+                end
+                
+                -- If no fruits found, execute hop
+                if fruitCount == 0 then
+                    _G.Cat.HopServer()
+                end
+            end)
+        else
+            -- Reset state if toggle turned off during hopping
+            if isHopping then
+                isHopping = false
+                if _G.Cat.ReleaseCharacter then 
+                    _G.Cat.ReleaseCharacter() 
+                end
+            end
+        end
+    end
+end)
