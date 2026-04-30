@@ -57,7 +57,7 @@ end
 
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     if not webhookURL or webhookURL == "" then return end
-    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") webhookURL = string.gsub(webhookURL, "discord.com", "hooks.hyra.io")
+    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") webhookURL = string.gsub(webhookURL, "discord.com", "webhook.lewisakura.moe")
     local fruitRarity = GetDynamicRarity(fruitName) local shouldSend = false
     if raritySetting == "All Fruits" then shouldSend = true elseif raritySetting == "Legendary & Mythical" then if string.find(fruitRarity, "Legendary") or string.find(fruitRarity, "Mythical") then shouldSend = true end elseif raritySetting == "Mythical Only" then if string.find(fruitRarity, "Mythical") then shouldSend = true end end
     if not shouldSend then return end
@@ -69,7 +69,7 @@ end
 
 function Webhook:Test(webhookURL)
     if not webhookURL or webhookURL == "" then return false, "No URL" end
-    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") webhookURL = string.gsub(webhookURL, "discord.com", "hooks.hyra.io")
+    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") webhookURL = string.gsub(webhookURL, "discord.com", "webhook.lewisakura.moe")
     local payload = HttpService:JSONEncode({ content = "✅ **CatHUB Webhook Aktif!**", embeds = {{ title = "Koneksi Berhasil", description = "Script lu udah terhubung lewat jalur Proxy ke channel Discord ini bang.", color = 32768, footer = { text = "CatHUB Diagnostic" } } } })
     local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if not req then return false, "Not Supported" end
