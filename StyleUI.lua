@@ -1,139 +1,170 @@
--- ==========================================
--- CATHUB PREMIUM: MODULAR FRAMEWORK (RUMAH KOSONG + PERKAKAS)
--- ==========================================
-local CoreGui = game:GetService("CoreGui")
+-- [[ ==========================================
+--      CATHUB PREMIUM: MODULAR UI FRAMEWORK
+--    ========================================== ]]
+
+-- // Services
+local CoreGui      = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
-local UserInput = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
+local UserInput    = game:GetService("UserInputService")
+local HttpService  = game:GetService("HttpService")
+local Players      = game:GetService("Players")
 
-if CoreGui:FindFirstChild("CatUI") then CoreGui.CatUI:Destroy() end
-
--- ==========================================
--- 1. CONFIG & SYSTEM
--- ==========================================
-
--- Services
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-
--- Variables
-local ConfigFile = "CatHUB_Config.json"
-
--- Functions
--- [HAPUS LoadSettings] -> Main.lua sudah handle ini. StyleUI cuma boleh Save, kagak boleh Load ulang nanti nimpa.
-local function SaveSettings()
-    pcall(function() 
-        local data = HttpService:JSONEncode(_G.Cat.Settings)
-        writefile(ConfigFile, data) 
-    end)
+-- // UI Cleanup (Anti-Duplicate)
+if CoreGui:FindFirstChild("CatUI") then 
+    CoreGui.CatUI:Destroy() 
 end
 
--- Initialization
-_G.Cat = _G.Cat or {}
+-- ==========================================
+-- 1. SYSTEM CONFIGURATION
+-- ==========================================
+
+-- // Variables
+local ConfigFile = "CatHUB_Config.json"
+
+-- // Global Initialization
+_G.Cat        = _G.Cat or {}
 _G.Cat.Player = Players.LocalPlayer
 _G.Cat.Labels = _G.Cat.Labels or {}
 
--- PENTING: Cek kalau Settings belum ada (misal load tanpa Main.lua), baru bikin kosong.
--- Kalau udah ada (dari Main.lua), BIARKAN JANGAN DITIMPA!
+-- // Settings Protection
+-- Ensures settings are only initialized if not already handled by Main.lua
 if not _G.Cat.Settings then
     _G.Cat.Settings = {}
 end
 
 -- ==========================================
--- 3. UI RENDERING (KERANGKA MURNI)
+-- 2. UTILITY FUNCTIONS
 -- ==========================================
-local Gui = Instance.new("ScreenGui", CoreGui)
-Gui.Name = "CatUI"
-Gui.ResetOnSpawn = false
-Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
+-- // Function: Persistent Data Storage (Save Only)
+local function SaveSettings()
+    pcall(function() 
+        local settings = _G.Cat.Settings
+        local payload  = HttpService:JSONEncode(settings)
+        
+        writefile(ConfigFile, payload) 
+    end)
+end
+
+-- // Export to Global for Module Access
+_G.Cat.SaveSettings = SaveSettings
+
+-- ==========================================
+-- 3. UI RENDERING: ROOT ELEMENTS
+-- ==========================================
+
+-- // Main Screen Container
+local Gui            = Instance.new("ScreenGui", CoreGui)
+Gui.Name             = "CatUI"
+Gui.ResetOnSpawn     = false
+Gui.ZIndexBehavior   = Enum.ZIndexBehavior.Sibling
+
+-- // Color Palette & Theme Engine
 local Theme = {
-    -- Backgrounds
-    MainBG      = Color3.fromRGB(10, 10, 10),
-    SideBG      = Color3.fromRGB(14, 14, 16),
-    TopBG       = Color3.fromRGB(10, 10, 10),
-    PageBG      = Color3.fromRGB(17, 18, 22),
+    -- Background Layers
+    MainBG    = Color3.fromRGB(10, 10, 10),
+    SideBG    = Color3.fromRGB(14, 14, 16),
+    TopBG     = Color3.fromRGB(10, 10, 10),
+    PageBG    = Color3.fromRGB(17, 18, 22),
     
-    -- Tabs & Cards
-    TabOn       = Color3.fromRGB(38, 38, 42),
-    TabOff      = Color3.fromRGB(25, 25, 30),
-    CardBG      = Color3.fromRGB(28, 28, 32),
-    CardHov     = Color3.fromRGB(36, 36, 42),
+    -- Navigation & Containers
+    TabOn     = Color3.fromRGB(38, 38, 42),
+    TabOff    = Color3.fromRGB(25, 25, 30),
+    CardBG    = Color3.fromRGB(28, 28, 32),
+    CardHov   = Color3.fromRGB(36, 36, 42),
     
-    -- Text Colors
-    Text        = Color3.fromRGB(250, 250, 250),
-    TextDim     = Color3.fromRGB(140, 140, 145),
+    -- Typography
+    Text      = Color3.fromRGB(250, 250, 250),
+    TextDim   = Color3.fromRGB(140, 140, 145),
     
-    -- Accents & Interactive
-    ToggleOn    = Color3.fromRGB(138, 43, 226),
-    ToggleOff   = Color3.fromRGB(75, 75, 80),
-    CatPurple   = Color3.fromRGB(160, 100, 255),
-    Gold        = Color3.fromRGB(255, 200, 50),
-    Accent      = Color3.fromRGB(138, 43, 226),
-    Line        = Color3.fromRGB(40, 40, 45)
+    -- Accents & Interactivity
+    ToggleOn  = Color3.fromRGB(138, 43, 226),
+    ToggleOff = Color3.fromRGB(75, 75, 80),
+    CatPurple = Color3.fromRGB(160, 100, 255),
+    Gold      = Color3.fromRGB(255, 200, 50),
+    Accent    = Color3.fromRGB(138, 43, 226),
+    Line      = Color3.fromRGB(40, 40, 45)
 }
 
--- ==========================================
--- FLOATING BUTTON
--- ==========================================
+-- // Export Theme to Global
+_G.Cat.Theme = Theme
 
--- Container
-local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Name = "FloatContainer"
-FloatCont.Size = UDim2.new(0, 70, 0, 40)
-FloatCont.Position = UDim2.new(0, 20, 0.5, -20)
+-- [[ ==========================================
+--      FLOATING BUTTON (MOBILE/PC TOGGLE)
+--    ========================================== ]]
+
+-- // 1. MAIN CONTAINER
+local FloatCont             = Instance.new("Frame", Gui)
+FloatCont.Name              = "FloatContainer"
+FloatCont.Size              = UDim2.new(0, 70, 0, 40)
+FloatCont.Position          = UDim2.new(0, 20, 0.5, -20)
 FloatCont.BackgroundTransparency = 1
-FloatCont.ZIndex = 99999
+FloatCont.ZIndex            = 99999
 
--- Main Button (The "Cat" Button)
-local FloatBtn = Instance.new("TextButton", FloatCont)
-FloatBtn.Name = "MainButton"
-FloatBtn.Size = UDim2.new(0, 40, 1, 0)
-FloatBtn.Position = UDim2.new(0, 30, 0, 0)
-FloatBtn.BackgroundColor3 = Theme.CardBG
-FloatBtn.Text = "Cat"
-FloatBtn.TextColor3 = Theme.CatPurple
-FloatBtn.Font = Enum.Font.GothamBold
-FloatBtn.TextSize = 16
-FloatBtn.BorderSizePixel = 0
-FloatBtn.AutoButtonColor = false
+-- // 2. THE MAIN "CAT" BUTTON
+local FloatBtn              = Instance.new("TextButton", FloatCont)
+FloatBtn.Name               = "MainButton"
+FloatBtn.Size               = UDim2.new(0, 40, 1, 0)
+FloatBtn.Position           = UDim2.new(0, 30, 0, 0)
+FloatBtn.BackgroundColor3   = Theme.CardBG
+FloatBtn.Text               = "Cat"
+FloatBtn.TextColor3         = Theme.CatPurple
+FloatBtn.Font               = Enum.Font.GothamBold
+FloatBtn.TextSize           = 16
+FloatBtn.BorderSizePixel    = 0
+FloatBtn.AutoButtonColor    = false
 
--- Decorations for Button
-local FloatCorner = Instance.new("UICorner", FloatBtn)
-FloatCorner.CornerRadius = UDim.new(0, 8)
+-- Decorations
+local FloatCorner           = Instance.new("UICorner", FloatBtn)
+FloatCorner.CornerRadius    = UDim.new(0, 8)
 
-local FloatStroke = Instance.new("UIStroke", FloatBtn)
-FloatStroke.Color = Theme.Line
+local FloatStroke           = Instance.new("UIStroke", FloatBtn)
+FloatStroke.Color           = Theme.Line
 
--- Drag Area (Invisible part to pull the button)
-local FloatDrag = Instance.new("TextButton", FloatCont)
-FloatDrag.Name = "DragArea"
-FloatDrag.Size = UDim2.new(0, 30, 1, 0)
-FloatDrag.Position = UDim2.new(0, 0, 0, 0)
+-- // 3. DRAG HANDLE (INVISIBLE)
+local FloatDrag             = Instance.new("TextButton", FloatCont)
+FloatDrag.Name              = "DragArea"
+FloatDrag.Size              = UDim2.new(0, 30, 1, 0)
+FloatDrag.Position          = UDim2.new(0, 0, 0, 0)
 FloatDrag.BackgroundTransparency = 1
-FloatDrag.Text = ""
+FloatDrag.Text              = ""
 
--- Dragging Logic
-local draggingFloat, dragStartFloat, startPosFloat
+-- // 4. DRAGGING LOGIC (DYNAMIC POSITIONING)
+local draggingFloat  = false
+local dragStartFloat = nil
+local startPosFloat  = nil
 
+-- Start Dragging
 FloatDrag.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingFloat = true
+    local isMouse = input.UserInputType == Enum.UserInputType.MouseButton1
+    local isTouch = input.UserInputType == Enum.UserInputType.Touch
+    
+    if isMouse or isTouch then
+        draggingFloat  = true
         dragStartFloat = input.Position
-        startPosFloat = FloatCont.Position
+        startPosFloat  = FloatCont.Position
     end
 end)
 
+-- Stop Dragging
 FloatDrag.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    local isMouse = input.UserInputType == Enum.UserInputType.MouseButton1
+    local isTouch = input.UserInputType == Enum.UserInputType.Touch
+    
+    if isMouse or isTouch then
         draggingFloat = false
     end
 end)
 
+-- Handle Movement
 UserInput.InputChanged:Connect(function(input)
-    if draggingFloat and input.UserInputType == Enum.UserInputType.MouseMovement then
+    local isMoving = input.UserInputType == Enum.UserInputType.MouseMovement 
+        or input.UserInputType == Enum.UserInputType.Touch
+    
+    if draggingFloat and isMoving then
         local delta = input.Position - dragStartFloat
         
+        -- // Update Position (Broken down for scannability)
         FloatCont.Position = UDim2.new(
             startPosFloat.X.Scale, 
             startPosFloat.X.Offset + delta.X, 
@@ -143,149 +174,183 @@ UserInput.InputChanged:Connect(function(input)
     end
 end)
 
--- ==========================================
--- 4. MAIN FRAME & TOP BAR
--- ==========================================
+-- [[ ==========================================
+--      4. MAIN INTERFACE: FRAME & TOP BAR
+--    ========================================== ]]
 
--- Main Frame
-local Main = Instance.new("Frame", Gui)
-Main.Name = "MainFrame"
-Main.Size = UDim2.new(0, 550, 0, 340)
-Main.Position = UDim2.new(0.5, -275, 0.5, -170)
-Main.BackgroundColor3 = Theme.MainBG
-Main.BorderSizePixel = 0
-Main.ClipsDescendants = true 
+-- // 4.1: MAIN FRAME SETUP
+local Main                  = Instance.new("Frame", Gui)
+Main.Name                   = "MainFrame"
+Main.Size                   = UDim2.new(0, 550, 0, 340)
+Main.Position               = UDim2.new(0.5, -275, 0.5, -170)
+Main.BackgroundColor3       = Theme.MainBG
+Main.BorderSizePixel        = 0
+Main.ClipsDescendants       = true 
 
-local MainCorner = Instance.new("UICorner", Main)
-MainCorner.CornerRadius = UDim.new(0, 6)
+-- Decorations
+local MainCorner            = Instance.new("UICorner", Main)
+MainCorner.CornerRadius     = UDim.new(0, 6)
 
-local MainStroke = Instance.new("UIStroke", Main)
-MainStroke.Color = Theme.Line
+local MainStroke            = Instance.new("UIStroke", Main)
+MainStroke.Color            = Theme.Line
 
--- Toggle Logic
+-- // Toggle Logic: Link Floating Button to UI Visibility
 FloatBtn.MouseButton1Click:Connect(function() 
     Main.Visible = not Main.Visible 
 end)
 
--- Top Bar
-local Top = Instance.new("Frame", Main)
-Top.Name = "TopBar"
-Top.Size = UDim2.new(1, 0, 0, 35)
-Top.BackgroundColor3 = Theme.TopBG
-Top.BorderSizePixel = 0
+-- // 4.2: TOP BAR CONSTRUCTION
+local Top                   = Instance.new("Frame", Main)
+Top.Name                    = "TopBar"
+Top.Size                    = UDim2.new(1, 0, 0, 35)
+Top.BackgroundColor3        = Theme.TopBG
+Top.BorderSizePixel         = 0
 
-local TopCorner = Instance.new("UICorner", Top)
-TopCorner.CornerRadius = UDim.new(0, 6)
+local TopCorner             = Instance.new("UICorner", Top)
+TopCorner.CornerRadius      = UDim.new(0, 6)
 
--- TopFix (Menghilangkan rounded di bagian bawah Top Bar)
-local TopFix = Instance.new("Frame", Top)
-TopFix.Name = "TopFix"
-TopFix.Size = UDim2.new(1, 0, 0, 10)
-TopFix.Position = UDim2.new(0, 0, 1, -10)
-TopFix.BackgroundColor3 = Theme.TopBG
-TopFix.BorderSizePixel = 0
+-- TopFix: Overlays the bottom corners to remove rounding on the lower side
+local TopFix                = Instance.new("Frame", Top)
+TopFix.Name                 = "TopFix"
+TopFix.Size                 = UDim2.new(1, 0, 0, 10)
+TopFix.Position             = UDim2.new(0, 0, 1, -10)
+TopFix.BackgroundColor3     = Theme.TopBG
+TopFix.BorderSizePixel      = 0
 
--- Title Container & Layout
-local TitleContainer = Instance.new("Frame", Top)
-TitleContainer.Name = "TitleContainer"
-TitleContainer.Size = UDim2.new(0, 350, 1, 0)
-TitleContainer.Position = UDim2.new(0, 15, 0, 0)
+-- // 4.3: TITLE ENGINE
+local TitleContainer        = Instance.new("Frame", Top)
+TitleContainer.Name         = "TitleContainer"
+TitleContainer.Size         = UDim2.new(0, 350, 1, 0)
+TitleContainer.Position     = UDim2.new(0, 15, 0, 0)
 TitleContainer.BackgroundTransparency = 1
 
-local TitleList = Instance.new("UIListLayout", TitleContainer)
-TitleList.FillDirection = Enum.FillDirection.Horizontal
+local TitleList             = Instance.new("UIListLayout", TitleContainer)
+TitleList.FillDirection     = Enum.FillDirection.Horizontal
 TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
-TitleList.Padding = UDim.new(0, 4) 
+TitleList.Padding           = UDim.new(0, 4) 
 
--- Helper Function: Create Title Part
+-- Helper Function: Construct Title Segments
 local function CreateTitlePart(text, color, font) 
-    local label = Instance.new("TextLabel", TitleContainer)
-    label.Text = text
-    label.TextColor3 = color
-    label.Font = font
-    label.TextSize = 13
+    local label             = Instance.new("TextLabel", TitleContainer)
+    label.Text              = text
+    label.TextColor3        = color
+    label.Font              = font
+    label.TextSize          = 13
     label.BackgroundTransparency = 1
-    label.AutomaticSize = Enum.AutomaticSize.XY 
+    label.AutomaticSize     = Enum.AutomaticSize.XY 
 end
 
--- TAMBAHKAN 3 BARIS INI YANG HILANG:
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
-CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium)
-CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium) 
+-- // Execute Title Generation
+CreateTitlePart(
+    "CatHUB", 
+    Theme.CatPurple, 
+    Enum.Font.GothamBold
+) 
 
--- ==========================================
--- 5. WINDOW CONTROLS & DRAGGING
--- ==========================================
+CreateTitlePart(
+    "Blox Fruits", 
+    Theme.Text, 
+    Enum.Font.GothamMedium
+)
 
--- Close Button (X)
-local BtnX = Instance.new("TextButton", Top)
-BtnX.Name = "CloseBtn"
-BtnX.Size = UDim2.new(0, 35, 0, 35)
-BtnX.Position = UDim2.new(1, -35, 0, 0)
-BtnX.Text = "X"
-BtnX.TextColor3 = Theme.TextDim
+CreateTitlePart(
+    "[Freemium]", 
+    Theme.Gold, 
+    Enum.Font.GothamMedium
+)
+
+-- [[ ==========================================
+--      5. WINDOW CONTROLS & DRAGGING LOGIC
+--    ========================================== ]]
+
+-- // 5.1: CLOSE BUTTON (X)
+local BtnX                  = Instance.new("TextButton", Top)
+BtnX.Name                   = "CloseBtn"
+BtnX.Size                   = UDim2.new(0, 35, 0, 35)
+BtnX.Position               = UDim2.new(1, -35, 0, 0)
+BtnX.Text                   = "X"
+BtnX.TextColor3             = Theme.TextDim
 BtnX.BackgroundTransparency = 1
-BtnX.Font = Enum.Font.Gotham
-BtnX.TextSize = 15
-BtnX.AutoButtonColor = false
+BtnX.Font                   = Enum.Font.Gotham
+BtnX.TextSize               = 15
+BtnX.AutoButtonColor        = false
 
--- Minimize Button (—)
-local BtnM = Instance.new("TextButton", Top)
-BtnM.Name = "MinBtn"
-BtnM.Size = UDim2.new(0, 35, 0, 35)
-BtnM.Position = UDim2.new(1, -70, 0, 0)
-BtnM.Text = "—"
-BtnM.TextColor3 = Theme.TextDim
+-- // 5.2: MINIMIZE BUTTON (—)
+local BtnM                  = Instance.new("TextButton", Top)
+BtnM.Name                   = "MinBtn"
+BtnM.Size                   = UDim2.new(0, 35, 0, 35)
+BtnM.Position               = UDim2.new(1, -70, 0, 0)
+BtnM.Text                   = "—"
+BtnM.TextColor3             = Theme.TextDim
 BtnM.BackgroundTransparency = 1
-BtnM.Font = Enum.Font.GothamBold
-BtnM.TextSize = 13
-BtnM.AutoButtonColor = false
+BtnM.Font                   = Enum.Font.GothamBold
+BtnM.TextSize               = 13
+BtnM.AutoButtonColor        = false
 
--- Close Logic
+-- // 5.3: WINDOW CONTROL ACTIONS
+-- Handle Close Action
 BtnX.MouseButton1Click:Connect(function() 
     Main.Visible = false 
 end)
 
--- Minimize Logic
-local isMin = false 
-local lastSize = Main.Size
+-- Handle Minimize Action (Animated)
+local isMinimized = false 
+local lastSize    = Main.Size
 
 BtnM.MouseButton1Click:Connect(function() 
-    isMin = not isMin 
+    isMinimized = not isMinimized 
     
-    if isMin then 
+    local targetHeight = isMinimized and 35 or lastSize.Y.Offset
+    local targetSize   = UDim2.new(0, Main.Size.X.Offset, 0, targetHeight)
+    
+    if isMinimized then 
         lastSize = Main.Size
-        TweenService:Create(Main, TweenInfo.new(0.3), {
-            Size = UDim2.new(0, Main.Size.X.Offset, 0, 35)
-        }):Play() 
-    else 
-        TweenService:Create(Main, TweenInfo.new(0.3), {
-            Size = lastSize
-        }):Play() 
-    end 
+    end
+    
+    -- Execute Smooth Resize Tween
+    TweenService:Create(
+        Main, 
+        TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+        { Size = targetSize }
+    ):Play() 
 end)
 
--- Main Frame Dragging Logic (Using Top Bar as Handle)
-local draggingMain, dragStartMain, startPosMain
+-- // 5.4: MAIN FRAME DRAGGING ENGINE
+local draggingMain  = false
+local dragStartMain = nil
+local startPosMain  = nil
 
+-- Start Dragging Handler
 Top.InputBegan:Connect(function(input) 
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
-        draggingMain = true
+    local isMouse = input.UserInputType == Enum.UserInputType.MouseButton1
+    local isTouch = input.UserInputType == Enum.UserInputType.Touch
+    
+    if isMouse or isTouch then 
+        draggingMain  = true
         dragStartMain = input.Position
-        startPosMain = Main.Position 
+        startPosMain  = Main.Position 
     end 
 end)
 
+-- End Dragging Handler
 Top.InputEnded:Connect(function(input) 
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+    local isMouse = input.UserInputType == Enum.UserInputType.MouseButton1
+    local isTouch = input.UserInputType == Enum.UserInputType.Touch
+    
+    if isMouse or isTouch then 
         draggingMain = false 
     end 
 end)
 
+-- Movement Processor
 UserInput.InputChanged:Connect(function(input) 
-    if draggingMain and input.UserInputType == Enum.UserInputType.MouseMovement then 
+    local isMoving = input.UserInputType == Enum.UserInputType.MouseMovement 
+        or input.UserInputType == Enum.UserInputType.Touch
+
+    if draggingMain and isMoving then 
         local delta = input.Position - dragStartMain
         
+        -- // Update Frame Position (Vertical Construction)
         Main.Position = UDim2.new(
             startPosMain.X.Scale, 
             startPosMain.X.Offset + delta.X, 
@@ -295,53 +360,79 @@ UserInput.InputChanged:Connect(function(input)
     end 
 end)
 
--- ==========================================
--- 6. WINDOW RESIZER
--- ==========================================
+-- [[ ==========================================
+--      6. DYNAMIC WINDOW RESIZER ENGINE
+--    ========================================== ]]
 
-local Resizer = Instance.new("TextButton", Main)
-Resizer.Name = "WindowResizer"
-Resizer.Size = UDim2.new(0, 35, 0, 35)
-Resizer.Position = UDim2.new(1, -35, 1, -35)
+-- // 6.1: RESIZER UI ELEMENT (CORNER HANDLE)
+local Resizer               = Instance.new("TextButton", Main)
+Resizer.Name                = "WindowResizer"
+Resizer.Size                = UDim2.new(0, 35, 0, 35)
+Resizer.Position            = UDim2.new(1, -35, 1, -35)
 Resizer.BackgroundTransparency = 1
-Resizer.Text = "⌟"
-Resizer.TextColor3 = Theme.CatPurple
-Resizer.TextSize = 25
-Resizer.Font = Enum.Font.Gotham
-Resizer.ZIndex = 99999
-Resizer.AutoButtonColor = false
+Resizer.Text                = "⌟"
+Resizer.TextColor3          = Theme.CatPurple
+Resizer.TextSize            = 25
+Resizer.Font                = Enum.Font.Gotham
+Resizer.ZIndex              = 99999
+Resizer.AutoButtonColor     = false
 
--- Resizing State Variables
-local isResizing, resizeStartPos, startSizeR
+-- // 6.2: RESIZING STATE VARIABLES
+local isResizing            = false
+local resizeStartPos        = nil
+local startSizeR            = nil
+
+-- // 6.3: RESIZING LOGIC (INPUT HANDLERS)
 
 -- Start Resizing
 Resizer.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and not isMin then
-        isResizing = true
+    local isMouse = input.UserInputType == Enum.UserInputType.MouseButton1
+    local isTouch = input.UserInputType == Enum.UserInputType.Touch
+    
+    -- Prevent resizing while window is minimized
+    if (isMouse or isTouch) and not isMinimized then
+        isResizing     = true
         resizeStartPos = UserInput:GetMouseLocation()
-        startSizeR = Main.Size
+        startSizeR     = Main.Size
     end
 end)
 
--- End Resizing
+-- Stop Resizing
 UserInput.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+    local isMouse = input.UserInputType == Enum.UserInputType.MouseButton1
+    local isTouch = input.UserInputType == Enum.UserInputType.Touch
+    
+    if isMouse or isTouch then
         isResizing = false
     end
 end)
 
--- Resizing Logic
+-- Execute Resizing Process
 UserInput.InputChanged:Connect(function(input)
-    if isResizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = UserInput:GetMouseLocation() - resizeStartPos
+    local isMoving = input.UserInputType == Enum.UserInputType.MouseMovement 
+        or input.UserInputType == Enum.UserInputType.Touch
         
-        -- Update Main Size with Clamping (Min: 350x220, Max: 900x700)
-        Main.Size = UDim2.new(
-            0, math.clamp(startSizeR.X.Offset + delta.X, 350, 900), 
-            0, math.clamp(startSizeR.Y.Offset + delta.Y, 220, 700)
+    if isResizing and isMoving then
+        local currentMousePos = UserInput:GetMouseLocation()
+        local delta           = currentMousePos - resizeStartPos
+        
+        -- // Calculate Clamped Sizes (Vertical Construction)
+        local newWidth = math.clamp(
+            startSizeR.X.Offset + delta.X, 
+            350, -- Min Width
+            900  -- Max Width
         )
         
-        -- Update lastSize for Minimize/Restore logic
+        local newHeight = math.clamp(
+            startSizeR.Y.Offset + delta.Y, 
+            220, -- Min Height
+            700  -- Max Height
+        )
+        
+        -- Apply Size Update
+        Main.Size = UDim2.new(0, newWidth, 0, newHeight)
+        
+        -- Sync with Minimize Logic to prevent restore bugs
         lastSize = Main.Size
     end
 end)
