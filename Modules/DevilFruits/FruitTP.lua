@@ -14,8 +14,8 @@ local ESP = _G.Cat.ESP
 local Page = UI.CreateTab("Devil Fruits", false)
 
 -- 1. PASANG UI
-UI.CreateToggle(Page, "Tween to Fruits", "Smoothly fly to collect fruits", Settings.TweenFruit, function(s) Settings.TweenFruit = s UI.SaveSettings() end)
-UI.CreateToggle(Page, "TP Fruits", "Instant teleport to spawned fruits", Settings.InstantTPFruit, function(s) Settings.InstantTPFruit = s UI.SaveSettings() end)
+UI.CreateToggle(Page, "Tween to Fruits", "Smoothly fly to collect fruits", Settings.TweenFruit, function(s) Settings.TweenFruit = s end)
+UI.CreateToggle(Page, "TP Fruits", "Instant teleport to spawned fruits", Settings.InstantTPFruit, function(s) Settings.InstantTPFruit = s end)
 
 -- 2. LOGIC TWEEN & INSTAN TP (MURNI DARI CODE LU)
 local isTweening = false
