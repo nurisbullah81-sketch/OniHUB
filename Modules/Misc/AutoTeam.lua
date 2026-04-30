@@ -1,54 +1,67 @@
--- ==========================================
--- MODULE: AUTO TEAM MARINES
--- ==========================================
+-- [[ ==========================================
+--      MODULE: AUTO TEAM MARINES
+--    ========================================== ]]
 
--- Services
+-- // Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
+local Players           = game:GetService("Players")
 
--- Variables
+-- // Variables
 local Me = Players.LocalPlayer
 
--- Wait for UI & Core Data
-while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings do 
+-- // Wait for Core System Initialization
+repeat 
     task.wait(0.1) 
-end
+until _G.Cat 
+    and _G.Cat.UI 
+    and _G.Cat.Settings
 
+-- // Reference Global Components
 local UI         = _G.Cat.UI
 local Settings   = _G.Cat.Settings
 local SafeInvoke = _G.Cat.SafeInvoke
 
 -- ==========================================
--- 1. UI SETUP
+-- 1. UI INITIALIZATION
 -- ==========================================
 local Page = UI.CreateTab("Misc", false)
 
+-- // Toggle: Auto Join Marines
 UI.CreateToggle(
     Page, 
     "Auto Team Marines", 
     "Automatically picks Marines on join", 
     Settings.AutoTeam or false, 
-    function(s) 
-        Settings.AutoTeam = s 
-        UI.SaveSettings() -- Manual save triggered on change
+    function(state) 
+        Settings.AutoTeam = state 
+        UI.SaveSettings() 
     end
 )
 
 -- ==========================================
--- 2. LOGIC: FIND MARINE BUTTON
+-- 2. LOGIC: INTERFACE SEARCHER
 -- ==========================================
+
+-- // Function: Locate the Marine Selection Button
 local function GetMarineButton()
-    -- Scan through PlayerGui for the Team Selection UI
-    for _, v in pairs(Me.PlayerGui:GetDescendants()) do
-        if v.Name == "ChooseTeam" and v.Visible then
-            local marineContainer = v:FindFirstChild("Marines", true)
+    local playerGui = Me.PlayerGui
+    
+    for _, ui in ipairs(playerGui:GetDescendants()) do
+        -- Check for the specific team selection frame
+        if ui.Name == "ChooseTeam" and ui.Visible then
+            local container = ui:FindFirstChild("Marines", true)
             
-            if marineContainer then
-                local btn = marineContainer:FindFirstChildWhichIsA("TextButton", true)
+            if container then
+                local btn = container:FindFirstChildWhichIsA("TextButton", true)
                 
-                -- Ensure button is valid and visible in-game
-                if btn and btn.AbsoluteSize.X > 0 and btn.AbsoluteSize.Y > 0 then 
-                    return btn 
+                -- Validate button presence and visibility
+                if btn then
+                    local isClickable = btn.AbsoluteSize.X > 0 
+                        and btn.AbsoluteSize.Y > 0
+                    
+                    if isClickable then 
+                        return btn 
+                    end
                 end
             end
         end
@@ -57,19 +70,23 @@ local function GetMarineButton()
 end
 
 -- ==========================================
--- 3. MAIN EXECUTION LOOP
+-- 3. MAIN EXECUTION HANDLER
 -- ==========================================
+
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            -- Only run if setting is ON and player is still teamless
-            if Settings.AutoTeam and Me.Team == nil then
-                local btn = GetMarineButton()
+            -- Activation: Setting is ON and Player is teamless
+            local shouldProcess = Settings.AutoTeam 
+                and Me.Team == nil
+            
+            if shouldProcess then
+                local targetBtn = GetMarineButton()
                 
-                if btn then
-                    -- Step 1: Remote Invocation (Standard Method)
-                    local remotePath = ReplicatedStorage:FindFirstChild("Remotes")
-                    local commF      = remotePath and remotePath:FindFirstChild("CommF_")
+                if targetBtn then
+                    -- // STEP 3.1: Remote Method (Standard)
+                    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                    local commF   = remotes and remotes:FindFirstChild("CommF_")
                     
                     if commF then 
                         SafeInvoke(commF, "SetTeam", "Marines") 
@@ -77,26 +94,30 @@ task.spawn(function()
                     
                     task.wait(0.5)
                     
-                    -- Step 2: Fallback (Fire Button Events)
-                    pcall(function() btn.MouseButton1Click:Fire() end)
-                    pcall(function() btn.Activated:Fire() end)
+                    -- // STEP 3.2: Fallback Method (UI Interaction)
+                    pcall(function() targetBtn.MouseButton1Click:Fire() end)
+                    pcall(function() targetBtn.Activated:Fire() end)
                     
                     task.wait(1)
                     
-                    -- Step 3: Cleanup & Camera Correction
+                    -- // STEP 3.3: Post-Execution Cleanup
                     if Me.Team ~= nil then
-                        -- Hide the UI manually if it stays stuck
-                        local chooseTeamUI = btn:FindFirstAncestor("ChooseTeam")
-                        if chooseTeamUI then 
-                            chooseTeamUI.Visible = false 
+                        -- Manually close the UI if still visible
+                        local rootUI = targetBtn:FindFirstAncestor("ChooseTeam")
+                        if rootUI then 
+                            rootUI.Visible = false 
                         end
                         
-                        -- Reset camera to follow character
-                        local cam = workspace.CurrentCamera
-                        cam.CameraType = Enum.CameraType.Custom
+                        -- Re-initialize Camera State
+                        local camera     = workspace.CurrentCamera
+                        camera.CameraType = Enum.CameraType.Custom
                         
-                        if Me.Character and Me.Character:FindFirstChild("Humanoid") then 
-                            cam.CameraSubject = Me.Character.Humanoid 
+                        -- Focus camera on player's humanoid
+                        local char = Me.Character
+                        local hum  = char and char:FindFirstChild("Humanoid")
+                        
+                        if hum then 
+                            camera.CameraSubject = hum 
                         end
                     end
                 end
