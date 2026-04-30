@@ -1,11 +1,10 @@
 -- ==========================================
--- MODULE: DEVIL FRUIT ESP
+-- MODULE: DEVIL FRUIT ESP (SUPER OPTIMIZED)
 -- ==========================================
 
 -- Services
 local Workspace   = game:GetService("Workspace")
-local RunService   = game:GetService("RunService")
-local Players      = game:GetService("Players")
+local Players     = game:GetService("Players")
 
 -- Variables
 local Me = Players.LocalPlayer
@@ -41,8 +40,6 @@ UI.CreateToggle(
 -- ==========================================
 local Data  = {} -- Stores ESP Objects
 local Mem   = {} -- Stores last known distance
-local FC    = 0
-local SKIP  = 10 -- Update every 10 frames
 
 -- Function: Get Fruit Position safely
 local function GetPosition(fruit)
@@ -71,7 +68,6 @@ local function IsFruit(obj)
     if not obj or not obj.Parent then return false end
     
     local ok, result = pcall(function()
-        -- Devil Fruits in Blox Fruits are usually Tools/Models with a "Fruit" tag inside
         if (obj:IsA("Tool") or obj:IsA("Model")) and obj:FindFirstChild("Fruit") then
             return true
         end
@@ -128,14 +124,19 @@ end
 -- 4. WORKSPACE OBSERVER
 -- ==========================================
 
--- Initial Scan
-for _, obj in pairs(Workspace:GetChildren()) do 
-    if IsFruit(obj) then AddESP(obj) end 
-end
+-- TUNGGU GAME READY DULU SEBELUM SCAN AWAL (BIAR KAGAK MISDETEKSI)
+task.spawn(function()
+    _G.Cat.WaitUntilReady()
+    task.wait(3) -- Jeda 3 detik setelah hidup biar map ke-load semua
+    
+    for _, obj in pairs(Workspace:GetChildren()) do 
+        if IsFruit(obj) then AddESP(obj) end 
+    end
+end)
 
 -- Monitor New Fruits
 Workspace.ChildAdded:Connect(function(obj) 
-    task.wait(0.5) -- Small delay for object replication
+    task.wait(1) -- Diperbesar dari 0.5 ke 1 detik, biar object "Fruit" didalemnya sempat ke-load oleh game
     
     if IsFruit(obj) then 
         AddESP(obj) 
@@ -198,55 +199,52 @@ _G.Cat.ESP = {
 }
 
 -- ==========================================
--- 6. RENDER LOOP (Distance Updates)
+-- 6. SUPER LIGHTWEIGHT LOOP (NAT HUB STYLE)
 -- ==========================================
-RunService.Heartbeat:Connect(function() 
-    FC = FC + 1 
-    if FC % 10 ~= 0 then return end -- Cek 10x per detik aja
-    
-    pcall(function() 
-        -- PINTU DARURAT: Kalau lagi loading/mati, matiin semua ESP & langsung diam
-        if not _G.Cat.State.IsGameReady then 
-            for _, d in pairs(Data) do 
-                if d and d.bb then d.bb.Enabled = false end 
-            end 
-            return 
-        end 
-        
-        if not Settings.FruitESP then 
-            for _, d in pairs(Data) do 
-                if d and d.bb then d.bb.Enabled = false end 
-            end 
-            return 
-        end 
-        
-        local c = Me.Character 
-        if not c then return end 
-        local r = c:FindFirstChild("HumanoidRootPart") 
-        if not r then return end 
-        local mp = r.Position 
-        
-        for f, d in pairs(Data) do 
-            -- FIX BUG: Rem -> RemoveESP, Pos -> GetPosition biar kagak crash!
-            if not f or not f.Parent or not d.bb or not d.bb.Parent then 
-                RemoveESP(f) 
-                continue 
-            end 
+-- Gue buang RunService! Pake task.spawn biasa yang jauh lebih hemat RAM & CPU.
+-- Update 2x per detik aja (0.5), mata lu kagak bakal ngeliat bedanya tapi PC lu LEGA!
+task.spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            -- Kalau ESP dimatikan, sembunyikan semua text
+            if not Settings.FruitESP then 
+                for _, d in pairs(Data) do 
+                    if d and d.bb then d.bb.Enabled = false end 
+                end 
+                return 
+            end
             
-            local p = GetPosition(f) 
-            if not p then 
-                d.bb.Enabled = false 
-                continue 
-            end 
+            local c = Me.Character 
+            local r = c and c:FindFirstChild("HumanoidRootPart")
+            local mp = r and r.Position
             
-            local dx, dy, dz = p.X - mp.X, p.Y - mp.Y, p.Z - mp.Z 
-            local m = math.floor(math.sqrt(dx*dx + dy*dy + dz*dz)) 
-            
-            if math.abs(m - (Mem[f] or -1)) > 5 then 
-                Mem[f] = m 
-                d.txt.Text = f.Name .. " [" .. m .. "m]" 
-            end 
-            d.bb.Enabled = true 
-        end
-    end) 
+            for f, d in pairs(Data) do 
+                -- Bersihkan data buah yang udah ilang
+                if not f or not f.Parent or not d.bb or not d.bb.Parent then 
+                    RemoveESP(f) 
+                    continue 
+                end 
+                
+                -- Kalau karakter belum load / lagi mati, kagak usah update jarak (hemat fps)
+                -- Tapi ESP tetep nyala kaya biasa!
+                if not mp then continue end 
+                
+                local p = GetPosition(f) 
+                if not p then 
+                    d.bb.Enabled = false
+                    continue 
+                end 
+                
+                local dx, dy, dz = p.X - mp.X, p.Y - mp.Y, p.Z - mp.Z 
+                local m = math.floor(math.sqrt(dx*dx + dy*dy + dz*dz)) 
+                
+                -- Update text jarak kalo perubahan lebih dari 5 meter
+                if math.abs(m - (Mem[f] or -1)) > 5 then 
+                    Mem[f] = m 
+                    d.txt.Text = f.Name .. " [" .. m .. "m]" 
+                end 
+                d.bb.Enabled = true 
+            end
+        end)
+    end
 end)
