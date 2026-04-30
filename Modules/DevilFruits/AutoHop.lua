@@ -162,47 +162,48 @@ function _G.Cat.HopServer()
     end)
 end
 
--- ==========================================
--- 3. TRIGGER LOOP: AUTO SCAN & HOP (PINTER & ANTI-STUCK)
--- ==========================================
+-- [[ ==========================================
+--      3. TRIGGER LOOP: AUTO SCAN & HOP
+--    ========================================== ]]
+
 task.spawn(function()
-    task.wait(10) -- Jeda awal pas baru inject script, biar game stabil
-    
+    task.wait(10) -- Jeda awal biar game stabil setelah inject
+
     while task.wait(2) do
-        -- KALO LAGI LOADING / MATI / LAG, SCRIPT TIDUR TOTAL DI SINI!
-        -- Dia kagak bakal ngulik data ESP atau apapun yang bikin FPS drop.
+        -- // 3.1: SAFETY CHECK (Anti-Stuck & Performance)
         if not State.IsGameReady then
-            _G.Cat.WaitUntilReady() -- Tunggu sampai game beneran aman (Ada Team, HRD, Health > 0)
+            _G.Cat.WaitUntilReady()
             
-            -- [OBAT STUCK HOP] Setelah game ready (misal baru selesai milih team), 
-            -- kasih jeda 10 detik biar server stabil & buah sempat spawn ke workspace.
-            -- Ini ngebunuh bug "langsung hop lagi pas baru masuk server"
+            -- Jeda tambahan pasca-loading biar workspace ke-load sempurna
             task.wait(10) 
         end
-        
+
+        -- // 3.2: MAIN LOGIC (Scanning)
         if Settings.AutoHop and State.IsGameReady then
             pcall(function()
                 local fruitCount = 0
-                
-                -- Count active fruits from ESP Data
-                for f, _ in pairs(ESP.Data) do
-                    if f and f.Parent and f.Parent == workspace then
+
+                -- Iterasi ESP Data untuk hitung buah di workspace
+                for fruit, _ in pairs(ESP.Data) do
+                    local isExist = fruit and fruit.Parent == workspace
+                    
+                    if isExist then
                         fruitCount = fruitCount + 1
                     end
                 end
-                
-                -- If no fruits found, execute hop
+
+                -- Jika server kosong/buah habis, langsung gas Hop
                 if fruitCount == 0 then
                     _G.Cat.HopServer()
                 end
             end)
-        else
-            -- Reset state if toggle turned off during hopping
-            if isHopping and not Settings.AutoHop then
-                isHopping = false
-                if _G.Cat.ReleaseCharacter then 
-                    _G.Cat.ReleaseCharacter() 
-                end
+
+        -- // 3.3: TOGGLE CLEANUP
+        elseif isHopping and not Settings.AutoHop then
+            isHopping = false
+            
+            if _G.Cat.ReleaseCharacter then 
+                _G.Cat.ReleaseCharacter() 
             end
         end
     end
