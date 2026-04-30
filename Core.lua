@@ -1,14 +1,30 @@
--- Core.lua
-if not game:IsLoaded() then game.Loaded:Wait() end
+-- ==========================================
+-- CORE INITIALIZATION
+-- ==========================================
 
-local GuiService = game:GetService("GuiService")
-local CoreGui = game:GetService("CoreGui")
+-- 1. Wait for Game to Load
+if not game:IsLoaded() then 
+    game.Loaded:Wait() 
+end
+
+-- 2. Services Initialization
+local GuiService  = game:GetService("GuiService")
+local CoreGui     = game:GetService("CoreGui")
 local VirtualUser = game:GetService("VirtualUser")
-local Players = game:GetService("Players")
+local Players     = game:GetService("Players")
 
-while not Players.LocalPlayer do task.wait(0.1) end
+-- 3. Wait for LocalPlayer
+while not Players.LocalPlayer do 
+    task.wait(0.1) 
+end
 local Me = Players.LocalPlayer
-while not _G or not _G.Cat or not _G.Cat.Settings do task.wait(0.1) end
+
+-- 4. Wait for Global CatHUB Data (Safety Check)
+while not _G or not _G.Cat or not _G.Cat.Settings do 
+    task.wait(0.1) 
+end
+
+-- Localize Settings for faster access
 local Settings = _G.Cat.Settings
 
 -- ==========================================
