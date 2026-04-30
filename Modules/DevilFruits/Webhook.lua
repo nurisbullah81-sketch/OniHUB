@@ -303,7 +303,7 @@ WHTestBtn.MouseButton1Click:Connect(function()
 end)
 
 -- [[ ==========================================
---      3. CCTV TITANIUM V6 (NEAT & ANTI-SPAM)
+--      3. CCTV TITANIUM V7 (THE ULTIMATE HANDLE CHECK)
 --    ========================================== ]]
 task.spawn(function()
     local player = Players.LocalPlayer or Players.PlayerAdded:Wait() 
@@ -313,7 +313,7 @@ task.spawn(function()
         player = Players.LocalPlayer 
     end
     
-    -- // Variables & Anti-Spam Memory (Berbasis Nama, Bukan Fisik)
+    -- // Variables & Anti-Spam Memory
     local fruitCooldowns = {} 
     
     -- // Function: Core Fruit Identification Logic
@@ -323,19 +323,25 @@ task.spawn(function()
         -- // Validation Gate
         if not Settings.FruitWebhook then return end 
         
+        -- // FILTER DEWA 1: Engine Handle Check (Pemisah Kekuatan vs Buah Fisik)
+        -- Kasih jeda dikit biar Roblox sempet nge-load isi Tool-nya secara penuh
+        task.wait(0.1) 
+        if not item:FindFirstChild("Handle") then 
+            return -- Fix ini cuma kekuatan/ability lu, buang!
+        end
+        
         local rawName   = item.Name
         local lowerName = string.lower(rawName)
         
-        -- // FILTER 1: Distinguish Physical Fruit vs Ability
-        -- Buah fisik PASTI punya kata "Fruit" atau tanda hubung "-"
+        -- // FILTER 2: Pattern Check
         local hasFruitWord = string.find(lowerName, "fruit")
         local hasHyphen    = string.find(lowerName, "-")
         
         if not (hasFruitWord or hasHyphen) then 
-            return -- Ini kekuatan/ability lu (misal "Kitsune" doang), buang!
+            return 
         end
         
-        -- // FILTER 2: Clean the Fruit Name
+        -- // FILTER 3: Clean Name
         local cleanFruitName = rawName
         
         if hasHyphen then
@@ -347,8 +353,8 @@ task.spawn(function()
             cleanFruitName = string.gsub(rawName, "(%s?)[Ff][Rr][Uu][Ii][Tt]", "")
         end
         
-        -- // FILTER 3: Name-Based Cooldown (Anti 3x Notification)
-        -- Kalau buah ini udah dikirim, tahan 15 detik biar sistem game ga ngespam cloning
+        -- // FILTER 4: Name-Based Cooldown (Anti 3x Notification)
+        -- Obat buat nahan notif "Ice" biar kaga ngirim 3 kali pas sistem nge-clone item
         if fruitCooldowns[cleanFruitName] then return end 
         fruitCooldowns[cleanFruitName] = true 
         
