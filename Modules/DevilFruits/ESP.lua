@@ -143,8 +143,51 @@ local function RemoveESP(fruit)
     end
 end
 
+-- ==========================================
+-- 4. EXPORTED API (YANG KEMAREN KEHAPUS JIR!)
+-- ==========================================
+_G.Cat.ESP = {
+    Data = Data,
+    Pos  = GetPosition,
+    
+    GetNearestFruit = function() 
+        local closest = nil
+        local minDist = math.huge 
+        local char    = Me.Character
+        local hrp     = char and char:FindFirstChild("HumanoidRootPart") 
+        
+        if not hrp then return nil end 
+        
+        for fruit, _ in pairs(Data) do 
+            if fruit and fruit.Parent == Workspace then 
+                local fruitPos = GetPosition(fruit) 
+                if fruitPos then 
+                    local dist = (fruitPos - hrp.Position).Magnitude 
+                    if dist < minDist then 
+                        closest = fruit
+                        minDist = dist 
+                    end 
+                end 
+            else 
+                RemoveESP(fruit) 
+            end 
+        end 
+        return closest 
+    end,
+    
+    GetFruitsList = function() 
+        local names = {} 
+        for fruit, _ in pairs(Data) do 
+            if fruit and fruit.Parent then 
+                table.insert(names, fruit.Name) 
+            end 
+        end 
+        return names 
+    end
+}
+
 -- [[ ==========================================
---      4 & 6. SMART SCANNER & UPDATE LOOP (ANTI-PING SPIKE)
+--      5. SMART SCANNER & UPDATE LOOP (ANTI-PING SPIKE)
 --    ========================================== ]]
 
 task.spawn(function()
@@ -169,11 +212,9 @@ task.spawn(function()
         if scanTimer >= 3 then
             scanTimer = 0
             for _, obj in ipairs(Workspace:GetChildren()) do 
-                -- Kalau itu beneran buah dan belum ada di database kita
                 if IsFruit(obj) and not Data[obj] then 
                     AddESP(obj) 
                     
-                    -- LOGIC WEBHOOK LU GUE BALIKIN KE SINI BANG! (Aman 100%)
                     if Settings.FruitWebhook and _G.Cat.Webhook then
                         _G.Cat.Webhook:Send(
                             obj.Name, 
