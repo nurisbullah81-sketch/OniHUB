@@ -160,3 +160,4 @@ Load("Modules/Misc/AntiAFK.lua")        -- Idle Protection & Auto Team
 
 -- // Phase 5: Miscellaneous & Optimization
 Load("Modules/Misc/FPSBooster.lua")     -- Max Performance (Anti-Lag)
+Load("Modules/Misc/GameSettings.lua")   -- Native Sync Engine
