@@ -44,46 +44,31 @@ else
 end
 
 -- ==========================================
--- 2. WEBHOOK ENGINE (LEWISAKURA PROXY)
+-- 2. WEBHOOK ENGINE (PROXY LEWISAKURA + ANTI-FREEZE RARITY)
 -- ==========================================
 local Webhook = {}
 
+-- Fungsi ini kaga bakal ngubah nama asli dari game. 
+-- Cuma buat nentuin kasta buahnya biar lolos filter UI lu.
 local function GetDynamicRarity(rawFruitName)
-    local cleanName = string.lower(string.gsub(rawFruitName, " Fruit", ""))
-    local foundRarity = "Common"
-    pcall(function()
-        local targets = {
-            RS:FindFirstChild("FruitInfo"),
-            RS:FindFirstChild("Modules") and RS.Modules:FindFirstChild("Asset") and RS.Modules.Asset:FindFirstChild("ItemData"),
-            RS:FindFirstChild("Modules") and RS.Modules:FindFirstChild("Asset") and RS.Modules.Asset:FindFirstChild("ItemData") and RS.Modules.Asset.ItemData:FindFirstChild("Demon Fruit")
-        }
-        for _, mod in pairs(targets) do
-            if mod and mod:IsA("ModuleScript") then
-                local dict = require(mod)
-                if type(dict) == "table" then
-                    for internalName, data in pairs(dict) do
-                        if type(internalName) == "string" and string.find(string.lower(internalName), cleanName) then
-                            if type(data) == "table" then
-                                if data.Rarity then foundRarity = tostring(data.Rarity); return 
-                                elseif data.Price or data.Cost then
-                                    local price = data.Price or data.Cost
-                                    if price >= 2000000 then foundRarity = "Mythical"; return end
-                                    if price >= 1000000 then foundRarity = "Legendary"; return end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
-    return foundRarity
+    local cleanName = string.lower(rawFruitName)
+    
+    local mythical = {"kitsune", "tiger", "leopard", "dragon", "venom", "dough", "t-rex", "trex", "mammoth", "spirit", "control", "gravity"}
+    local legendary = {"blizzard", "portal", "lightning", "rumble", "pain", "buddha", "quake", "sound", "spider", "string", "love", "phoenix"}
+    
+    for _, kw in pairs(mythical) do
+        if string.find(cleanName, kw) then return "Mythical" end
+    end
+    for _, kw in pairs(legendary) do
+        if string.find(cleanName, kw) then return "Legendary" end
+    end
+    
+    return "Common" -- Kalau kaga masuk list dewa di atas
 end
 
 function Webhook:Test(webhookURL)
     if not webhookURL or webhookURL == "" then return false, "No URL" end
     
-    -- [OBAT 403]: Pakai Proxy Lewisakura
     webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
     webhookURL = string.gsub(webhookURL, "discord%.com", "webhook.lewisakura.moe")
 
@@ -102,33 +87,22 @@ function Webhook:Test(webhookURL)
     
     local ok, res = pcall(function() return req({ Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload }) end)
     
-    if ok and res then
-        if res.StatusCode == 200 or res.StatusCode == 204 then return true, "Success"
-        else return false, "HTTP " .. tostring(res.StatusCode) end
-    end
+    if ok and res and (res.StatusCode == 200 or res.StatusCode == 204) then return true, "Success" end
     return false, "Pcall Error"
 end
 
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
-    warn("[CatHUB-WEBHOOK] ===== PANGGILAN SEND DITERIMA =====")
-    warn("[CatHUB-WEBHOOK] Nama Buah: " .. tostring(fruitName))
-    warn("[CatHUB-WEBHOOK] Setting Rarity di UI: " .. tostring(raritySetting))
-    warn("[CatHUB-WEBHOOK] URL: " .. tostring(webhookURL))
+    warn("[CatHUB] Menganalisa buah: " .. tostring(fruitName))
+    if not webhookURL or webhookURL == "" then return end
     
-    if not webhookURL or webhookURL == "" then 
-        warn("[CatHUB-WEBHOOK] GAGAL: URL KOSONG!")
-        return 
-    end
-    
-    -- [OBAT 403]: Pakai Proxy Lewisakura
     webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
     webhookURL = string.gsub(webhookURL, "discord%.com", "webhook.lewisakura.moe")
     
+    -- Ambil rarity pakai sistem detektor, kaga nge-require game lagi!
     local fruitRarity = GetDynamicRarity(fruitName)
-    warn("[CatHUB-WEBHOOK] Rarity Asli dari Game: " .. tostring(fruitRarity))
+    warn("[CatHUB] Rarity buah ini adalah: " .. fruitRarity)
     
     local shouldSend = false
-    
     if raritySetting == "All Fruits" then
         shouldSend = true
     elseif raritySetting == "Legendary & Mythical" then
@@ -138,11 +112,9 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     end
     
     if not shouldSend then 
-        warn("[CatHUB-WEBHOOK] DIBATALKAN: Buah kaga lolos filter UI lu!")
+        warn("[CatHUB] BATAL KIRIM! Buah kerendahan buat filter UI lu.")
         return 
     end
-    
-    warn("[CatHUB-WEBHOOK] Lolos filter! Mengeksekusi pengiriman ke Discord...")
     
     local embedColor = 16777215
     if string.find(fruitRarity, "Legendary") then embedColor = 16753920
@@ -161,21 +133,9 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if req then
         task.spawn(function()
-            local ok, res = pcall(function() 
-                return req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) 
-            end)
-            
-            if not ok then
-                warn("[CatHUB-WEBHOOK] PCALL ERROR (Script gagal): " .. tostring(res))
-            else
-                warn("[CatHUB-WEBHOOK] STATUS DARI DISCORD/PROXY: " .. tostring(res.StatusCode))
-                if res.StatusCode ~= 200 and res.StatusCode ~= 204 then
-                    warn("[CatHUB-WEBHOOK] ALASAN DITOLAK: " .. tostring(res.Body))
-                end
-            end
+            pcall(function() req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) end)
+            warn("[CatHUB] Sukses ditembak ke Discord!")
         end)
-    else
-        warn("[CatHUB-WEBHOOK] FATAL: Executor lu kaga support fungsi Request!")
     end
 end
 
