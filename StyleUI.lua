@@ -437,389 +437,490 @@ UserInput.InputChanged:Connect(function(input)
     end
 end)
 
--- ==========================================
--- 7. CONTENT CONTAINER & SIDEBAR
--- ==========================================
--- Wrapper for Sidebar and Content Area
-local ContentContainer = Instance.new("Frame", Main)
-ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, 0, 1, -35)
-ContentContainer.Position = UDim2.new(0, 0, 0, 35)
+-- [[ ==========================================
+--      7. CONTENT ARCHITECTURE: SIDEBAR & AREA
+--    ========================================== ]]
+
+-- // 7.1: MAIN CONTENT WRAPPER
+local ContentContainer       = Instance.new("Frame", Main)
+ContentContainer.Name        = "ContentContainer"
+ContentContainer.Size        = UDim2.new(1, 0, 1, -35)
+ContentContainer.Position    = UDim2.new(0, 0, 0, 35)
 ContentContainer.BackgroundTransparency = 1
 
--- Sidebar Background
-local Side = Instance.new("Frame", ContentContainer)
-Side.Name = "Sidebar"
-Side.Size = UDim2.new(0.28, 0, 1, 0)
-Side.BackgroundColor3 = Theme.SideBG
-Side.BorderSizePixel = 0
+-- // 7.2: SIDEBAR SYSTEM
+local Side                   = Instance.new("Frame", ContentContainer)
+Side.Name                    = "Sidebar"
+Side.Size                    = UDim2.new(0.28, 0, 1, 0)
+Side.BackgroundColor3        = Theme.SideBG
+Side.BorderSizePixel         = 0
 
--- Vertical Line Separator
-local SideLine = Instance.new("Frame", Side)
-SideLine.Name = "SideLine"
-SideLine.Size = UDim2.new(0, 1, 1, 0)
-SideLine.Position = UDim2.new(1, -1, 0, 0)
-SideLine.BackgroundColor3 = Theme.Line
-SideLine.BorderSizePixel = 0
+-- Vertical Separator Line
+local SideLine               = Instance.new("Frame", Side)
+SideLine.Name                = "SideLine"
+SideLine.Size                = UDim2.new(0, 1, 1, 0)
+SideLine.Position            = UDim2.new(1, -1, 0, 0)
+SideLine.BackgroundColor3    = Theme.Line
+SideLine.BorderSizePixel     = 0
 
--- Search Bar Frame
-local SearchFrame = Instance.new("Frame", Side)
-SearchFrame.Name = "SearchFrame"
-SearchFrame.Size = UDim2.new(1, -16, 0, 30)
-SearchFrame.Position = UDim2.new(0, 8, 0, 10)
+-- // 7.3: SEARCH NAVIGATION UI
+local SearchFrame            = Instance.new("Frame", Side)
+SearchFrame.Name             = "SearchFrame"
+SearchFrame.Size             = UDim2.new(1, -16, 0, 30)
+SearchFrame.Position         = UDim2.new(0, 8, 0, 10)
 SearchFrame.BackgroundColor3 = Theme.CardBG
-SearchFrame.BorderSizePixel = 0
+SearchFrame.BorderSizePixel  = 0
 
-local SearchCorner = Instance.new("UICorner", SearchFrame)
-SearchCorner.CornerRadius = UDim.new(0, 6)
+local SearchCorner           = Instance.new("UICorner", SearchFrame)
+SearchCorner.CornerRadius    = UDim.new(0, 6)
 
-local SearchStroke = Instance.new("UIStroke", SearchFrame)
-SearchStroke.Color = Theme.Line
+local SearchStroke           = Instance.new("UIStroke", SearchFrame)
+SearchStroke.Color           = Theme.Line
 
--- Actual Search Input
-local SearchBox = Instance.new("TextBox", SearchFrame)
-SearchBox.Name = "SearchBox"
-SearchBox.Size = UDim2.new(1, -16, 1, 0)
-SearchBox.Position = UDim2.new(0, 8, 0, 0)
+-- Search Input Field
+local SearchBox              = Instance.new("TextBox", SearchFrame)
+SearchBox.Name               = "SearchBox"
+SearchBox.Size               = UDim2.new(1, -16, 1, 0)
+SearchBox.Position           = UDim2.new(0, 8, 0, 0)
 SearchBox.BackgroundTransparency = 1
-SearchBox.Text = ""
-SearchBox.PlaceholderText = "Search..."
-SearchBox.TextColor3 = Theme.Text
-SearchBox.PlaceholderColor3 = Theme.TextDim
-SearchBox.Font = Enum.Font.GothamMedium
-SearchBox.TextSize = 12
-SearchBox.TextXAlignment = Enum.TextXAlignment.Left
+SearchBox.Text               = ""
+SearchBox.PlaceholderText    = "Search..."
+SearchBox.TextColor3         = Theme.Text
+SearchBox.PlaceholderColor3  = Theme.TextDim
+SearchBox.Font               = Enum.Font.GothamMedium
+SearchBox.TextSize           = 12
+SearchBox.TextXAlignment     = Enum.TextXAlignment.Left
 
--- Sidebar Scrolling Container
-local SideScroll = Instance.new("ScrollingFrame", Side)
-SideScroll.Name = "SideScroll"
-SideScroll.Size = UDim2.new(1, 0, 1, -50)
-SideScroll.Position = UDim2.new(0, 0, 0, 50)
+-- // 7.4: SIDEBAR TAB SCROLLING ENGINE
+local SideScroll             = Instance.new("ScrollingFrame", Side)
+SideScroll.Name              = "SideScroll"
+SideScroll.Size              = UDim2.new(1, 0, 1, -50)
+SideScroll.Position          = UDim2.new(0, 0, 0, 50)
 SideScroll.BackgroundTransparency = 1
 SideScroll.ScrollBarThickness = 0
-SideScroll.BorderSizePixel = 0
+SideScroll.BorderSizePixel    = 0
 
--- Sidebar Layouts
-local SideList = Instance.new("UIListLayout", SideScroll)
-SideList.Padding = UDim.new(0, 4)
-SideList.SortOrder = Enum.SortOrder.LayoutOrder -- <--- TAMBAHKAN INI
+-- Layout & Padding Configuration
+local SideList               = Instance.new("UIListLayout", SideScroll)
+SideList.Padding             = UDim.new(0, 4)
+SideList.SortOrder           = Enum.SortOrder.LayoutOrder
 
-local SidePad = Instance.new("UIPadding", SideScroll)
-SidePad.PaddingLeft = UDim.new(0, 8)
-SidePad.PaddingRight = UDim.new(0, 8)
+local SidePad                = Instance.new("UIPadding", SideScroll)
+SidePad.PaddingLeft          = UDim.new(0, 8)
+SidePad.PaddingRight         = UDim.new(0, 8)
 
--- Main Content Area (Where the pages are)
-local ContentArea = Instance.new("Frame", ContentContainer)
-ContentArea.Name = "ContentArea"
-ContentArea.Size = UDim2.new(0.72, 0, 1, 0)
-ContentArea.Position = UDim2.new(0.28, 0, 0, 0)
+-- // 7.5: MAIN CONTENT DISPLAY AREA
+local ContentArea            = Instance.new("Frame", ContentContainer)
+ContentArea.Name             = "ContentArea"
+ContentArea.Size             = UDim2.new(0.72, 0, 1, 0)
+ContentArea.Position         = UDim2.new(0.28, 0, 0, 0)
 ContentArea.BackgroundTransparency = 1
 
--- ==========================================
--- PERKAKAS UI (UNTUK DIPAKE FILE LOGIC)
--- ==========================================
+-- [[ ==========================================
+--      8. UI TOOLS: TAB & PAGE GENERATOR
+--    ========================================== ]]
 
-local Pages = {}
+local Pages      = {}
 local AllToggles = {}
 
--- Tabel prioritas urutan Sidebar (Makin kecil makin di atas)
+-- // Sidebar Priority Table (Ascending Order)
 local TabPriority = {
-    ["Status"] = 1,
-    ["Auto Farm"] = 2,
+    ["Status"]       = 1,
+    ["Auto Farm"]    = 2,
     ["Devil Fruits"] = 3,
-    ["Misc"] = 4
+    ["Misc"]         = 4
 }
 
+-- // Function: Create a new Sidebar Tab and its Content Page
 local function CreateTab(name, isFirst)
-    -- PENCEGAH DUPLIKAT: Kalau tab nya udah ada, cukup return Page nya doang
+    -- DUPLICATE CHECK: Returns existing page if already created
     if Pages[name] then 
         return Pages[name].Page 
     end
     
-    -- Tab Button
-    local Btn = Instance.new("TextButton", SideScroll)
-    Btn.Name = name .. "_TabBtn"
-    Btn.LayoutOrder = TabPriority[name] or 99 -- Ini yang ngatur urutan
-    Btn.Size = UDim2.new(1, 0, 0, 32)
-    Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff
-    Btn.Text = "    " .. name 
-    Btn.TextColor3 = isFirst and Theme.Text or Theme.TextDim
-    Btn.Font = Enum.Font.GothamMedium
-    Btn.TextSize = 12
-    Btn.BorderSizePixel = 0
-    Btn.TextXAlignment = Enum.TextXAlignment.Left
-    Btn.AutoButtonColor = false
+    -- // 8.1: SIDEBAR BUTTON CONSTRUCTION
+    local Btn                = Instance.new("TextButton", SideScroll)
+    Btn.Name                 = name .. "_TabBtn"
+    Btn.LayoutOrder          = TabPriority[name] or 99
+    Btn.Size                 = UDim2.new(1, 0, 0, 32)
+    Btn.BackgroundColor3     = isFirst and Theme.TabOn or Theme.TabOff
+    Btn.Text                 = "    " .. name 
+    Btn.TextColor3           = isFirst and Theme.Text or Theme.TextDim
+    Btn.Font                 = Enum.Font.GothamMedium
+    Btn.TextSize             = 12
+    Btn.BorderSizePixel      = 0
+    Btn.TextXAlignment       = Enum.TextXAlignment.Left
+    Btn.AutoButtonColor      = false
     
-    -- Button Corner
-    local BtnCorner = Instance.new("UICorner", Btn)
-    BtnCorner.CornerRadius = UDim.new(0, 6)
+    local BtnCorner          = Instance.new("UICorner", Btn)
+    BtnCorner.CornerRadius   = UDim.new(0, 6)
     
-    -- Button Stroke
-    local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Name = "TabStroke"
-    BtnStroke.Color = Color3.fromRGB(65, 65, 70)
-    BtnStroke.Thickness = 1
-    BtnStroke.Transparency = isFirst and 0 or 0.3 
+    local BtnStroke          = Instance.new("UIStroke", Btn)
+    BtnStroke.Name           = "TabStroke"
+    BtnStroke.Color          = Color3.fromRGB(65, 65, 70)
+    BtnStroke.Thickness      = 1
+    BtnStroke.Transparency   = isFirst and 0 or 0.3 
     
-    -- Selection Indicator (Garis kecil di samping kiri)
-    local Indicator = Instance.new("Frame", Btn)
-    Indicator.Name = "Indicator"
-    Indicator.Size = UDim2.new(0, 3, 0, 14)
-    Indicator.Position = UDim2.new(0, 4, 0.5, -7)
+    -- Selection Indicator (Vertical Accent Bar)
+    local Indicator          = Instance.new("Frame", Btn)
+    Indicator.Name           = "Indicator"
+    Indicator.Size           = UDim2.new(0, 3, 0, 14)
+    Indicator.Position       = UDim2.new(0, 4, 0.5, -7)
     Indicator.BackgroundColor3 = Theme.Accent
-    Indicator.BorderSizePixel = 0
-    Indicator.Visible = isFirst
+    Indicator.BorderSizePixel  = 0
+    Indicator.Visible        = isFirst
 
-    local IndicatorCorner = Instance.new("UICorner", Indicator)
+    local IndicatorCorner    = Instance.new("UICorner", Indicator)
     IndicatorCorner.CornerRadius = UDim.new(1, 0)
 
--- ==========================================
-    -- PAGE CREATION (Scrolling Area)
-    -- ==========================================
-    local Page = Instance.new("ScrollingFrame", ContentArea)
-    Page.Name = name .. "_Page"
-    Page.Size = UDim2.new(1, -16, 1, -16)
-    Page.Position = UDim2.new(0, 8, 0, 8)
-    Page.BackgroundColor3 = Theme.PageBG
-    Page.BackgroundTransparency = 0
-    Page.ScrollBarThickness = 2
-    Page.ScrollBarImageColor3 = Theme.TextDim
-    Page.Visible = isFirst
-    Page.BorderSizePixel = 0
+    -- // 8.2: CONTENT PAGE CONSTRUCTION
+    local Page               = Instance.new("ScrollingFrame", ContentArea)
+    Page.Name                = name .. "_Page"
+    Page.Size                = UDim2.new(1, 0, 1, 0)
+    Page.BackgroundTransparency = 1
+    Page.Visible             = isFirst
+    Page.ScrollBarThickness  = 0
+    Page.CanvasSize          = UDim2.new(0, 0, 0, 0)
+    Page.BorderSizePixel     = 0
 
-    -- Page Decorations
-    local PageCorner = Instance.new("UICorner", Page)
-    PageCorner.CornerRadius = UDim.new(0, 6)
+    local PageLayout         = Instance.new("UIListLayout", Page)
+    PageLayout.Padding       = UDim.new(0, 8)
+    PageLayout.SortOrder     = Enum.SortOrder.LayoutOrder
 
-    local PageStroke = Instance.new("UIStroke", Page)
-    PageStroke.Color = Theme.Line
+    local PagePad            = Instance.new("UIPadding", Page)
+    PagePad.PaddingTop       = UDim.new(0, 12)
+    PagePad.PaddingLeft      = UDim.new(0, 12)
+    PagePad.PaddingRight     = UDim.new(0, 12)
+    PagePad.PaddingBottom    = UDim.new(0, 12)
 
-    -- Layout & Padding
-    local List = Instance.new("UIListLayout", Page)
-    List.Padding = UDim.new(0, 6)
-    List.SortOrder = Enum.SortOrder.LayoutOrder
+    -- Auto-Canvas Sizer
+    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 24)
+    end)
 
-    local Pad = Instance.new("UIPadding", Page)
-    Pad.PaddingTop = UDim.new(0, 10)
-    Pad.PaddingLeft = UDim.new(0, 10)
-    Pad.PaddingRight = UDim.new(0, 14)
-    Pad.PaddingBottom = UDim.new(0, 10)
-    
-    -- Store Data for Management
+    -- // 8.3: SWITCHING LOGIC (CLICK HANDLER)
+    Btn.MouseButton1Click:Connect(function()
+        -- Skip if already active
+        if Page.Visible then return end
+        
+        -- Reset all other tabs and pages
+        for _, tab in pairs(Pages) do
+            tab.Btn.BackgroundColor3  = Theme.TabOff
+            tab.Btn.TextColor3        = Theme.TextDim
+            tab.Btn.TabStroke.Transparency = 0.3
+            tab.Btn.Indicator.Visible = false
+            tab.Page.Visible          = false
+        end
+        
+        -- Activate current tab
+        Btn.BackgroundColor3      = Theme.TabOn
+        Btn.TextColor3            = Theme.Text
+        BtnStroke.Transparency    = 0
+        Indicator.Visible         = true
+        Page.Visible              = true
+    end)
+
+    -- Store for global reference
     Pages[name] = {
-        Btn = Btn, 
-        Page = Page, 
-        Ind = Indicator, 
+        Btn  = Btn,
+        Page = Page
+    }
+
+    return Page
+end
+
+-- Export to Global UI Toolkit
+_G.Cat.UI.CreateTab = CreateTab
+
+-- [[ ==========================================
+--      8.4: PAGE AREA CONSTRUCTION
+--    ========================================== ]]
+
+    -- // Main Page Container (Scrolling)
+    local Page                  = Instance.new("ScrollingFrame", ContentArea)
+    Page.Name                   = name .. "_Page"
+    Page.Size                   = UDim2.new(1, -16, 1, -16)
+    Page.Position               = UDim2.new(0, 8, 0, 8)
+    Page.BackgroundColor3       = Theme.PageBG
+    Page.BackgroundTransparency = 0
+    Page.ScrollBarThickness     = 2
+    Page.ScrollBarImageColor3   = Theme.TextDim
+    Page.Visible                = isFirst
+    Page.BorderSizePixel        = 0
+
+    -- Decorations
+    local PageCorner            = Instance.new("UICorner", Page)
+    PageCorner.CornerRadius     = UDim.new(0, 6)
+
+    local PageStroke            = Instance.new("UIStroke", Page)
+    PageStroke.Color            = Theme.Line
+
+    -- // Layout & Padding (Vertical Flow)
+    local List                  = Instance.new("UIListLayout", Page)
+    List.Padding                = UDim.new(0, 6)
+    List.SortOrder              = Enum.SortOrder.LayoutOrder
+
+    local Pad                   = Instance.new("UIPadding", Page)
+    Pad.PaddingTop              = UDim.new(0, 10)
+    Pad.PaddingLeft             = UDim.new(0, 10)
+    Pad.PaddingRight            = UDim.new(0, 14)
+    Pad.PaddingBottom           = UDim.new(0, 10)
+    
+    -- // Register Data for Management
+    Pages[name] = {
+        Btn    = Btn, 
+        Page   = Page, 
+        Ind    = Indicator, 
         Stroke = BtnStroke
     }
 
-    -- ==========================================
-    -- TAB SWITCHING LOGIC
-    -- ==========================================
-    Btn.MouseButton1Click:Connect(function()
-        for tName, data in pairs(Pages) do 
-            local active = (tName == name)
-            
-            -- Visibility Toggle
-            data.Page.Visible = active
-            data.Ind.Visible = active
-            
-            -- Color Transition (Tweens)
-            TweenService:Create(data.Btn, TweenInfo.new(0.15), {
-                BackgroundColor3 = active and Theme.TabOn or Theme.TabOff, 
-                TextColor3 = active and Theme.Text or Theme.TextDim
-            }):Play()
+-- [[ ==========================================
+--      8.5: INTERACTIVE TAB SWITCHING LOGIC
+--    ========================================== ]]
 
-            -- Stroke Transparency Transition
-            TweenService:Create(data.Stroke, TweenInfo.new(0.15), {
-                Transparency = active and 0 or 0.3
-            }):Play()
+    Btn.MouseButton1Click:Connect(function()
+        -- Loop through all registered pages to update states
+        for tName, data in pairs(Pages) do 
+            local isActive = (tName == name)
+            
+            -- Visibility Control
+            data.Page.Visible = isActive
+            data.Ind.Visible  = isActive
+            
+            -- // Smooth Color Transitions (Tweens)
+            -- Transition for Button Background and Text
+            TweenService:Create(
+                data.Btn, 
+                TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+                {
+                    BackgroundColor3 = isActive and Theme.TabOn or Theme.TabOff, 
+                    TextColor3       = isActive and Theme.Text or Theme.TextDim
+                }
+            ):Play()
+
+            -- Transition for Border (Stroke) Transparency
+            TweenService:Create(
+                data.Stroke, 
+                TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
+                {
+                    Transparency = isActive and 0 or 0.3
+                }
+            ):Play()
         end
     end)
 
     return Page
 end
 
--- ==========================================
--- 8. UI COMPONENTS (SECTION, TOGGLE, LABEL)
--- ==========================================
+-- // Export to Global Toolkit
+_G.Cat.UI.CreateTab = CreateTab
 
--- Function: Create Section Header
+-- [[ ==========================================
+--      8. UI COMPONENTS (SECTION, TOGGLE, LABEL)
+--    ========================================== ]]
+
+-- // 8.1: FUNCTION - CREATE SECTION HEADER
 local function CreateSection(parent, text)
-    local F = Instance.new("Frame", parent)
-    F.Name = "Section_" .. text
-    F.LayoutOrder = #parent:GetChildren()
-    F.Size = UDim2.new(1, 0, 0, 36)
-    F.BackgroundTransparency = 1
+    local SectionFrame         = Instance.new("Frame", parent)
+    SectionFrame.Name          = "Section_" .. text
+    SectionFrame.LayoutOrder   = #parent:GetChildren()
+    SectionFrame.Size          = UDim2.new(1, 0, 0, 36)
+    SectionFrame.BackgroundTransparency = 1
 
-    local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, 0, 0, 14)
-    L.Position = UDim2.new(0, 4, 0, 16)
-    L.Text = text
-    L.TextColor3 = Theme.TextDim
-    L.Font = Enum.Font.GothamBold
-    L.TextSize = 11
-    L.TextXAlignment = Enum.TextXAlignment.Left
-    L.BackgroundTransparency = 1
+    local Label                = Instance.new("TextLabel", SectionFrame)
+    Label.Size                 = UDim2.new(1, 0, 0, 14)
+    Label.Position             = UDim2.new(0, 4, 0, 16)
+    Label.Text                 = string.upper(text)
+    Label.TextColor3           = Theme.TextDim
+    Label.Font                 = Enum.Font.GothamBold
+    Label.TextSize             = 11
+    Label.TextXAlignment       = Enum.TextXAlignment.Left
+    Label.BackgroundTransparency = 1
 end
 
--- Function: Create Toggle Switch
+-- // 8.2: FUNCTION - CREATE TOGGLE SWITCH
 local function CreateToggle(parent, text, description, stateRef, callback)
-    local frameHeight = description and 52 or 36
+    local frameHeight          = description and 52 or 36
     
-    local F = Instance.new("TextButton", parent)
-    F.Name = text .. "_Toggle"
-    F.LayoutOrder = #parent:GetChildren()
-    F.Size = UDim2.new(1, 0, 0, frameHeight)
-    F.BackgroundColor3 = Theme.CardBG
-    F.BorderSizePixel = 0
-    F.Text = ""
-    F.AutoButtonColor = false
+    local ToggleBtn            = Instance.new("TextButton", parent)
+    ToggleBtn.Name             = text .. "_Toggle"
+    ToggleBtn.LayoutOrder      = #parent:GetChildren()
+    ToggleBtn.Size             = UDim2.new(1, 0, 0, frameHeight)
+    ToggleBtn.BackgroundColor3 = Theme.CardBG
+    ToggleBtn.BorderSizePixel  = 0
+    ToggleBtn.Text             = ""
+    ToggleBtn.AutoButtonColor  = false
 
-    local FCorner = Instance.new("UICorner", F)
-    FCorner.CornerRadius = UDim.new(0, 6)
+    local Corner               = Instance.new("UICorner", ToggleBtn)
+    Corner.CornerRadius        = UDim.new(0, 6)
 
-    local FStroke = Instance.new("UIStroke", F)
-    FStroke.Color = Theme.Line
+    local Stroke               = Instance.new("UIStroke", ToggleBtn)
+    Stroke.Color               = Theme.Line
 
-    -- Toggle Title
-    local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -60, 0, 20)
-    L.Position = UDim2.new(0, 12, 0, description and 6 or 8)
-    L.Text = text
-    L.TextColor3 = Theme.Text
-    L.Font = Enum.Font.GothamMedium
-    L.TextSize = 12
-    L.TextXAlignment = Enum.TextXAlignment.Left
-    L.BackgroundTransparency = 1
+    -- Main Title
+    local Title                = Instance.new("TextLabel", ToggleBtn)
+    Title.Size                 = UDim2.new(1, -60, 0, 20)
+    Title.Position             = UDim2.new(0, 12, 0, description and 6 or 8)
+    Title.Text                 = text
+    Title.TextColor3           = Theme.Text
+    Title.Font                 = Enum.Font.GothamMedium
+    Title.TextSize             = 12
+    Title.TextXAlignment       = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
 
-    -- Toggle Description (If exists)
+    -- Description (Conditional)
     if description then 
-        local D = Instance.new("TextLabel", F)
-        D.Size = UDim2.new(1, -60, 0, 14)
-        D.Position = UDim2.new(0, 12, 0, 26)
-        D.Text = description
-        D.TextColor3 = Theme.TextDim
-        D.Font = Enum.Font.Gotham
-        D.TextSize = 10
-        D.TextXAlignment = Enum.TextXAlignment.Left
-        D.BackgroundTransparency = 1 
+        local Desc             = Instance.new("TextLabel", ToggleBtn)
+        Desc.Size              = UDim2.new(1, -60, 0, 14)
+        Desc.Position          = UDim2.new(0, 12, 0, 26)
+        Desc.Text              = description
+        Desc.TextColor3        = Theme.TextDim
+        Desc.Font              = Enum.Font.Gotham
+        Desc.TextSize          = 10
+        Desc.TextXAlignment    = Enum.TextXAlignment.Left
+        Desc.BackgroundTransparency = 1 
     end
 
-    -- Switch Background
-    local Sw = Instance.new("Frame", F)
-    Sw.Size = UDim2.new(0, 36, 0, 18)
-    Sw.Position = UDim2.new(1, -48, 0.5, -9)
-    Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
-    Sw.BorderSizePixel = 0
+    -- Switch Outer Frame
+    local SwitchBG             = Instance.new("Frame", ToggleBtn)
+    SwitchBG.Size              = UDim2.new(0, 36, 0, 18)
+    SwitchBG.Position          = UDim2.new(1, -48, 0.5, -9)
+    SwitchBG.BackgroundColor3  = stateRef and Theme.Accent or Theme.ToggleOff
+    SwitchBG.BorderSizePixel   = 0
     
-    local SwCorner = Instance.new("UICorner", Sw)
-    SwCorner.CornerRadius = UDim.new(1, 0) 
+    local SwCorner             = Instance.new("UICorner", SwitchBG)
+    SwCorner.CornerRadius      = UDim.new(1, 0) 
 
-    -- Switch Dot (Circle)
-    local Dot = Instance.new("Frame", Sw)
-    Dot.Size = UDim2.new(0, 14, 0, 14)
-    Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Dot.BorderSizePixel = 0
+    -- Switch Inner Dot
+    local Dot                  = Instance.new("Frame", SwitchBG)
+    Dot.Size                   = UDim2.new(0, 14, 0, 14)
+    Dot.Position               = stateRef 
+        and UDim2.new(1, -16, 0.5, -7) 
+        or UDim2.new(0, 2, 0.5, -7)
+    Dot.BackgroundColor3       = Color3.fromRGB(255, 255, 255)
+    Dot.BorderSizePixel        = 0
     
-    local DotCorner = Instance.new("UICorner", Dot)
-    DotCorner.CornerRadius = UDim.new(1, 0) 
+    local DotCorner            = Instance.new("UICorner", Dot)
+    DotCorner.CornerRadius     = UDim.new(1, 0) 
 
-    -- Toggle Click Logic
-    F.MouseButton1Click:Connect(function() 
+    -- // Toggle Click Logic
+    ToggleBtn.MouseButton1Click:Connect(function() 
         stateRef = not stateRef 
         
-        -- Animate Switch Background
-        TweenService:Create(Sw, TweenInfo.new(0.2), {
+        -- Smooth Background Transition
+        TweenService:Create(SwitchBG, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
             BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
         }):Play() 
         
-        -- Animate Dot Position
-        TweenService:Create(Dot, TweenInfo.new(0.25), {
-            Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+        -- Smooth Dot Movement
+        local targetPos = stateRef 
+            and UDim2.new(1, -16, 0.5, -7) 
+            or UDim2.new(0, 2, 0.5, -7)
+
+        TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.BackOut), {
+            Position = targetPos
         }):Play() 
         
+        -- Execute Callback & Save
         if callback then 
-            callback(stateRef) 
+            pcall(callback, stateRef) 
         end 
         
         SaveSettings() 
     end)
 
-    -- Register for Search Feature
-    table.insert(AllToggles, {Btn = F, Label = L})
+    -- Register for Global Search Access
+    table.insert(AllToggles, {Btn = ToggleBtn, Label = Title})
 end
 
--- Function: Create Information Label
+-- // 8.3: FUNCTION - CREATE INFORMATION LABEL
 local function CreateLabel(parent, text, description)
-    local frameHeight = description and 45 or 30
+    local frameHeight          = description and 45 or 30
     
-    local F = Instance.new("Frame", parent)
-    F.LayoutOrder = #parent:GetChildren()
-    F.Size = UDim2.new(1, 0, 0, frameHeight)
-    F.BackgroundColor3 = Theme.CardBG
-    F.BorderSizePixel = 0
+    local LabelFrame           = Instance.new("Frame", parent)
+    LabelFrame.LayoutOrder     = #parent:GetChildren()
+    LabelFrame.Size            = UDim2.new(1, 0, 0, frameHeight)
+    LabelFrame.BackgroundColor3 = Theme.CardBG
+    LabelFrame.BorderSizePixel  = 0
     
-    local FCorner = Instance.new("UICorner", F)
-    FCorner.CornerRadius = UDim.new(0, 6)
+    local Corner               = Instance.new("UICorner", LabelFrame)
+    Corner.CornerRadius        = UDim.new(0, 6)
 
-    local FStroke = Instance.new("UIStroke", F)
-    FStroke.Color = Theme.Line
+    local Stroke               = Instance.new("UIStroke", LabelFrame)
+    Stroke.Color               = Theme.Line
 
-    -- Label Main Text
-    local L = Instance.new("TextLabel", F)
-    L.Size = UDim2.new(1, -20, 0, 20)
-    L.Position = UDim2.new(0, 12, 0, description and 4 or 5)
-    L.Text = text
-    L.TextColor3 = Theme.Text
-    L.Font = Enum.Font.GothamMedium
-    L.TextSize = 12
-    L.TextXAlignment = Enum.TextXAlignment.Left
-    L.BackgroundTransparency = 1
+    -- Primary Label Text
+    local MainLabel            = Instance.new("TextLabel", LabelFrame)
+    MainLabel.Size             = UDim2.new(1, -20, 0, 20)
+    MainLabel.Position         = UDim2.new(0, 12, 0, description and 4 or 5)
+    MainLabel.Text             = text
+    MainLabel.TextColor3       = Theme.Text
+    MainLabel.Font             = Enum.Font.GothamMedium
+    MainLabel.TextSize         = 12
+    MainLabel.TextXAlignment   = Enum.TextXAlignment.Left
+    MainLabel.BackgroundTransparency = 1
 
-    -- Label Description (If exists)
+    -- Secondary Label Text (Sub-title)
     if description then 
-        local D = Instance.new("TextLabel", F)
-        D.Size = UDim2.new(1, -20, 0, 14)
-        D.Position = UDim2.new(0, 12, 0, 22)
-        D.Text = description
-        D.TextColor3 = Theme.TextDim
-        D.Font = Enum.Font.Gotham
-        D.TextSize = 10
-        D.TextXAlignment = Enum.TextXAlignment.Left
-        D.BackgroundTransparency = 1 
+        local SubLabel         = Instance.new("TextLabel", LabelFrame)
+        SubLabel.Size          = UDim2.new(1, -20, 0, 14)
+        SubLabel.Position      = UDim2.new(0, 12, 0, 22)
+        SubLabel.Text          = description
+        SubLabel.TextColor3    = Theme.TextDim
+        SubLabel.Font          = Enum.Font.Gotham
+        SubLabel.TextSize      = 10
+        SubLabel.TextXAlignment = Enum.TextXAlignment.Left
+        SubLabel.BackgroundTransparency = 1 
     end
     
-    return L
+    return MainLabel
 end
 
--- ==========================================
--- SEARCH ENGINE LOGIC
--- ==========================================
--- ... (Kode pembuatan fungsi CreateTab, CreateToggle, dll ada di atas) ...
+-- [[ ==========================================
+--      9. SEARCH ENGINE LOGIC
+--    ========================================== ]]
 
+-- // Logic: Dynamic UI Filtering
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
     local query = string.lower(SearchBox.Text)
-    for _, toggle in ipairs(AllToggles) do local text = string.lower(toggle.Label.Text) toggle.Btn.Visible = query == "" or string.find(text, query) ~= nil end 
+    
+    -- Iterate through all registered toggles for filtering
+    for _, toggle in ipairs(AllToggles) do 
+        local labelText = string.lower(toggle.Label.Text)
+        local isMatch   = (query == "") 
+            or (string.find(labelText, query) ~= nil)
+            
+        -- Toggle visibility based on search match
+        toggle.Btn.Visible = isMatch
+    end 
 end)
 
 -- ==========================================
--- PRE-CREATE TABS (HARUS ADA DI SINI, SETELAH FUNGSI DIBUAT)
+-- 10. PRE-INITIALIZE DEFAULT TABS
 -- ==========================================
-CreateTab("Status", true)
+-- Creating the core tab structure (Must be done after function declarations)
+
+CreateTab("Status", true)        -- Default landing page
 CreateTab("Auto Farm", false)
 CreateTab("Devil Fruits", false)
 CreateTab("Misc", false)
 
 -- ==========================================
--- EXPORT PERKAKAS KE GLOBAL
+-- 11. GLOBAL FRAMEWORK EXPORT
 -- ==========================================
+-- Registering UI tools to global table for modular access
+
 _G.Cat.UI = {
-    CreateTab = CreateTab,
+    -- UI Builders
+    CreateTab     = CreateTab,
     CreateSection = CreateSection,
-    CreateToggle = CreateToggle,
-    CreateLabel = CreateLabel,
-    Theme = Theme,
-    SaveSettings = SaveSettings
+    CreateToggle  = CreateToggle,
+    CreateLabel   = CreateLabel,
+    
+    -- Framework Data
+    Theme         = Theme,
+    SaveSettings  = SaveSettings
 }
+
+-- Final initialization message in console
+print("[CatHUB] UI Framework Loaded Successfully.")
