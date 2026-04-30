@@ -199,7 +199,7 @@ task.spawn(function()
                             proxyPart.CFrame       = startCF
                             proxyPart.Parent       = workspace
 
-                            -- // 3.7: Stepped Physics Connection
+                            -- // 3.7: Stepped Physics Connection (OPTIMIZED NOCLIP)
                             noclipConn = RunService.Stepped:Connect(function()
                                 -- Validate if tween should still run
                                 local canRun = isTweening 
@@ -213,10 +213,11 @@ task.spawn(function()
                                 end
 
                                 if char and hrp and proxyPart then
-                                    -- Continuous Noclip Enforcement
-                                    for _, v in ipairs(char:GetDescendants()) do 
-                                        if v:IsA("BasePart") and v.CanCollide then 
-                                            v.CanCollide = false 
+                                    -- FIX MUTLAK: Pakai tabel cache "originalCollisions" yang udah disiapin!
+                                    -- JANGAN PERNAH pakai GetDescendants() tiap frame bang!
+                                    for part, _ in pairs(originalCollisions) do 
+                                        if part.CanCollide then 
+                                            part.CanCollide = false 
                                         end 
                                     end
                                     
