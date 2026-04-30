@@ -92,7 +92,9 @@ Me.CharacterAdded:Connect(function(char)
     -- Wait for Humanoid components
     local human = char:WaitForChild("Humanoid", 15)
     if human then
-        human.HealthChanged:Connect(function() 
+        -- FIX MUTLAK 0% LAG: 
+        -- Panggil Update pas darah habis (mati), BUKAN pas darah berubah!
+        human.Died:Connect(function() 
             UpdateGameState() 
         end)
     end
