@@ -1,12 +1,12 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER & GAME SETTINGS (V9)
---      Status: Aesthetic Sky, 3-Tier Boost & No Shake
+--      MODULE: FPS BOOSTER & GAME SETTINGS (V10)
+--      Status: Anti-Stuck, 0% Memory Leak
 --    ========================================== ]]
 
-local Workspace   = game:GetService("Workspace")
-local Lighting    = game:GetService("Lighting")
-local RunService  = game:GetService("RunService")
-local Players     = game:GetService("Players")
+local Workspace    = game:GetService("Workspace")
+local Lighting     = game:GetService("Lighting")
+local RunService   = game:GetService("RunService")
+local Players      = game:GetService("Players")
 local SoundService = game:GetService("SoundService")
 
 repeat task.wait(0.1) until _G.Cat and _G.Cat.UI
@@ -27,80 +27,72 @@ local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
 local OrigLighting = {
     Shadows = Lighting.GlobalShadows,
-    QualityLevel = 3
 }
-
 local OrigTerrain = {}
 if Terrain then
-    pcall(function() OrigTerrain.Deco = Terrain.Decoration end)
-    pcall(function() OrigTerrain.Wave = Terrain.WaterWaveSize end)
-    pcall(function() OrigTerrain.Speed = Terrain.WaterWaveSpeed end)
-    pcall(function() OrigTerrain.Reflect = Terrain.WaterReflectance end)
+    OrigTerrain.Deco = Terrain.Decoration
+    OrigTerrain.Wave = Terrain.WaterWaveSize
+    OrigTerrain.Speed = Terrain.WaterWaveSpeed
+    OrigTerrain.Reflect = Terrain.WaterReflectance
 end
 
--- // SISTEM ANTI-PING (Background Cleaner)
-task.spawn(function()
-    pcall(function() Workspace.StreamingIntegrityEnabled = false end)
-    local count = 0
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            pcall(function()
-                if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
-                    obj.CanTouch = false
-                    obj.CanQuery = false
-                end
-            end)
-        end
-        count = count + 1
-        if count >= 100 then count = 0 task.wait(0.1) end
-    end
-end)
+-- Matiin Streaming Integrity di awal (Aman kaga pake loop)
+pcall(function() Workspace.StreamingIntegrityEnabled = false end)
 
 local currentMode = "None"
+local boostThread = nil -- Buat ngebatalin proses kalau lu pencet tombol cepet-cepet
 
 local function ApplyBoost(level)
     currentMode = level
     
-    -- Jarak pandang jauh (kaga ada kabut) & matiin bayangan matahari
     Lighting.FogEnd = 9e9 
     Lighting.GlobalShadows = false
     
     if Terrain then
-        pcall(function() Terrain.Decoration = false end) 
-        pcall(function() Terrain.WaterWaveSize = 0 end)
-        pcall(function() Terrain.WaterWaveSpeed = 0 end)
-        pcall(function() Terrain.WaterReflectance = 0 end)
+        Terrain.Decoration = false
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveSpeed = 0
+        Terrain.WaterReflectance = 0
     end
 
-    task.spawn(function()
+    -- Kalau ada scan yang lagi jalan, berhentiin dulu biar CPU kaga tabrakan
+    if boostThread then task.cancel(boostThread) end
+
+    boostThread = task.spawn(function()
         local count = 0
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if currentMode ~= level then break end 
+        local descs = Workspace:GetDescendants() -- Tarik data SEKALI doang!
+        
+        for i = 1, #descs do
+            local obj = descs[i]
             
-            -- KILL VFX (Semua Level)
-            if (obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles")) then
-                pcall(function() obj.Enabled = false end)
-            end
+            -- KILL VFX (Instan, kaga pake pcall!)
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
+                obj.Enabled = false
             
-            if obj:IsA("BasePart") then
-                pcall(function()
-                    -- Mode High & Extreme: Matiin bayangan detail
-                    if level == "High" or level == "Extreme" then
-                        obj.CastShadow = false
-                    end
-                    -- Mode Extreme: Plastik polos
-                    if level == "Extreme" then
-                        obj.Material = Enum.Material.SmoothPlastic
-                        obj.Reflectance = 0
-                    end
-                end)
-            -- Mode Extreme: Hapus decal/stiker
+            -- OPTIMASI BENDA (Instan, kaga pake pcall!)
+            elseif obj:IsA("BasePart") then
+                -- Anti-Ping (Sensor sentuh mati)
+                if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
+                    obj.CanTouch = false
+                    obj.CanQuery = false
+                end
+                
+                if level == "High" or level == "Extreme" then
+                    obj.CastShadow = false
+                end
+                if level == "Extreme" then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.Reflectance = 0
+                end
+                
+            -- HAPUS DECAL (Instan)
             elseif (obj:IsA("Decal") or obj:IsA("Texture")) and level == "Extreme" then
-                pcall(function() obj.Transparency = 1 end)
+                obj.Transparency = 1
             end
             
             count = count + 1
-            if count >= 150 then 
+            -- CPU istirahat tiap 1000 benda (Jauh lebih cepet dan mulus dari V9)
+            if count >= 1000 then 
                 count = 0
                 task.wait()
             end
@@ -111,35 +103,35 @@ end
 local function RestoreNormal()
     currentMode = "None"
     Lighting.GlobalShadows = OrigLighting.Shadows
-    Lighting.FogEnd = 2000 -- Default kabut Blox Fruits
+    Lighting.FogEnd = 2000 
     
     if Terrain then
-        pcall(function() Terrain.Decoration = OrigTerrain.Deco end)
-        pcall(function() Terrain.WaterWaveSize = OrigTerrain.Wave end)
-        pcall(function() Terrain.WaterWaveSpeed = OrigTerrain.Speed end)
-        pcall(function() Terrain.WaterReflectance = OrigTerrain.Reflect end)
+        Terrain.Decoration = OrigTerrain.Deco
+        Terrain.WaterWaveSize = OrigTerrain.Wave
+        Terrain.WaterWaveSpeed = OrigTerrain.Speed
+        Terrain.WaterReflectance = OrigTerrain.Reflect
     end
 end
 
 -- // TOGGLES FPS
-UI.CreateToggle(MiscPage, "Medium Boost (PvP)", "Matiin VFX skill, rumput & air. Tekstur & Skybox aman!", StateMed, function(state)
+UI.CreateToggle(MiscPage, "Medium Boost (PvP)", "Matiin VFX skill, rumput & air. Tekstur aman!", StateMed, function(state)
     StateMed = state
     if state then ApplyBoost("Medium") else RestoreNormal() end
 end)
 
-UI.CreateToggle(MiscPage, "High Boost (Smooth)", "Medium + Matiin semua bayangan mikro part. Enteng!", StateHigh, function(state)
+UI.CreateToggle(MiscPage, "High Boost (Smooth)", "Medium + Matiin semua bayangan mikro part.", StateHigh, function(state)
     StateHigh = state
     if state then ApplyBoost("High") else RestoreNormal() end
 end)
 
-UI.CreateToggle(MiscPage, "Extreme Boost (Potato)", "High + Plastik polos, no texture. Langit tetep cakep!", StateExt, function(state)
+UI.CreateToggle(MiscPage, "Extreme Boost (Potato)", "High + Plastik polos. Langit tetep biru!", StateExt, function(state)
     StateExt = state
     if state then ApplyBoost("Extreme") else RestoreNormal() end
 end)
 
 
 -- ==========================================
--- TAB 2: GAME SETTINGS (NEW!)
+-- TAB 2: GAME SETTINGS
 -- ==========================================
 local SettingsPage = UI.CreateTab("Game Settings", false)
 UI.CreateSection(SettingsPage, "AUDIO & CAMERA CONTROL")
@@ -150,11 +142,9 @@ UI.CreateToggle(SettingsPage, "Mute Background Music", "Matiin lagu pulau biar k
     MuteState = state
     for _, sound in ipairs(SoundService:GetDescendants()) do
         if sound:IsA("Sound") then
-            -- Kalau true volumenya 0, kalau false balik ke 0.5
             sound.Volume = state and 0 or 0.5 
         end
     end
-    -- Pasang listener buat lagu baru yang mau play
     if state then
         SoundService.DescendantAdded:Connect(function(obj)
             if MuteState and obj:IsA("Sound") then
@@ -176,7 +166,6 @@ UI.CreateToggle(SettingsPage, "Disable Screen Shake", "Kamera stabil biarpun ada
             local char = Players.LocalPlayer.Character
             local hum = char and char:FindFirstChild("Humanoid")
             if hum then
-                -- Ngunci offset kamera biar kaga geter
                 hum.CameraOffset = Vector3.new(0, 0, 0)
             end
         end)
