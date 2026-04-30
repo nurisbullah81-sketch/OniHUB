@@ -856,27 +856,12 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     end 
 end)
 
--- ==========================================
--- 4. PRE-CREATE TABS (MENGATUR URUTAN SIDEBAR)
--- ==========================================
--- Ini memastikan tombol sidebar muncul sesuai urutan ini, biar Status (Home) selalu di atas
--- Tabel prioritas urutan Sidebar (Makin kecil makin di atas)
-local TabPriority = {
-    ["Status"] = 1,
-    ["Auto Farm"] = 2,
-    ["Devil Fruits"] = 3,
-    ["Misc"] = 4
-}
-
+-- PRE-CREATE TABS (MEMAKSA URUTAN SIDEBAR KAGAK ACAK)
 CreateTab("Status", true)
 CreateTab("Auto Farm", false)
 CreateTab("Devil Fruits", false)
 CreateTab("Misc", false)
 
--- ==========================================
--- 5. EXPORT PERKAKAS KE GLOBAL
--- ==========================================
--- Ini yang bakal dipake sama file Logic (InstantTP, ESP, dll)
 _G.Cat.UI = {
     CreateTab = CreateTab,
     CreateSection = CreateSection,
