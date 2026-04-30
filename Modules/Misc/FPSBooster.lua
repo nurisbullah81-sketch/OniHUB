@@ -1,6 +1,6 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER (GOD TIER V6)
---      Engine: Network Optimizer + VFX Killer
+--      MODULE: FPS BOOSTER (CatHUB x z.ai V7)
+--      Engine: Network Optimizer + VFX Killer + Anti-Crash
 --    ========================================== ]]
 
 local Workspace  = game:GetService("Workspace")
@@ -10,13 +10,18 @@ repeat task.wait(0.1) until _G.Cat and _G.Cat.UI and _G.Cat.Settings
 
 local UI       = _G.Cat.UI
 local Settings = _G.Cat.Settings
+local Page     = UI.CreateTab("Misc", false)
 
-local Page = UI.CreateTab("Misc", false)
 UI.CreateSection(Page, "FPS OPTIMIZER (PILIH SALAH SATU)")
+
+-- Setup Default Settings biar UI kaga gaib
+if type(Settings.BoostMed) ~= "boolean" then Settings.BoostMed = false end
+if type(Settings.BoostHigh) ~= "boolean" then Settings.BoostHigh = false end
+if type(Settings.BoostExt) ~= "boolean" then Settings.BoostExt = false end
 
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
--- Simpan original state
+-- Simpan original state dengan aman
 local OrigLighting = {
     Shadows = Lighting.GlobalShadows,
     FogEnd = Lighting.FogEnd,
@@ -30,21 +35,20 @@ pcall(function() OrigLighting.QualityLevel = settings().Rendering.QualityLevel e
 
 local OrigTerrain = {}
 if Terrain then
-    OrigTerrain.Deco = Terrain.Decoration
-    OrigTerrain.Wave = Terrain.WaterWaveSize
-    OrigTerrain.Speed = Terrain.WaterWaveSpeed
-    OrigTerrain.Reflect = Terrain.WaterReflectance
+    pcall(function() OrigTerrain.Deco = Terrain.Decoration end)
+    pcall(function() OrigTerrain.Wave = Terrain.WaterWaveSize end)
+    pcall(function() OrigTerrain.Speed = Terrain.WaterWaveSpeed end)
+    pcall(function() OrigTerrain.Reflect = Terrain.WaterReflectance end)
 end
 
 -- ==========================================
--- 1. SISTEM ANTI-PING & SILENT OPTIMIZER
--- Jalan otomatis, ngurangin beban jaringan & CPU tanpa ngaruh grafik
+-- 1. SISTEM ANTI-PING & SILENT OPTIMIZER (z.ai Core)
 -- ==========================================
 task.spawn(function()
-    -- A. Matiin Streaming Integrasi (Biar kagak lag spike pas load map)
+    -- Matiin Streaming Integrasi (Anti lag spike pas pindah pulau)
     pcall(function() Workspace.StreamingIntegrityEnabled = false end)
     
-    -- B. Silent CPU Cleaner (Matiin sensor fisik benda mati pelan-pelan)
+    -- Silent CPU Cleaner
     local count = 0
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -60,7 +64,7 @@ task.spawn(function()
     end
 end)
 
--- Auto-clean part baru
+-- Auto-clean part baru (Peluru, jurus baru)
 Workspace.DescendantAdded:Connect(function(obj)
     task.wait(0.5)
     if obj:IsA("BasePart") then
@@ -87,7 +91,7 @@ local function ApplyBoost(level)
     Lighting.FogEnd = 9e9
     
     if Terrain then
-        pcall(function() Terrain.Decoration = false end)
+        pcall(function() Terrain.Decoration = false end) -- Digembok anti-crash!
         pcall(function() Terrain.WaterWaveSize = 0 end)
         pcall(function() Terrain.WaterWaveSpeed = 0 end)
         pcall(function() Terrain.WaterReflectance = 0 end)
@@ -97,9 +101,9 @@ local function ApplyBoost(level)
     task.spawn(function()
         local count = 0
         for _, obj in ipairs(Workspace:GetDescendants()) do
-            if currentMode ~= level then break end -- Berhenti kalau ganti mode
+            if currentMode ~= level then break end -- Batalin kalau ganti mode
             
-            -- KILL VFX (Asap, Api, Partikel) - Ini yang paling bikin drop pas PVP!
+            -- KILL VFX (Asap, Api, Partikel) - z.ai signature move!
             if (obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles")) then
                 if level == "Medium" or level == "High" or level == "Extreme" then
                     pcall(function() obj.Enabled = false end)
@@ -108,12 +112,6 @@ local function ApplyBoost(level)
             
             if obj:IsA("BasePart") then
                 pcall(function()
-                    -- Matiin sensor fisik benda mati
-                    if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
-                        obj.CanTouch = false
-                        obj.CanQuery = false
-                    end
-                    
                     -- Level High & Extreme: Matiin Bayangan Mikro
                     if level == "High" or level == "Extreme" then
                         obj.CastShadow = false
@@ -131,31 +129,27 @@ local function ApplyBoost(level)
             end
             
             count = count + 1
-            if count >= 50 then
+            if count >= 100 then -- Dibikin 100 biar lebih cepet ngeloadnya
                 count = 0
-                task.wait(0.1)
+                task.wait()
             end
         end
         
-        -- 3. Post-Loop Optimizations (Setelah selesai scan)
+        -- 3. Post-Loop Optimizations (Skybox & Lighting)
         if currentMode == level then
-            -- Level High: Ilangin Skybox biar GPU kaga mikir keras
-            if level == "High" then
+            if level == "High" or level == "Extreme" then
                 for _, v in pairs(Lighting:GetChildren()) do
                     if v:IsA("Sky") then pcall(function() v.Parent = nil end) end
                 end
             end
             
-            -- Level Extreme: Ilangin Skybox + Cahaya Datar
             if level == "Extreme" then
-                for _, v in pairs(Lighting:GetChildren()) do
-                    if v:IsA("Sky") then pcall(function() v.Parent = nil end) end
-                end
                 Lighting.Brightness = 0.5
                 Lighting.Ambient = Color3.fromRGB(120, 120, 120)
                 Lighting.OutdoorAmbient = Color3.fromRGB(120, 120, 120)
             end
         end
+        warn("[CatHUB] " .. level .. " Mode Activated (VFX Killed)")
     end)
 end
 
@@ -176,10 +170,9 @@ local function RestoreNormal()
         pcall(function() Terrain.WaterReflectance = OrigTerrain.Reflect end)
     end
     
-    -- Balikin Skybox kalau ilang
     pcall(function()
         if not Lighting:FindFirstChildOfClass("Sky") then
-            local sky = Instance.new("Sky", Lighting)
+            Instance.new("Sky", Lighting)
         end
     end)
 end
@@ -192,8 +185,9 @@ UI.CreateToggle(
     Page, 
     "1. Medium (PvP Smooth)", 
     "Matiin efek skill (asap/api) & bayangan. Paling pas buat war!", 
-    false, 
+    Settings.BoostMed, 
     function(state)
+        Settings.BoostMed = state
         if state then ApplyBoost("Medium") else RestoreNormal() end
     end
 )
@@ -202,8 +196,9 @@ UI.CreateToggle(
     Page, 
     "2. High (Ultra Light)", 
     "Medium + Ilangin Skybox & Cahaya HD. Enteng gila!", 
-    false, 
+    Settings.BoostHigh, 
     function(state)
+        Settings.BoostHigh = state
         if state then ApplyBoost("High") else RestoreNormal() end
     end
 )
@@ -212,8 +207,9 @@ UI.CreateToggle(
     Page, 
     "3. Extreme (Potato PC)", 
     "Plastik polos, no texture, gelap! FPS 60+ di PC Kentang!", 
-    false, 
+    Settings.BoostExt, 
     function(state)
+        Settings.BoostExt = state
         if state then ApplyBoost("Extreme") else RestoreNormal() end
     end
 )
