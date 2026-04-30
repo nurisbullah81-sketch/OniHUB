@@ -48,54 +48,59 @@ State.StopSmartTween = StopSmartTween
 task.spawn(function() 
     while task.wait(0.2) do 
         pcall(function() 
-            if State.IsGameReady then 
-                if Settings.InstantTPFruit then
-                    StopSmartTween()
-                    local nearest = ESP.GetNearestFruit() 
-                    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-                    if nearest and hrp then 
-                        local targetPos = ESP.Pos(nearest) 
-                        if targetPos and (targetPos - hrp.Position).Magnitude > 5 then
-                            hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
-                            hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
-                            hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
-                        end
-                    end
-                elseif Settings.TweenFruit then 
-                    local nearest = ESP.GetNearestFruit() 
-                    local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
-                    if nearest and hrp then 
-                        local targetPos = ESP.Pos(nearest) 
-                        if not targetPos then StopSmartTween() return end
-                        local dist = (targetPos - hrp.Position).Magnitude 
-                        if dist < 5 then StopSmartTween()
-                        else
-                            if currentTarget ~= nearest or not isTweening then
-                                StopSmartTween() 
-                                currentTarget = nearest; isTweening = true
-                                table.clear(originalCollisions)
-                                for _, part in pairs(Me.Character:GetDescendants()) do if part:IsA("BasePart") then originalCollisions[part] = part.CanCollide end end
-                                local startCFrame = CFrame.lookAt(hrp.Position, targetPos)
-                                proxyPart = Instance.new("Part") proxyPart.Name = "NomexyProxy" proxyPart.Transparency = 1 proxyPart.Anchored = true proxyPart.CanCollide = false proxyPart.Size = Vector3.new(1, 1, 1) proxyPart.CFrame = startCFrame proxyPart.Parent = workspace
+            -- PINTU DARURAT: Kalau game kagak ready, berhenti dulu & jeda 1 detik
+            if not State.IsGameReady then 
+                StopSmartTween()
+                task.wait(1) -- Tidur 1 detik biar kagak makan FPS
+                return 
+            end
 
-                                noclipConn = RunService.Stepped:Connect(function()
-                                    if isTweening and Settings.TweenFruit and not Settings.InstantTPFruit and State.IsGameReady then
-                                        local success, hrpCheck = pcall(function() return Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") end)
-                                        if success and hrpCheck and proxyPart then
-                                            for _, part in pairs(Me.Character:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end
-                                            hrpCheck.AssemblyLinearVelocity = Vector3.zero; hrpCheck.AssemblyAngularVelocity = Vector3.zero; hrpCheck.CFrame = proxyPart.CFrame
-                                        end
+            if Settings.InstantTPFruit then
+                StopSmartTween()
+                local nearest = ESP.GetNearestFruit() 
+                local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+                if nearest and hrp then 
+                    local targetPos = ESP.Pos(nearest) 
+                    if targetPos and (targetPos - hrp.Position).Magnitude > 5 then
+                        hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
+                        hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
+                        hrp.AssemblyLinearVelocity = Vector3.zero; hrp.AssemblyAngularVelocity = Vector3.zero
+                    end
+                end
+            elseif Settings.TweenFruit then 
+                local nearest = ESP.GetNearestFruit() 
+                local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+                if nearest and hrp then 
+                    local targetPos = ESP.Pos(nearest) 
+                    if not targetPos then StopSmartTween() return end
+                    local dist = (targetPos - hrp.Position).Magnitude 
+                    if dist < 5 then StopSmartTween()
+                    else
+                        if currentTarget ~= nearest or not isTweening then
+                            StopSmartTween() 
+                            currentTarget = nearest; isTweening = true
+                            table.clear(originalCollisions)
+                            for _, part in pairs(Me.Character:GetDescendants()) do if part:IsA("BasePart") then originalCollisions[part] = part.CanCollide end end
+                            local startCFrame = CFrame.lookAt(hrp.Position, targetPos)
+                            proxyPart = Instance.new("Part") proxyPart.Name = "NomexyProxy" proxyPart.Transparency = 1 proxyPart.Anchored = true proxyPart.CanCollide = false proxyPart.Size = Vector3.new(1, 1, 1) proxyPart.CFrame = startCFrame proxyPart.Parent = workspace
+
+                            noclipConn = RunService.Stepped:Connect(function()
+                                if isTweening and Settings.TweenFruit and not Settings.InstantTPFruit and State.IsGameReady then
+                                    local success, hrpCheck = pcall(function() return Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") end)
+                                    if success and hrpCheck and proxyPart then
+                                        for _, part in pairs(Me.Character:GetDescendants()) do if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end end
+                                        hrpCheck.AssemblyLinearVelocity = Vector3.zero; hrpCheck.AssemblyAngularVelocity = Vector3.zero; hrpCheck.CFrame = proxyPart.CFrame
                                     else StopSmartTween() end
-                                end)
-                                
-                                local endPos = targetPos + Vector3.new(0, 2, 0) 
-                                currentTween = TweenService:Create(proxyPart, TweenInfo.new(dist / TWEEN_SPEED, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.lookAt(endPos, endPos + startCFrame.LookVector)})
-                                currentTween:Play()
-                            end
-                        end 
-                    else StopSmartTween() end 
-                else StopSmartTween() end
-            else StopSmartTween() end 
+                                else StopSmartTween() end
+                            end)
+                            
+                            local endPos = targetPos + Vector3.new(0, 2, 0) 
+                            currentTween = TweenService:Create(proxyPart, TweenInfo.new(dist / TWEEN_SPEED, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {CFrame = CFrame.lookAt(endPos, endPos + startCFrame.LookVector)})
+                            currentTween:Play()
+                        end
+                    end 
+                else StopSmartTween() end 
+            else StopSmartTween() end
         end) 
     end 
 end)
