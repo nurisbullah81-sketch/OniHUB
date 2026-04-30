@@ -1,6 +1,6 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER & GAME SETTINGS (V10)
---      Status: Anti-Stuck, 0% Memory Leak
+--      MODULE: FPS BOOSTER & GAME SETTINGS (V11)
+--      Status: 1000% Anti-Crash, 0% GC Spike
 --    ========================================== ]]
 
 local Workspace    = game:GetService("Workspace")
@@ -25,22 +25,21 @@ local StateExt  = false
 
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
-local OrigLighting = {
-    Shadows = Lighting.GlobalShadows,
-}
+-- // FIX MUTLAK: SEMUA BACKUP HARUS DI-PCALL BIAR KAGA CRASH!
+local OrigLighting = { Shadows = Lighting.GlobalShadows }
 local OrigTerrain = {}
+
 if Terrain then
-    OrigTerrain.Deco = Terrain.Decoration
-    OrigTerrain.Wave = Terrain.WaterWaveSize
-    OrigTerrain.Speed = Terrain.WaterWaveSpeed
-    OrigTerrain.Reflect = Terrain.WaterReflectance
+    pcall(function() OrigTerrain.Deco = Terrain.Decoration end)
+    pcall(function() OrigTerrain.Wave = Terrain.WaterWaveSize end)
+    pcall(function() OrigTerrain.Speed = Terrain.WaterWaveSpeed end)
+    pcall(function() OrigTerrain.Reflect = Terrain.WaterReflectance end)
 end
 
--- Matiin Streaming Integrity di awal (Aman kaga pake loop)
 pcall(function() Workspace.StreamingIntegrityEnabled = false end)
 
 local currentMode = "None"
-local boostThread = nil -- Buat ngebatalin proses kalau lu pencet tombol cepet-cepet
+local boostThread = nil 
 
 local function ApplyBoost(level)
     currentMode = level
@@ -49,29 +48,24 @@ local function ApplyBoost(level)
     Lighting.GlobalShadows = false
     
     if Terrain then
-        Terrain.Decoration = false
-        Terrain.WaterWaveSize = 0
-        Terrain.WaterWaveSpeed = 0
-        Terrain.WaterReflectance = 0
+        pcall(function() Terrain.Decoration = false end)
+        pcall(function() Terrain.WaterWaveSize = 0 end)
+        pcall(function() Terrain.WaterWaveSpeed = 0 end)
+        pcall(function() Terrain.WaterReflectance = 0 end)
     end
 
-    -- Kalau ada scan yang lagi jalan, berhentiin dulu biar CPU kaga tabrakan
     if boostThread then task.cancel(boostThread) end
 
     boostThread = task.spawn(function()
         local count = 0
-        local descs = Workspace:GetDescendants() -- Tarik data SEKALI doang!
+        local descs = Workspace:GetDescendants()
         
         for i = 1, #descs do
             local obj = descs[i]
             
-            -- KILL VFX (Instan, kaga pake pcall!)
             if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
                 obj.Enabled = false
-            
-            -- OPTIMASI BENDA (Instan, kaga pake pcall!)
             elseif obj:IsA("BasePart") then
-                -- Anti-Ping (Sensor sentuh mati)
                 if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
                     obj.CanTouch = false
                     obj.CanQuery = false
@@ -84,19 +78,17 @@ local function ApplyBoost(level)
                     obj.Material = Enum.Material.SmoothPlastic
                     obj.Reflectance = 0
                 end
-                
-            -- HAPUS DECAL (Instan)
             elseif (obj:IsA("Decal") or obj:IsA("Texture")) and level == "Extreme" then
                 obj.Transparency = 1
             end
             
             count = count + 1
-            -- CPU istirahat tiap 1000 benda (Jauh lebih cepet dan mulus dari V9)
             if count >= 1000 then 
                 count = 0
                 task.wait()
             end
         end
+        warn("[CatHUB] FPS Boost " .. level .. " Berhasil Dieksekusi!")
     end)
 end
 
@@ -106,10 +98,10 @@ local function RestoreNormal()
     Lighting.FogEnd = 2000 
     
     if Terrain then
-        Terrain.Decoration = OrigTerrain.Deco
-        Terrain.WaterWaveSize = OrigTerrain.Wave
-        Terrain.WaterWaveSpeed = OrigTerrain.Speed
-        Terrain.WaterReflectance = OrigTerrain.Reflect
+        pcall(function() Terrain.Decoration = OrigTerrain.Deco end)
+        pcall(function() Terrain.WaterWaveSize = OrigTerrain.Wave end)
+        pcall(function() Terrain.WaterWaveSpeed = OrigTerrain.Speed end)
+        pcall(function() Terrain.WaterReflectance = OrigTerrain.Reflect end)
     end
 end
 
@@ -124,11 +116,10 @@ UI.CreateToggle(MiscPage, "High Boost (Smooth)", "Medium + Matiin semua bayangan
     if state then ApplyBoost("High") else RestoreNormal() end
 end)
 
-UI.CreateToggle(MiscPage, "Extreme Boost (Potato)", "High + Plastik polos. Langit tetep biru!", StateExt, function(state)
+UI.CreateToggle(MiscPage, "Extreme Boost (Potato)", "High + Plastik polos. Langit tetep cakep!", StateExt, function(state)
     StateExt = state
     if state then ApplyBoost("Extreme") else RestoreNormal() end
 end)
-
 
 -- ==========================================
 -- TAB 2: GAME SETTINGS
