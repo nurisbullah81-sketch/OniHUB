@@ -162,46 +162,51 @@ function _G.Cat.HopServer()
     end)
 end
 
--- [[ ==========================================
---      3. TRIGGER LOOP: AUTO SCAN & HOP
---    ========================================== ]]
+-- [[ LOKASI: PALING BAWAH SENDIRI, GANTI SELURUH BLOK INI ]]
 
 task.spawn(function()
-    task.wait(10) -- Jeda awal biar game stabil setelah inject
+    task.wait(10) -- Jeda awal, biar game ke-load beneran
 
-    while task.wait(2) do
-        -- // 3.1: SAFETY CHECK (Anti-Stuck & Performance)
+    while task.wait(2) do -- Interval 2 detik itu udah pas, jangan dipepet
+        -- // Safety Check: Kalau game belum siap, cek tapi jangan lakukan aksi berat
         if not State.IsGameReady then
             _G.Cat.WaitUntilReady()
-            
-            -- Jeda tambahan pasca-loading biar workspace ke-load sempurna
-            task.wait(10) 
+            task.wait(5) -- Jeda lebih lama kalau lagi loading
+            continue -- Langsung skip iterasi ini
         end
 
-        -- // 3.2: MAIN LOGIC (Scanning)
+        -- // Main Logic
         if Settings.AutoHop and State.IsGameReady then
-            pcall(function()
+            local success, err = pcall(function()
                 local fruitCount = 0
-
-                -- Iterasi ESP Data untuk hitung buah di workspace
-                for fruit, _ in pairs(ESP.Data) do
-                    local isExist = fruit and fruit.Parent == workspace
-                    
-                    if isExist then
-                        fruitCount = fruitCount + 1
+                
+                -- Cek Data ESP
+                -- ESP.Data itu table referensi, sangat ringan diakses
+                if _G.Cat.ESP and _G.Cat.ESP.Data then
+                    for fruit, _ in pairs(_G.Cat.ESP.Data) do
+                        if fruit and fruit.Parent == workspace then
+                            fruitCount = fruitCount + 1
+                        end
                     end
                 end
 
-                -- Jika server kosong/buah habis, langsung gas Hop
+                -- Logic Hop
                 if fruitCount == 0 then
-                    _G.Cat.HopServer()
+                    -- Cek dulu kalau lagi nggak ada proses hop lain
+                    if not isHopping then
+                        _G.Cat.HopServer()
+                    end
                 end
             end)
-
-        -- // 3.3: TOGGLE CLEANUP
-        elseif isHopping and not Settings.AutoHop then
-            isHopping = false
             
+            if not success then
+                warn("[CatHUB] Error scanning fruits: ", err)
+            end
+        end
+
+        -- // Cleanup Logic (Tetap dipertahankan)
+        if isHopping and not Settings.AutoHop then
+            isHopping = false
             if _G.Cat.ReleaseCharacter then 
                 _G.Cat.ReleaseCharacter() 
             end
