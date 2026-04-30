@@ -845,23 +845,24 @@ end
 -- ==========================================
 -- SEARCH ENGINE LOGIC
 -- ==========================================
+-- ... (Kode pembuatan fungsi CreateTab, CreateToggle, dll ada di atas) ...
+
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function() 
     local query = string.lower(SearchBox.Text)
-    
-    for _, toggle in ipairs(AllToggles) do 
-        local text = string.lower(toggle.Label.Text)
-        
-        -- Filter visibility based on query
-        toggle.Btn.Visible = (query == "") or (string.find(text, query) ~= nil)
-    end 
+    for _, toggle in ipairs(AllToggles) do local text = string.lower(toggle.Label.Text) toggle.Btn.Visible = query == "" or string.find(text, query) ~= nil end 
 end)
 
--- PRE-CREATE TABS (MEMAKSA URUTAN SIDEBAR KAGAK ACAK)
+-- ==========================================
+-- PRE-CREATE TABS (HARUS ADA DI SINI, SETELAH FUNGSI DIBUAT)
+-- ==========================================
 CreateTab("Status", true)
 CreateTab("Auto Farm", false)
 CreateTab("Devil Fruits", false)
 CreateTab("Misc", false)
 
+-- ==========================================
+-- EXPORT PERKAKAS KE GLOBAL
+-- ==========================================
 _G.Cat.UI = {
     CreateTab = CreateTab,
     CreateSection = CreateSection,
