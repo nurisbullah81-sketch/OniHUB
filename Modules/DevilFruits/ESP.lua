@@ -200,19 +200,53 @@ _G.Cat.ESP = {
 -- ==========================================
 -- 6. RENDER LOOP (Distance Updates)
 -- ==========================================
--- GANTI RenderStepped JADI Heartbeat BIAR HEMAT FPS
 RunService.Heartbeat:Connect(function() 
-    FC=FC+1 
-    if FC%10~=0 then return end -- Cek 10x per detik aja, kagak usah 60x
+    FC = FC + 1 
+    if FC % 10 ~= 0 then return end -- Cek 10x per detik aja
+    
     pcall(function() 
-        if not Settings.FruitESP then for _,d in pairs(Data) do if d and d.bb then d.bb.Enabled=false end end return end 
-        if not _G.Cat.State.IsGameReady then return end -- KAGAK USAH JALAN KALO LAGI LOADING/MATI
-        local c=Me.Character if not c then return end local r=c:FindFirstChild("HumanoidRootPart") if not r then return end local mp=r.Position 
-        for f,d in pairs(Data) do 
-            if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end 
-            local p=Pos(f) if not p then d.bb.Enabled=false continue end 
-            local dx,dy,dz=p.X-mp.X,p.Y-mp.Y,p.Z-mp.Z local m=math.floor(math.sqrt(dx*dx+dy*dy+dz*dz)) 
-            if math.abs(m-(Mem[f]or-1))>5 then Mem[f]=m d.txt.Text=f.Name.." ["..m.."m]" end d.bb.Enabled=true 
+        -- PINTU DARURAT: Kalau lagi loading/mati, matiin semua ESP & langsung diam
+        if not _G.Cat.State.IsGameReady then 
+            for _, d in pairs(Data) do 
+                if d and d.bb then d.bb.Enabled = false end 
+            end 
+            return 
+        end 
+        
+        if not Settings.FruitESP then 
+            for _, d in pairs(Data) do 
+                if d and d.bb then d.bb.Enabled = false end 
+            end 
+            return 
+        end 
+        
+        local c = Me.Character 
+        if not c then return end 
+        local r = c:FindFirstChild("HumanoidRootPart") 
+        if not r then return end 
+        local mp = r.Position 
+        
+        for f, d in pairs(Data) do 
+            -- FIX BUG: Rem -> RemoveESP, Pos -> GetPosition biar kagak crash!
+            if not f or not f.Parent or not d.bb or not d.bb.Parent then 
+                RemoveESP(f) 
+                continue 
+            end 
+            
+            local p = GetPosition(f) 
+            if not p then 
+                d.bb.Enabled = false 
+                continue 
+            end 
+            
+            local dx, dy, dz = p.X - mp.X, p.Y - mp.Y, p.Z - mp.Z 
+            local m = math.floor(math.sqrt(dx*dx + dy*dy + dz*dz)) 
+            
+            if math.abs(m - (Mem[f] or -1)) > 5 then 
+                Mem[f] = m 
+                d.txt.Text = f.Name .. " [" .. m .. "m]" 
+            end 
+            d.bb.Enabled = true 
         end
     end) 
 end)
