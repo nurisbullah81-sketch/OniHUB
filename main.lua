@@ -96,13 +96,13 @@ end
 -- ==========================================
 -- 5. EXECUTION ORDER
 -- ==========================================
-Load("StyleUI.lua")                     -- UI Framework
-Load("Core.lua")                        -- Hub Logic
-Load("Modules/Status/Status.lua")       -- Player Status
-Load("Modules/AutoFarm/AutoFarm.lua")   -- Farming Logic
-Load("Modules/DevilFruits/ESP.lua")     -- Visuals
-Load("Modules/DevilFruits/FruitTP.lua") -- Teleportation
-Load("Modules/DevilFruits/AutoStore.lua")-- Inventory Management
-Load("Modules/DevilFruits/AutoHop.lua")  -- Server Hopping
-Load("Modules/DevilFruits/Webhook.lua")  -- Discord Integration
-Load("Modules/Misc/AntiAFK.lua")        -- Anti Idle
+Load("StyleUI.lua")                     -- 1. Bangun Rumah Kosong
+Load("Core.lua")                        -- 2. Pasang Fondasi & Keamanan
+Load("Status.lua")                      -- 3. Penghuni Status (INI BETUL-BETUL HARUS SESUAI NAMA FILE LU)
+Load("Modules/AutoFarm/AutoFarm.lua")   -- 4. Penghuni Auto Farm
+Load("Modules/DevilFruits/ESP.lua")     -- 5. Penghuni ESP (Scanner)
+Load("Modules/DevilFruits/FruitTP.lua") -- 6. Penghuni TP/Tween
+Load("Modules/DevilFruits/AutoStore.lua")-- 7. Penghuni AutoStore
+Load("Modules/DevilFruits/AutoHop.lua") -- 8. Penghuni AutoHop
+Load("Modules/DevilFruits/Webhook.lua") -- 9. Penghuni Webhook & CCTV
+Load("Modules/Misc/AntiAFK.lua")        -- 10. Penghuni Anti AFK & Auto Team
