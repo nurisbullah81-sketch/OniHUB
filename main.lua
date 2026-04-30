@@ -87,17 +87,24 @@ end
 LoadConfig()
 
 -- ==========================================
--- 4. AUTO-SAVE ENGINE (Persistence)
+-- 4. SMART AUTO-SAVE ENGINE (ZERO I/O LAG)
 -- ==========================================
--- Periodically saves settings to disk every 3 seconds
+-- Cuma nyimpen file ke disk KALAU ada perubahan settingan!
 task.spawn(function()
-    while task.wait(3) do
+    local LastSavedState = HttpService:JSONEncode(_G.Cat.Settings) -- Simpan wujud awal
+    
+    while task.wait(5) do -- Mundurin ke 5 detik biar makin lega
         local canSave = writefile ~= nil
         
         if canSave then
             pcall(function() 
-                local payload = HttpService:JSONEncode(_G.Cat.Settings)
-                writefile(ConfigFile, payload) 
+                local CurrentState = HttpService:JSONEncode(_G.Cat.Settings)
+                
+                -- CEK MUTLAK: Kalau settingannya MASIH SAMA, JANGAN NULIS FILE!
+                if CurrentState ~= LastSavedState then
+                    writefile(ConfigFile, CurrentState) 
+                    LastSavedState = CurrentState -- Update ingatan terakhir
+                end
             end)
         end
     end
