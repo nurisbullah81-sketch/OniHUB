@@ -38,9 +38,6 @@ if Terrain then
     Orig.WaterReflectance = Terrain.WaterReflectance
 end
 
--- Inisialisasi Settings jika belum ada
-if Settings.FPSBoost == nil then Settings.FPSBoost = false end
-
 UI.CreateToggle(
     Page,
     "PvP FPS Boost",
@@ -54,10 +51,10 @@ UI.CreateToggle(
             -- ON: MODE PVP (SEDITIK BURIK TAPI LANCAR)
             -- =====================================
             
-            -- 1. Paksa Quality Level ke Level 1 (Paling Ampuh, Nge-bypass setting game)
+            -- 1. Paksa Quality Level ke Level 1 (Dibungkus Pcall biar kagak crash executor)
             pcall(function() settings().Rendering.QualityLevel = 1 end)
             
-            -- 2. Matiin Bayangan Global (Roblox otomatis matiin semua CastShadow tanpa loop!)
+            -- 2. Matiin Bayangan Global (Roblox otomatis matiin semua CastShadow)
             Lighting.GlobalShadows = false
             
             -- 3. Botakin Rumput 3D & Ratain Air
@@ -79,8 +76,6 @@ UI.CreateToggle(
                     v.Enabled = false
                 end
             end
-
-            warn("[CatHUB] PvP Boost ON! FPS Tembus Langit!")
 
         else
             -- =====================================
@@ -107,11 +102,9 @@ UI.CreateToggle(
             Lighting.FogEnd = Orig.FogEnd
 
             -- Balikin PostEffects
-            for v, state in pairs(Orig.PostEffects) do
-                if v and v.Parent then v.Enabled = state end
+            for v, origState in pairs(Orig.PostEffects) do
+                if v and v.Parent then v.Enabled = origState end
             end
-            
-            warn("[CatHUB] PvP Boost OFF! Grafik balik normal.")
         end
     end
 )
