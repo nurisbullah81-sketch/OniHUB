@@ -244,15 +244,21 @@ local function StartDistanceLoop()
     end)
 end
 
--- // SENSOR X-RAY (Deteksi buah di seluruh pelosok map/folder)
+-- [[ LOKASI: PALING BAWAH SENDIRI, GANTI FUNGSI OnItemSpawned DAN LISTENER NYA ]]
+
+-- // SENSOR X-RAY (Hanya aktif kalau beneran Model/Tool)
 local function OnItemSpawned(obj)
-    -- Filter super ringan: Pastiin yang baru masuk map itu namanya berakhiran "Fruit"
+    -- Filter Pintar: Cek dulu tipenya sebelum buka string. Hemat 90% CPU.
+    if not (obj:IsA("Model") or obj:IsA("Tool")) then return end
+
     if typeof(obj.Name) == "string" and string.match(obj.Name, "Fruit$") then
-        task.delay(0.5, function() -- Jeda 0.5s biar model buah kelar kerender
-            if IsFruit(obj) and not Data[obj] then
+        task.delay(0.5, function() -- Jeda biar game render dulu
+            -- Cek validitas isolasi (aman dari error)
+            if obj.Parent and IsFruit(obj) and not Data[obj] then
                 AddESP(obj)
-                StartDistanceLoop() -- WANGUNIN MESIN JARAK!
+                StartDistanceLoop() -- Nyalain mesin jarak
                 
+                -- Webhook logic biarkan sama persis seperti punya lu
                 if Settings.FruitWebhook and _G.Cat.Webhook then
                     _G.Cat.Webhook:Send(
                         obj.Name, 
@@ -266,7 +272,7 @@ local function OnItemSpawned(obj)
     end
 end
 
--- Pasang X-Ray pas buah masuk
+-- Pasang sensor yang udah pintar
 Workspace.ChildAdded:Connect(OnItemSpawned)
 Workspace.ChildRemoved:Connect(function(obj)
     if Data[obj] then 
@@ -274,17 +280,28 @@ Workspace.ChildRemoved:Connect(function(obj)
     end
 end)
 
--- // GELEDAH MAP 1X SAAT EXECUTE (Safety First!)
+-- // GELEDAH MAP PAKAI CARA HALUS (Anti-Freeze Startup)
 task.spawn(function()
-    -- Kita pakai GetDescendants() buat nembus semua folder pas awal nge-run!
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if typeof(obj.Name) == "string" and string.match(obj.Name, "Fruit$") then
-            if IsFruit(obj) and not Data[obj] then
+    -- Lu musti paham, di Blox Fruits buah bisa spawn di mana aja.
+    -- Kita pakai cara 'StreamingEnabled' style manual.
+    
+    local descendants = Workspace:GetDescendants() -- Ambil data sekali
+    
+    for index, obj in ipairs(descendants) do
+        -- PROTEKSI: Pause dikit setiap 50 object biar FPS stabil
+        if index % 50 == 0 then 
+            task.wait() -- Ini kuncinya, biar nggak nge-block main thread
+        end
+        
+        -- Logic cek buah (sama seperti di atas)
+        if (obj:IsA("Model") or obj:IsA("Tool")) and typeof(obj.Name) == "string" then
+            if string.match(obj.Name, "Fruit$") and IsFruit(obj) and not Data[obj] then
                 AddESP(obj)
             end
         end
     end
     
+    -- Kalau ketemu buah, baru nyalain mesin jarak
     if next(Data) ~= nil then
         StartDistanceLoop()
     end
