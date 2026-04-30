@@ -319,18 +319,75 @@ UserInput.InputChanged:Connect(function(input)
     end
 end)
 
--- Main Frame (Sama persis)
-local Main = Instance.new("Frame", Gui) Main.Size = UDim2.new(0, 550, 0, 340) Main.Position = UDim2.new(0.5, -275, 0.5, -170) Main.BackgroundColor3 = Theme.MainBG Main.BorderSizePixel = 0 Main.ClipsDescendants = true 
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", Main).Color = Theme.Line
-FloatBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+-- ==========================================
+-- 4. MAIN FRAME & TOP BAR
+-- ==========================================
 
-local Top = Instance.new("Frame", Main) Top.Size = UDim2.new(1, 0, 0, 35) Top.BackgroundColor3 = Theme.TopBG Top.BorderSizePixel = 0
-Instance.new("UICorner", Top).CornerRadius = UDim.new(0, 6)
-local TopFix = Instance.new("Frame", Top) TopFix.Size = UDim2.new(1, 0, 0, 10) TopFix.Position = UDim2.new(0, 0, 1, -10) TopFix.BackgroundColor3 = Theme.TopBG TopFix.BorderSizePixel = 0
-local TitleContainer = Instance.new("Frame", Top) TitleContainer.Size = UDim2.new(0, 350, 1, 0) TitleContainer.Position = UDim2.new(0, 15, 0, 0) TitleContainer.BackgroundTransparency = 1
-local TitleList = Instance.new("UIListLayout", TitleContainer) TitleList.FillDirection = Enum.FillDirection.Horizontal TitleList.VerticalAlignment = Enum.VerticalAlignment.Center TitleList.Padding = UDim.new(0, 4) 
-local function CreateTitlePart(text, color, font) local label = Instance.new("TextLabel", TitleContainer) label.Text = text; label.TextColor3 = color; label.Font = font; label.TextSize = 13; label.BackgroundTransparency = 1; label.AutomaticSize = Enum.AutomaticSize.XY end
-CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium) CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium) 
+-- Main Frame
+local Main = Instance.new("Frame", Gui)
+Main.Name = "MainFrame"
+Main.Size = UDim2.new(0, 550, 0, 340)
+Main.Position = UDim2.new(0.5, -275, 0.5, -170)
+Main.BackgroundColor3 = Theme.MainBG
+Main.BorderSizePixel = 0
+Main.ClipsDescendants = true 
+
+local MainCorner = Instance.new("UICorner", Main)
+MainCorner.CornerRadius = UDim.new(0, 6)
+
+local MainStroke = Instance.new("UIStroke", Main)
+MainStroke.Color = Theme.Line
+
+-- Toggle Logic
+FloatBtn.MouseButton1Click:Connect(function() 
+    Main.Visible = not Main.Visible 
+end)
+
+-- Top Bar
+local Top = Instance.new("Frame", Main)
+Top.Name = "TopBar"
+Top.Size = UDim2.new(1, 0, 0, 35)
+Top.BackgroundColor3 = Theme.TopBG
+Top.BorderSizePixel = 0
+
+local TopCorner = Instance.new("UICorner", Top)
+TopCorner.CornerRadius = UDim.new(0, 6)
+
+-- TopFix (Menghilangkan rounded di bagian bawah Top Bar)
+local TopFix = Instance.new("Frame", Top)
+TopFix.Name = "TopFix"
+TopFix.Size = UDim2.new(1, 0, 0, 10)
+TopFix.Position = UDim2.new(0, 0, 1, -10)
+TopFix.BackgroundColor3 = Theme.TopBG
+TopFix.BorderSizePixel = 0
+
+-- Title Container & Layout
+local TitleContainer = Instance.new("Frame", Top)
+TitleContainer.Name = "TitleContainer"
+TitleContainer.Size = UDim2.new(0, 350, 1, 0)
+TitleContainer.Position = UDim2.new(0, 15, 0, 0)
+TitleContainer.BackgroundTransparency = 1
+
+local TitleList = Instance.new("UIListLayout", TitleContainer)
+TitleList.FillDirection = Enum.FillDirection.Horizontal
+TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
+TitleList.Padding = UDim.new(0, 4) 
+
+-- Helper Function: Create Title Part
+local function CreateTitlePart(text, color, font) 
+    local label = Instance.new("TextLabel", TitleContainer)
+    label.Text = text
+    label.TextColor3 = color
+    label.Font = font
+    label.TextSize = 13
+    label.BackgroundTransparency = 1
+    label.AutomaticSize = Enum.AutomaticSize.XY 
+end
+
+-- Render Titles
+CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
+CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium) 
+CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium)
 
 local BtnX = Instance.new("TextButton", Top) BtnX.Size = UDim2.new(0, 35, 0, 35); BtnX.Position = UDim2.new(1, -35, 0, 0); BtnX.Text = "X"; BtnX.TextColor3 = Theme.TextDim; BtnX.BackgroundTransparency = 1; BtnX.Font = Enum.Font.Gotham; BtnX.TextSize = 15; BtnX.AutoButtonColor = false
 local BtnM = Instance.new("TextButton", Top) BtnM.Size = UDim2.new(0, 35, 0, 35); BtnM.Position = UDim2.new(1, -70, 0, 0); BtnM.Text = "—"; BtnM.TextColor3 = Theme.TextDim; BtnM.BackgroundTransparency = 1; BtnM.Font = Enum.Font.GothamBold; BtnM.TextSize = 13; BtnM.AutoButtonColor = false
