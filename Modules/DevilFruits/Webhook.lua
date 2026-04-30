@@ -109,21 +109,66 @@ WHTestBtn.MouseButton1Click:Connect(function()
     WHTestBtn.Text = "Sending..." local ok, err = Webhook:Test(Settings.FruitWebhookURL) if ok then WHTestBtn.Text = "Test Sent!" else WHTestBtn.Text = "Fail: " .. string.sub(tostring(err), 1, 15) end task.wait(2) WHTestBtn.Text = "Test Webhook"
 end)
 
--- 3. CCTV TITANIUM V2
+-- 3. CCTV TITANIUM V3 (BEBAS PENYAKIT BLIND)
 task.spawn(function()
-    local player = Players.LocalPlayer or Players.PlayerAdded:Wait() while not player do task.wait(0.5) player = Players.LocalPlayer end
-    local sentFruits = {} local isScannerReady = false task.delay(5, function() isScannerReady = true end)
+    local player = Players.LocalPlayer or Players.PlayerAdded:Wait() 
+    while not player do task.wait(0.5) player = Players.LocalPlayer end
+    
+    local sentFruits = {} 
+    local isScannerReady = false 
+    
+    -- Jeda 5 detik awal masuk server udah cukup buat cegah spam Kitsune nempel
+    task.delay(5, function() isScannerReady = true end)
+    
     local function CheckForFruit(item)
         if not isScannerReady or not Settings.FruitWebhook then return end 
+        
         if item:IsA("Tool") then
-            if not item.CanBeDropped then return end 
-            local isFruit = false local fruitName = item.Name local len = string.len(item.Name) local half = math.floor(len / 2)
-            if half > 0 then local part1 = string.sub(item.Name, 1, half) local part2 = string.sub(item.Name, half + 2, len) local mid = string.sub(item.Name, half + 1, half + 1) if mid == "-" and part1 == part2 then isFruit = true; fruitName = part1 end end
-            if not isFruit and string.find(string.lower(item.Name), "fruit") then isFruit = true; fruitName = string.gsub(item.Name, " Fruit", "") end
-            if isFruit then if sentFruits[fruitName] then return end sentFruits[fruitName] = true task.delay(30, function() sentFruits[fruitName] = nil end) if _G.Cat.Webhook then local jobId = game.JobId if jobId == "" then jobId = "Singleplayer/Test-Server" end _G.Cat.Webhook:Send(fruitName, jobId, Settings.FruitWebhookRarity, Settings.FruitWebhookURL) end end
+            -- BARIS CanBeDropped UDAH DIMUSNAHKAN DARI SINI
+            
+            local isFruit = false 
+            local fruitName = item.Name 
+            local len = string.len(item.Name) 
+            local half = math.floor(len / 2)
+            
+            -- Pola 1: Buah Fisik Name-Name (Kitsune-Kitsune)
+            if half > 0 then 
+                local part1 = string.sub(item.Name, 1, half) 
+                local part2 = string.sub(item.Name, half + 2, len) 
+                local mid = string.sub(item.Name, half + 1, half + 1) 
+                if mid == "-" and part1 == part2 then 
+                    isFruit = true; 
+                    fruitName = part1 
+                end 
+            end
+            
+            -- Pola 2: Buah Lama (Smoke Fruit)
+            if not isFruit and string.find(string.lower(item.Name), "fruit") then 
+                isFruit = true; 
+                fruitName = string.gsub(item.Name, " Fruit", "") 
+            end
+            
+            if isFruit then 
+                if sentFruits[fruitName] then return end 
+                sentFruits[fruitName] = true 
+                task.delay(30, function() sentFruits[fruitName] = nil end) 
+                
+                if _G.Cat.Webhook then 
+                    local jobId = game.JobId 
+                    if jobId == "" then jobId = "Singleplayer/Test-Server" end 
+                    _G.Cat.Webhook:Send(fruitName, jobId, Settings.FruitWebhookRarity, Settings.FruitWebhookURL) 
+                end 
+            end
         end
     end
-    player.CharacterAdded:Connect(function(char) char.ChildAdded:Connect(CheckForFruit) local backpack = player:WaitForChild("Backpack", 5) if backpack then backpack.ChildAdded:Connect(CheckForFruit) end end)
+    
+    player.CharacterAdded:Connect(function(char) 
+        char.ChildAdded:Connect(CheckForFruit) 
+        local backpack = player:WaitForChild("Backpack", 5) 
+        if backpack then backpack.ChildAdded:Connect(CheckForFruit) end 
+    end)
+    
     if player.Character then player.Character.ChildAdded:Connect(CheckForFruit) end
-    local currentBackpack = player:WaitForChild("Backpack", 5) if currentBackpack then currentBackpack.ChildAdded:Connect(CheckForFruit) end
+    local currentBackpack = player:WaitForChild("Backpack", 5) 
+    if currentBackpack then currentBackpack.ChildAdded:Connect(CheckForFruit) end
 end)
