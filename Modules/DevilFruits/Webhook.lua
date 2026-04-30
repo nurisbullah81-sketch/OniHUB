@@ -19,11 +19,30 @@ UI.CreateToggle(Page, "Fruit Webhook", "Send alerts to Discord on spawn", Settin
 local WHConfig = Instance.new("Frame", Page) WHConfig.LayoutOrder = #Page:GetChildren() WHConfig.Size = UDim2.new(1, 0, 0, 106) WHConfig.BackgroundTransparency = 1
 local WHConfigLayout = Instance.new("UIListLayout", WHConfig) WHConfigLayout.Padding = UDim.new(0, 6) WHConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local WHURLFrame = Instance.new("Frame", WHConfig) WHURLFrame.LayoutOrder = 1 WHURLFrame.Size = UDim2.new(1, 0, 0, 32) WHURLFrame.BackgroundColor3 = Theme.CardBG WHURLFrame.BorderSizePixel = 0
-Instance.new("UICorner", WHURLFrame).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", WHURLFrame).Color = Theme.Line
-local WHURLBox = Instance.new("TextBox", WHURLFrame) WHURLBox.Size = UDim2.new(1, -16, 1, 0) WHURLBox.Position = UDim2.new(0, 8, 0, 0) WHURLBox.BackgroundTransparency = 1
-WHURLBox.Text = Settings.FruitWebhookURL ~= "" and Settings.FruitWebhookURL or "" WHURLBox.TextColor3 = Theme.Text WHURLBox.PlaceholderText = "Paste Discord Webhook URL here..." WHURLBox.PlaceholderColor3 = Theme.TextDim
-WHURLBox.Font = Enum.Font.GothamMedium WHURLBox.TextSize = 11 WHURLBox.TextXAlignment = Enum.TextXAlignment.Left WHURLBox.ClearTextOnFocus = false
+-- 1. URL Box (Diperbesar & Anti Wrap)
+local WHURLFrame = Instance.new("Frame", WHConfig)
+WHURLFrame.LayoutOrder = 1
+WHURLFrame.Size = UDim2.new(1, 0, 0, 38) -- Gue besarin dari 32 ke 38 biar adem
+WHURLFrame.BackgroundColor3 = Theme.CardBG
+WHURLFrame.BorderSizePixel = 0
+Instance.new("UICorner", WHURLFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", WHURLFrame).Color = Theme.Line
+
+local WHURLBox = Instance.new("TextBox", WHURLFrame)
+WHURLBox.Size = UDim2.new(1, -16, 1, 0)
+WHURLBox.Position = UDim2.new(0, 8, 0, 0)
+WHURLBox.BackgroundTransparency = 1
+WHURLBox.Text = Settings.FruitWebhookURL ~= "" and Settings.FruitWebhookURL or ""
+WHURLBox.TextColor3 = Theme.Text
+WHURLBox.PlaceholderText = "Paste Webhook URL..."
+WHURLBox.PlaceholderColor3 = Theme.TextDim
+WHURLBox.Font = Enum.Font.GothamMedium
+WHURLBox.TextSize = 11
+WHURLBox.TextXAlignment = Enum.TextXAlignment.Left
+WHURLBox.TextYAlignment = Enum.TextYAlignment.Center -- Biar teks nengah tegak
+WHURLBox.ClearTextOnFocus = false
+WHURLBox.TextWrapped = false -- <--- INI KUNCINYA BIAR KAGAK NGELEWAT BARIS
+WHURLBox.ClipsDescendants = true -- Potong teks kalau kepanjangan
 WHURLBox.FocusLost:Connect(function() Settings.FruitWebhookURL = WHURLBox.Text UI.SaveSettings() end)
 
 local WHRarityBtn = Instance.new("TextButton", WHConfig) WHRarityBtn.LayoutOrder = 2 WHRarityBtn.Size = UDim2.new(1, 0, 0, 28) WHRarityBtn.BackgroundColor3 = Theme.SideBG WHRarityBtn.BorderSizePixel = 0
