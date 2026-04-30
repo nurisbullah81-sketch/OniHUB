@@ -1,52 +1,75 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER (MAX PERFORMANCE)
---      Deskripsi: Membunuh grafik berat Roblox
+--      MODULE: FPS BOOSTER (SMART TOGGLE)
+--      Status: Grafik Aman, FPS Nyaman
 --    ========================================== ]]
 
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
--- // 1. MATIIN PENCAHAYAAN BERAT (SHADOWS & EFFECTS)
-Lighting.GlobalShadows = false
-Lighting.FogEnd = 9e9
-Lighting.ShadowSoftness = 0
+-- // Tunggu UI Core siap
+repeat 
+    task.wait(0.1) 
+until _G.Cat and _G.Cat.UI and _G.Cat.Settings
 
-for _, effect in ipairs(Lighting:GetChildren()) do
-    if effect:IsA("BlurEffect") or effect:IsA("SunRaysEffect") or effect:IsA("ColorCorrectionEffect") or effect:IsA("BloomEffect") or effect:IsA("DepthOfFieldEffect") then
-        effect.Enabled = false
-    end
-end
+-- // 1. Simpan Grafik Original (Biar bisa di-Off-in lagi)
+local Orig = {
+    GlobalShadows = Lighting.GlobalShadows,
+    FogEnd = Lighting.FogEnd,
+    WaterWaveSize = Terrain and Terrain.WaterWaveSize or 0,
+    WaterWaveSpeed = Terrain and Terrain.WaterWaveSpeed or 0,
+    WaterReflectance = Terrain and Terrain.WaterReflectance or 0,
+}
 
--- // 2. RATAKAN AIR LAUT (HEMAT CPU)
-if Terrain then
-    Terrain.WaterWaveSize = 0
-    Terrain.WaterWaveSpeed = 0
-    Terrain.WaterReflectance = 0
-    Terrain.WaterTransparency = 0
-end
+-- // 2. Bikin Menu di Tab "Misc"
+local Page = _G.Cat.UI.CreateTab("Misc", false)
+_G.Cat.UI.CreateSection(Page, "GAME OPTIMIZATION")
 
--- // 3. MATIIN TEKSTUR & MATERIAL PART SECARA AMAN (ANTI-FREEZE)
--- Kita pakai task.spawn & wait biar pas script jalan kaga bikin game nge-freeze
-task.spawn(function()
-    local count = 0
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        -- Buat part biasa, ubah jadi plastik polos dan buang bayangannya
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.Plastic
-            obj.Reflectance = 0
-            obj.CastShadow = false
-        -- Buat stiker/tekstur, kita tembus pandang aja
-        elseif obj:IsA("Decal") or obj:IsA("Texture") then
-            obj.Transparency = 1
+_G.Cat.UI.CreateToggle(
+    Page,
+    "Lite FPS Boost",
+    "Matiin bayangan & air (Grafik tetep HD, FPS naik)",
+    false, -- Default-nya OFF biar pas masuk kaga kaget
+    function(state)
+        if state then
+            -- =====================================
+            -- ON: MODE RINGAN (ANTI-LAG)
+            -- =====================================
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 9e9
+            
+            if Terrain then
+                Terrain.WaterWaveSize = 0
+                Terrain.WaterWaveSpeed = 0
+                Terrain.WaterReflectance = 0
+            end
+            
+            -- Matiin efek cahaya silau (Kecuali ColorCorrection biar warna kaga pudar)
+            for _, effect in ipairs(Lighting:GetChildren()) do
+                if effect:IsA("PostEffect") or string.match(effect.ClassName, "Effect") then
+                    if effect:IsA("ColorCorrectionEffect") then continue end
+                    effect.Enabled = false
+                end
+            end
+        else
+            -- =====================================
+            -- OFF: BALIK KE GRAFIK ASLI
+            -- =====================================
+            Lighting.GlobalShadows = Orig.GlobalShadows
+            Lighting.FogEnd = Orig.FogEnd
+            
+            if Terrain then
+                Terrain.WaterWaveSize = Orig.WaterWaveSize
+                Terrain.WaterWaveSpeed = Orig.WaterWaveSpeed
+                Terrain.WaterReflectance = Orig.WaterReflectance
+            end
+            
+            -- Nyalain efek cahaya bawaan game
+            for _, effect in ipairs(Lighting:GetChildren()) do
+                if effect:IsA("PostEffect") or string.match(effect.ClassName, "Effect") then
+                    effect.Enabled = true
+                end
+            end
         end
-        
-        -- Istirahat sepersekian detik tiap 1000 part biar CPU HP/PC lu kaga kaget
-        count = count + 1
-        if count >= 1000 then
-            count = 0
-            task.wait()
-        end
     end
-    warn("✅ [CatHUB] FPS Booster Berhasil Diaktifkan! Grafik Ultra Kentang!")
-end)
+)
