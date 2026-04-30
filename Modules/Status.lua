@@ -235,148 +235,150 @@ task.spawn(function()
     end
 end)
 
--- ==========================================
--- 🔥 FITUR PLAYER SCANNER (X-RAY INVENTORY) 🔥
--- ==========================================
+-- [[ ==========================================
+--      MODULE: LIVE PLAYER SCANNER (FULL LIST)
+--    ========================================== ]]
 
--- Bikin bagian baru di bawah Server Status
-UI.CreateSection(Page, "PLAYER SCANNER")
+local Players = game:GetService("Players")
 
--- 1. KOTAK INPUT NAMA TARGET
-local ScanInputFrame = Instance.new("Frame", Page)
-ScanInputFrame.LayoutOrder = #Page:GetChildren()
-ScanInputFrame.Size = UDim2.new(1, 0, 0, 38)
-ScanInputFrame.BackgroundColor3 = Theme.CardBG
-ScanInputFrame.BorderSizePixel = 0
-Instance.new("UICorner", ScanInputFrame).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", ScanInputFrame).Color = Theme.Line
+UI.CreateSection(Page, "SERVER PLAYER LIST")
 
-local ScanTextBox = Instance.new("TextBox", ScanInputFrame)
-ScanTextBox.Size = UDim2.new(1, -16, 1, 0)
-ScanTextBox.Position = UDim2.new(0, 8, 0, 0)
-ScanTextBox.BackgroundTransparency = 1
-ScanTextBox.TextColor3 = Theme.Text
-ScanTextBox.PlaceholderText = "Ketik nama/nickname player di sini..."
-ScanTextBox.PlaceholderColor3 = Theme.TextDim
-ScanTextBox.Font = Enum.Font.GothamMedium
-ScanTextBox.TextSize = 11
-ScanTextBox.TextXAlignment = Enum.TextXAlignment.Left
-ScanTextBox.ClearTextOnFocus = false
+-- // 1. REFRESH BUTTON
+local RefreshBtn             = Instance.new("TextButton", Page)
+RefreshBtn.LayoutOrder       = #Page:GetChildren()
+RefreshBtn.Size              = UDim2.new(1, 0, 0, 28)
+RefreshBtn.BackgroundColor3  = Theme.SideBG
+RefreshBtn.BorderSizePixel   = 0
+RefreshBtn.Text              = "🔄 Refresh Player Data"
+RefreshBtn.TextColor3        = Theme.CatPurple
+RefreshBtn.Font              = Enum.Font.GothamBold
+RefreshBtn.TextSize          = 11
+RefreshBtn.AutoButtonColor   = false
+Instance.new("UICorner", RefreshBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", RefreshBtn).Color        = Theme.Line
 
--- 2. LAYAR MONITOR HASIL SCAN
-local ScanResultFrame = Instance.new("Frame", Page)
-ScanResultFrame.LayoutOrder = #Page:GetChildren()
-ScanResultFrame.Size = UDim2.new(1, 0, 0, 140) -- Cukup buat nampung 6 baris
-ScanResultFrame.BackgroundColor3 = Theme.CardBG
-ScanResultFrame.BorderSizePixel = 0
-Instance.new("UICorner", ScanResultFrame).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", ScanResultFrame).Color = Theme.Line
+-- // 2. SCROLLING LIST CONTAINER
+local ListContainer             = Instance.new("Frame", Page)
+ListContainer.LayoutOrder       = #Page:GetChildren()
+ListContainer.Size              = UDim2.new(1, 0, 0, 220) -- Tinggi kotak list
+ListContainer.BackgroundColor3  = Theme.CardBG
+ListContainer.BorderSizePixel   = 0
+ListContainer.ClipsDescendants  = true
+Instance.new("UICorner", ListContainer).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", ListContainer).Color        = Theme.Line
 
-local ResultLayout = Instance.new("UIListLayout", ScanResultFrame)
-ResultLayout.Padding = UDim.new(0, 4)
-ResultLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-ResultLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+local ScrollList                = Instance.new("ScrollingFrame", ListContainer)
+ScrollList.Size                 = UDim2.new(1, -8, 1, -8)
+ScrollList.Position             = UDim2.new(0, 4, 0, 4)
+ScrollList.BackgroundTransparency = 1
+ScrollList.BorderSizePixel      = 0
+ScrollList.ScrollBarThickness   = 3
+ScrollList.ScrollBarImageColor3 = Theme.Line
 
--- Fungsi bantu biar kodenya rapi bikin text
-local function CreateResultLabel(text, color, font)
-    local lbl = Instance.new("TextLabel", ScanResultFrame)
-    lbl.Size = UDim2.new(1, -20, 0, 18)
-    lbl.BackgroundTransparency = 1
-    lbl.TextColor3 = color or Theme.TextDim
-    lbl.Font = font or Enum.Font.GothamMedium
-    lbl.TextSize = 11
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Text = text
-    return lbl
-end
+local ListLayout                = Instance.new("UIListLayout", ScrollList)
+ListLayout.Padding              = UDim.new(0, 6)
+ListLayout.SortOrder            = Enum.SortOrder.LayoutOrder
 
--- Bikin baris-baris datanya
-local LblTarget = CreateResultLabel("🎯 Target: Belum ada", Theme.CatPurple, Enum.Font.GothamBold)
-local LblRace   = CreateResultLabel("🧬 Race: -")
-local LblMelee  = CreateResultLabel("👊 Melee: -")
-local LblFruit  = CreateResultLabel("🍎 Fruit: -")
-local LblSword  = CreateResultLabel("🗡️ Sword: -")
-local LblGun    = CreateResultLabel("🔫 Gun: -")
-
--- 3. TOMBOL EKSEKUSI SCAN
-local ScanBtn = Instance.new("TextButton", Page)
-ScanBtn.LayoutOrder = #Page:GetChildren()
-ScanBtn.Size = UDim2.new(1, 0, 0, 28)
-ScanBtn.BackgroundColor3 = Theme.SideBG
-ScanBtn.BorderSizePixel = 0
-ScanBtn.Text = "🔍 Scan Player"
-ScanBtn.TextColor3 = Theme.Text
-ScanBtn.Font = Enum.Font.GothamBold
-ScanBtn.TextSize = 11
-ScanBtn.AutoButtonColor = false
-Instance.new("UICorner", ScanBtn).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", ScanBtn).Color = Theme.Line
-
--- 4. MESIN INTELIJENNYA (LOGIKA)
-ScanBtn.MouseButton1Click:Connect(function()
-    ScanBtn.Text = "Membobol Data..."
-    local targetStr = string.lower(ScanTextBox.Text)
-    local foundPlayer = nil
+-- // 3. CORE SCANNER LOGIC (ENGINE)
+local function GetPlayerEquipment(player)
+    -- Default Kosong
+    local eq = { Race = "Unknown", Melee = "None", Fruit = "None", Sword = "None", Gun = "None" }
     
-    -- Fitur Smart Search: Lu ngetik "brax" doang, script bakal nyari "Braxlaw50"
-    if targetStr ~= "" then
-        for _, p in pairs(Players:GetPlayers()) do
-            if string.find(string.lower(p.Name), targetStr) or string.find(string.lower(p.DisplayName), targetStr) then
-                foundPlayer = p
-                break
-            end
-        end
+    -- Sadap Ras
+    if player:FindFirstChild("Data") and player.Data:FindFirstChild("Race") then
+        eq.Race = player.Data.Race.Value
     end
     
-    if not foundPlayer then
-        LblTarget.Text = "🎯 Target: Kaga Ketemu Bang!"
-        LblRace.Text = "🧬 Race: -"
-        LblMelee.Text = "👊 Melee: -"
-        LblFruit.Text = "🍎 Fruit: -"
-        LblSword.Text = "🗡️ Sword: -"
-        LblGun.Text = "🔫 Gun: -"
-        task.wait(1)
-        ScanBtn.Text = "🔍 Scan Player"
-        return
-    end
-    
-    -- Siapin wadah kosong
-    local pData = { Race = "Unknown", Melee = "Kopong", Fruit = "Kopong", Sword = "Kopong", Gun = "Kopong" }
-    
-    -- Nyadap Race dari folder Data (Tembus karena dikirim ke Client)
-    if foundPlayer:FindFirstChild("Data") and foundPlayer.Data:FindFirstChild("Race") then
-        pData.Race = foundPlayer.Data.Race.Value
-    end
-    
-    -- Fungsi bongkar isi tas dan tangan pakai ToolTip
-    local function BongkarTas(container)
-        if not container then return end
-        for _, item in pairs(container:GetChildren()) do
+    -- Sadap Inventory & Tangan
+    local function ScanFolder(folder)
+        if not folder then return end
+        
+        for _, item in ipairs(folder:GetChildren()) do
             if item:IsA("Tool") then
-                local tType = item.ToolTip
-                if tType == "Melee" then pData.Melee = item.Name
-                elseif tType == "Blox Fruit" then pData.Fruit = item.Name
-                elseif tType == "Sword" then pData.Sword = item.Name
-                elseif tType == "Gun" then pData.Gun = item.Name
+                -- Ambil tipe barang dari ToolTip bawaan game
+                local tType = item:FindFirstChild("ToolTip") and item.ToolTip.Value or item.ToolTip
+                
+                if type(tType) == "string" then
+                    if tType == "Melee" then 
+                        eq.Melee = item.Name
+                    elseif tType == "Blox Fruit" then 
+                        eq.Fruit = item.Name
+                    elseif tType == "Sword" then 
+                        eq.Sword = item.Name
+                    elseif tType == "Gun" then 
+                        eq.Gun = item.Name
+                    end
                 end
             end
         end
     end
     
-    -- Eksekusi pembongkaran
-    BongkarTas(foundPlayer:FindFirstChild("Backpack"))
-    if foundPlayer.Character then
-        BongkarTas(foundPlayer.Character)
+    ScanFolder(player:FindFirstChild("Backpack"))
+    ScanFolder(player.Character)
+    
+    return eq
+end
+
+-- // 4. UI POPULATION (NGE-RENDER DATA KE LAYAR)
+local function RefreshList()
+    RefreshBtn.Text = "⏳ Scanning Server..."
+    
+    -- Bersihkan list lama sebelum nge-scan ulang
+    for _, child in ipairs(ScrollList:GetChildren()) do
+        if child:IsA("Frame") then 
+            child:Destroy() 
+        end
     end
     
-    -- Tembak ke Layar UI lu
-    LblTarget.Text = "🎯 Target: " .. foundPlayer.Name
-    LblRace.Text = "🧬 Race: " .. tostring(pData.Race)
-    LblMelee.Text = "👊 Melee: " .. tostring(pData.Melee)
-    LblFruit.Text = "🍎 Fruit: " .. tostring(pData.Fruit)
-    LblSword.Text = "🗡️ Sword: " .. tostring(pData.Sword)
-    LblGun.Text = "🔫 Gun: " .. tostring(pData.Gun)
+    local players = Players:GetPlayers()
+    
+    -- Looping semua pemain di server
+    for i, target in ipairs(players) do
+        local eq = GetPlayerEquipment(target)
+        
+        -- // Bikin Kartu untuk tiap Player
+        local Card             = Instance.new("Frame", ScrollList)
+        Card.LayoutOrder       = i
+        Card.Size              = UDim2.new(1, -8, 0, 56) -- Ukuran pas buat 3 baris teks
+        Card.BackgroundColor3  = Theme.SideBG
+        Card.BorderSizePixel   = 0
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
+        
+        local CardLayout             = Instance.new("UIListLayout", Card)
+        CardLayout.Padding           = UDim.new(0, 3)
+        CardLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        CardLayout.VerticalAlignment   = Enum.VerticalAlignment.Center
+        
+        local UIPadding          = Instance.new("UIPadding", Card)
+        UIPadding.PaddingLeft    = UDim.new(0, 8)
+        
+        -- // Fungsi pembuat teks biar kode ga kepanjangan
+        local function MakeText(txt, font, color)
+            local lbl              = Instance.new("TextLabel", Card)
+            lbl.Size               = UDim2.new(1, -10, 0, 14)
+            lbl.BackgroundTransparency = 1
+            lbl.Text               = txt
+            lbl.TextColor3         = color or Theme.Text
+            lbl.Font               = font or Enum.Font.Gotham
+            lbl.TextSize           = 10
+            lbl.TextXAlignment     = Enum.TextXAlignment.Left
+        end
+        
+        -- // Render Teks Info Player (Pake Unicode Minimalis)
+        MakeText("👤 " .. target.DisplayName .. " (@" .. target.Name .. ")", Enum.Font.GothamBold, Theme.CatPurple)
+        MakeText("⚡ Race: " .. eq.Race .. "   |   🥊 Melee: " .. eq.Melee, Enum.Font.GothamMedium, Theme.Text)
+        MakeText("🍇 Fruit: " .. eq.Fruit .. "  |  ⚔️ Sword: " .. eq.Sword .. "  |  🎯 Gun: " .. eq.Gun, Enum.Font.Gotham, Theme.TextDim)
+    end
+    
+    -- Sesuaikan tinggi scroll otomatis biar bisa digeser
+    ScrollList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
     
     task.wait(0.5)
-    ScanBtn.Text = "🔍 Scan Player"
-end)
+    RefreshBtn.Text = "🔄 Refresh Player Data"
+end
+
+-- // 5. EVENT CONNECTIONS
+RefreshBtn.MouseButton1Click:Connect(RefreshList)
+
+-- Otomatis nge-scan 1x pas script pertama kali di-execute
+task.spawn(RefreshList)
