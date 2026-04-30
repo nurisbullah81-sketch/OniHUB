@@ -236,12 +236,16 @@ task.spawn(function()
 end)
 
 -- [[ ==========================================
---      MODULE: LIVE PLAYER SCANNER (FAIL-SAFE)
+--      MODULE: LIVE PLAYER SCANNER (FULL X-RAY)
+--      Status: Bypass UI Library Crash
 --    ========================================== ]]
 local Players = game:GetService("Players")
 
--- 1. Siapin Theme dengan Fallback (Biar Kaga Error Nabrak)
-local UI = _G.Cat.UI
+-- Pastikan variabel Page ini sesuai sama nama tab lu di atas
+local TabKita = Page 
+
+-- // 1. Trik Aman Tarik Tema UI
+local UI    = _G.Cat.UI
 local Theme = UI and UI.Theme or {}
 
 local cCard = Theme.CardBG or Color3.fromRGB(30, 30, 30)
@@ -251,24 +255,33 @@ local cText = Theme.Text or Color3.fromRGB(240, 240, 240)
 local cDim  = Theme.TextDim or Color3.fromRGB(150, 150, 150)
 local cPurp = Theme.CatPurple or Color3.fromRGB(170, 85, 255)
 
--- 2. Bikin Bagian UI
-UI.CreateSection(Page, "SERVER PLAYER LIST")
+-- // 2. BIKIN JUDUL MANUAL (BYPASS ERROR CREATE SECTION)
+local SectionTitle = Instance.new("TextLabel", TabKita)
+SectionTitle.LayoutOrder = #TabKita:GetChildren()
+SectionTitle.Size = UDim2.new(1, 0, 0, 25)
+SectionTitle.BackgroundTransparency = 1
+SectionTitle.Text = " SERVER PLAYER LIST (X-RAY)"
+SectionTitle.TextColor3 = cPurp
+SectionTitle.Font = Enum.Font.GothamBold
+SectionTitle.TextSize = 11
+SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-local RefreshBtn = Instance.new("TextButton", Page)
-RefreshBtn.LayoutOrder = #Page:GetChildren()
+-- // 3. Bikin Komponen UI Utama
+local RefreshBtn = Instance.new("TextButton", TabKita)
+RefreshBtn.LayoutOrder = #TabKita:GetChildren()
 RefreshBtn.Size = UDim2.new(1, 0, 0, 28)
 RefreshBtn.BackgroundColor3 = cSide
 RefreshBtn.BorderSizePixel = 0
-RefreshBtn.Text = "🔄 Refresh Player Data"
-RefreshBtn.TextColor3 = cPurp
+RefreshBtn.Text = "Refresh Player Data"
+RefreshBtn.TextColor3 = cText
 RefreshBtn.Font = Enum.Font.GothamBold
 RefreshBtn.TextSize = 11
 RefreshBtn.AutoButtonColor = false
 Instance.new("UICorner", RefreshBtn).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", RefreshBtn).Color = cLine
 
-local ListContainer = Instance.new("Frame", Page)
-ListContainer.LayoutOrder = #Page:GetChildren()
+local ListContainer = Instance.new("Frame", TabKita)
+ListContainer.LayoutOrder = #TabKita:GetChildren()
 ListContainer.Size = UDim2.new(1, 0, 0, 220)
 ListContainer.BackgroundColor3 = cCard
 ListContainer.BorderSizePixel = 0
@@ -276,7 +289,6 @@ ListContainer.ClipsDescendants = true
 Instance.new("UICorner", ListContainer).CornerRadius = UDim.new(0, 6)
 Instance.new("UIStroke", ListContainer).Color = cLine
 
--- Bikin list yang bisa di-scroll
 local ScrollList = Instance.new("ScrollingFrame", ListContainer)
 ScrollList.Size = UDim2.new(1, -8, 1, -8)
 ScrollList.Position = UDim2.new(0, 4, 0, 4)
@@ -284,59 +296,72 @@ ScrollList.BackgroundTransparency = 1
 ScrollList.BorderSizePixel = 0
 ScrollList.ScrollBarThickness = 3
 ScrollList.ScrollBarImageColor3 = cLine
-ScrollList.AutomaticCanvasSize = Enum.AutomaticSize.Y -- FIX MUTLAK BIAR BISA SCROLL
+ScrollList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 ScrollList.CanvasSize = UDim2.new(0, 0, 0, 0)
 
 local ListLayout = Instance.new("UIListLayout", ScrollList)
 ListLayout.Padding = UDim.new(0, 6)
 ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- 3. Mesin Intelijen (Aman dari error nil)
-local function GetPlayerEquipment(player)
-    local eq = { Race = "Unknown", Melee = "None", Fruit = "None", Sword = "None", Gun = "None" }
-    
-    pcall(function()
-        if player:FindFirstChild("Data") and player.Data:FindFirstChild("Race") then
-            eq.Race = player.Data.Race.Value
-        end
-    end)
-    
-    local function ScanFolder(folder)
-        if not folder then return end
-        for _, item in ipairs(folder:GetChildren()) do
-            if item:IsA("Tool") then
-                local tType = ""
-                pcall(function() tType = item.ToolTip end) -- Amanin error tooltip
-                
-                if tType == "Melee" then eq.Melee = item.Name
-                elseif tType == "Blox Fruit" then eq.Fruit = item.Name
-                elseif tType == "Sword" then eq.Sword = item.Name
-                elseif tType == "Gun" then eq.Gun = item.Name
+-- // 4. Mesin Inti Pembongkar Tas (Tanpa Emoji)
+local function ScanSenjata(folder, eq)
+    if not folder then return end
+    for _, item in ipairs(folder:GetChildren()) do
+        if item:IsA("Tool") then
+            local name = item.Name
+            local lower = string.lower(name)
+            
+            if string.find(lower, "awaken") or string.find(lower, "summon") or string.find(lower, "ribbon") then continue end
+            if string.find(lower, "fruit") or string.find(lower, "-") then continue end
+            
+            local tType = ""
+            pcall(function() tType = item.ToolTip end)
+            
+            if type(tType) ~= "string" or tType == "" then
+                if string.find(lower, "gun") or string.find(lower, "rifle") or string.find(lower, "bow") or string.find(lower, "guitar") or string.find(lower, "kabucha") or string.find(lower, "cannon") then 
+                    tType = "Gun"
+                elseif string.find(lower, "sword") or string.find(lower, "blade") or string.find(lower, "katana") or string.find(lower, "saber") or string.find(lower, "anchor") or string.find(lower, "tushita") or string.find(lower, "yama") then 
+                    tType = "Sword"
+                else 
+                    tType = "Melee" 
                 end
+            end
+            
+            if tType == "Melee" then eq.Melee = name
+            elseif tType == "Sword" then eq.Sword = name
+            elseif tType == "Gun" then eq.Gun = name
             end
         end
     end
-    
-    pcall(function()
-        ScanFolder(player:FindFirstChild("Backpack"))
-        ScanFolder(player.Character)
-    end)
-    
-    return eq
 end
 
--- 4. Mesin Render UI
 local function RefreshList()
-    RefreshBtn.Text = "⏳ Scanning Server..."
+    RefreshBtn.Text = "Scanning Server..."
     
-    -- Hapus kartu lama
     for _, child in ipairs(ScrollList:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
     
-    -- Looping semua orang
     for i, target in ipairs(Players:GetPlayers()) do
-        local eq = GetPlayerEquipment(target)
+        local cleanRace = "Unknown"
+        local eatenFruit = "None"
+        local eq = { Melee = "None", Sword = "None", Gun = "None" }
+        
+        pcall(function()
+            if target:FindFirstChild("Data") then
+                if target.Data:FindFirstChild("Race") then
+                    cleanRace = target.Data.Race.Value
+                end
+                if target.Data:FindFirstChild("DevilFruit") and target.Data.DevilFruit.Value ~= "" then
+                    eatenFruit = target.Data.DevilFruit.Value
+                end
+            end
+        end)
+        
+        pcall(function()
+            ScanSenjata(target:FindFirstChild("Backpack"), eq)
+            ScanSenjata(target.Character, eq)
+        end)
         
         local Card = Instance.new("Frame", ScrollList)
         Card.LayoutOrder = i
@@ -352,28 +377,29 @@ local function RefreshList()
         local UIPad = Instance.new("UIPadding", Card)
         UIPad.PaddingLeft = UDim.new(0, 8)
         
-        -- Helper buat teks
         local function MakeText(txt, font, color)
             local lbl = Instance.new("TextLabel", Card)
             lbl.Size = UDim2.new(1, -10, 0, 14)
             lbl.BackgroundTransparency = 1
             lbl.Text = txt
-            lbl.TextColor3 = color or cText
-            lbl.Font = font or Enum.Font.Gotham
+            lbl.TextColor3 = color
+            lbl.Font = font
             lbl.TextSize = 10
             lbl.TextXAlignment = Enum.TextXAlignment.Left
         end
         
-        MakeText("👤 " .. target.DisplayName .. " (@" .. target.Name .. ")", Enum.Font.GothamBold, cPurp)
-        MakeText("⚡ Race: " .. tostring(eq.Race) .. "   |   🥊 Melee: " .. tostring(eq.Melee), Enum.Font.GothamMedium, cText)
-        MakeText("🍇 Fruit: " .. tostring(eq.Fruit) .. "  |  ⚔️ Sword: " .. tostring(eq.Sword) .. "  |  🎯 Gun: " .. tostring(eq.Gun), Enum.Font.Gotham, cDim)
+        MakeText(target.DisplayName .. " (@" .. target.Name .. ")", Enum.Font.GothamBold, cPurp)
+        MakeText("Race: " .. cleanRace .. "  |  Melee: " .. eq.Melee, Enum.Font.GothamMedium, cText)
+        MakeText("Fruit: " .. eatenFruit .. "  |  Sword: " .. eq.Sword .. "  |  Gun: " .. eq.Gun, Enum.Font.Gotham, cDim)
     end
     
-    task.wait(0.5)
-    RefreshBtn.Text = "🔄 Refresh Player Data"
+    task.wait(0.2)
+    RefreshBtn.Text = "Refresh Player Data"
 end
 
 RefreshBtn.MouseButton1Click:Connect(RefreshList)
 
--- Auto-scan pas baru di-load
-task.spawn(RefreshList)
+task.spawn(function()
+    task.wait(1)
+    RefreshList()
+end)
