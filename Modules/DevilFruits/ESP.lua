@@ -147,7 +147,6 @@ end
 --      4 & 6. SMART SCANNER & UPDATE LOOP (ANTI-PING SPIKE)
 --    ========================================== ]]
 
--- KITA GABUNG JADI SATU LOOP, HAPUS WORKSPACE.CHILDADDED!
 task.spawn(function()
     local scanTimer = 0
     
@@ -166,20 +165,29 @@ task.spawn(function()
         if not myPos then continue end 
         
         -- 2. SMART SCANNER (Jalanin absen buah cuma setiap 3 detik sekali)
-        -- Ini ngebunuh lag peluru/ledakan secara instan, CPU kaga peduli lagi ada part baru!
         scanTimer = scanTimer + 0.5
         if scanTimer >= 3 then
             scanTimer = 0
             for _, obj in ipairs(Workspace:GetChildren()) do 
+                -- Kalau itu beneran buah dan belum ada di database kita
                 if IsFruit(obj) and not Data[obj] then 
                     AddESP(obj) 
+                    
+                    -- LOGIC WEBHOOK LU GUE BALIKIN KE SINI BANG! (Aman 100%)
+                    if Settings.FruitWebhook and _G.Cat.Webhook then
+                        _G.Cat.Webhook:Send(
+                            obj.Name, 
+                            game.JobId, 
+                            Settings.FruitWebhookRarity, 
+                            Settings.FruitWebhookURL
+                        )
+                    end
                 end 
             end
         end
         
-        -- 3. NAMPILIN JARAK
+        -- 3. UPDATE JARAK INSTAN & PEMBERSIHAN
         for fruit, entry in pairs(Data) do 
-            -- Kalau buah ilang / dimakan, hapus dari memori
             if not fruit or not fruit.Parent or not entry.bb or not entry.bb.Parent then 
                 RemoveESP(fruit) 
                 continue 
