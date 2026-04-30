@@ -1,16 +1,17 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER (GOD TIER V3)
---      Engine: Slow-Scan Background Optimizer
+--      MODULE: FPS BOOSTER (GOD TIER V4)
+--      Engine: Background Cleaner + PVP Toggle
 --    ========================================== ]]
 
-local Lighting  = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
+local Workspace  = game:GetService("Workspace")
+local Lighting   = game:GetService("Lighting")
 
-while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings do task.wait(0.1) end
+repeat task.wait(0.1) until _G.Cat and _G.Cat.UI and _G.Cat.Settings
+
 local UI       = _G.Cat.UI
 local Settings = _G.Cat.Settings
 
--- SUPER OBAT: Pastiin variable ini boolean biar toggle kagak error
+-- OBAT AMAN: Pastiin setting boolean biar kagak error apapun yang terjadi
 if type(Settings.FPSBoost) ~= "boolean" then
     Settings.FPSBoost = false
 end
@@ -18,45 +19,72 @@ end
 local Page = UI.CreateTab("Misc", false)
 UI.CreateSection(Page, "EXTREME OPTIMIZATION")
 
--- Simpan Original State
-local Orig = {
-    Shadows = Lighting.GlobalShadows,
-    QualityLevel = 3,
-    FogEnd = Lighting.FogEnd,
-}
-pcall(function() Orig.QualityLevel = settings().Rendering.QualityLevel end)
+-- ==========================================
+-- 1. AUTO-BOOST (Jalan Otomatis Tanpa Ngurangin Grafik)
+-- Ini merapikan CPU game di background biar kagak makan RAM/Ping
+-- ==========================================
+task.spawn(function()
+    -- A. Matiin Streaming Roblox (Biar kagak patah-patah pas jalan)
+    pcall(function() Workspace.StreamingIntegrityEnabled = false end)
+    
+    -- B. Background Cleaner (Ngurus benda mati pelan-pelan biar kagak freeze)
+    local count = 0
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            pcall(function()
+                -- Bayangan tetep nyala (kagak ngaruh grafik), tapi sensor fisik dimatiin
+                if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
+                    obj.CanTouch = false
+                    obj.CanQuery = false
+                end
+            end)
+        end
+        
+        count = count + 1
+        if count >= 50 then
+            count = 0
+            task.wait(0.1) -- Jeda biar kagak lag
+        end
+    end
+end)
 
+-- ==========================================
+-- 2. PVP FPS BOOST TOGGLE
+-- ==========================================
+-- Gue pake cara Gemini (Hardcode false) biar muncul 100%
+local CurrentBoostState = Settings.FPSBoost
+
+-- Simpan Original State buat restore
+local OrigShadows = Lighting.GlobalShadows
+local OrigTerrain = {}
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
-local OrigTerrain = Terrain and {
-    Deco = Terrain.Decoration,
-    Wave = Terrain.WaterWaveSize,
-    Speed = Terrain.WaterWaveSpeed,
-    Reflect = Terrain.WaterReflectance
-}
-
--- State buat nge-stop loop di background
-local isBoosting = false
-local descendantConn = nil
+if Terrain then
+    OrigTerrain.Deco = Terrain.Decoration
+    OrigTerrain.Wave = Terrain.WaterWaveSize
+    OrigTerrain.Speed = Terrain.WaterWaveSpeed
+    OrigTerrain.Reflect = Terrain.WaterReflectance
+end
 
 UI.CreateToggle(
-    Page, 
-    "God Tier FPS Boost", 
-    "Optimasi Super Berat di Background (Tunggu 1-2 Menit, FX Aman!)", 
-    Settings.FPSBoost == true, 
+    Page,
+    "PvP FPS Boost",
+    "Kurangi bayangan & air, FPS meroket! (FX Tetap Aman)",
+    CurrentBoostState, -- Pake variable, kagak langsung dari Settings biar aman
     function(state)
         Settings.FPSBoost = state
-        isBoosting = state
         
         if state then
             -- =====================================
-            -- ON: MODE PVP (Instant Render + Slow CPU Boost)
+            -- ON: MODE PVP (Instant +20 FPS)
             -- =====================================
             
-            -- 1. Instant Boost (Matiin Bayangan & Air)
+            -- 1. Turunin Quality Level (Paling ampuh, tapi kagak ngilangin FX)
             pcall(function() settings().Rendering.QualityLevel = 1 end)
-            Lighting.GlobalShadows = false
-            Lighting.FogEnd = 9e9 -- Ilangin kabut jauh biar GPU lega
             
+            -- 2. Matiin Bayangan Global (GPU Lega)
+            Lighting.GlobalShadows = false
+            
+            -- 3. Matiin Air Berat
             if Terrain then
                 Terrain.Decoration = false
                 Terrain.WaterWaveSize = 0
@@ -64,61 +92,15 @@ UI.CreateToggle(
                 Terrain.WaterReflectance = 0
             end
 
-            -- KAGAK SENTUH PostEffects (Bloom, SunRays tetep nyala biar kagak jelek!)
-
-            -- 2. Slow Background Optimizer (20 part per detik, kagak freeze!)
-            task.spawn(function()
-                local count = 0
-                for _, obj in ipairs(Workspace:GetDescendants()) do
-                    -- Kalau di-off in tengah jalan, langsung berhenti
-                    if not isBoosting then break end 
-                    
-                    if obj:IsA("BasePart") then
-                        pcall(function()
-                            obj.CastShadow = false
-                            -- Matiin fisik benda mati biar CPU super lega
-                            if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
-                                obj.CanTouch = false
-                                obj.CanQuery = false
-                            end
-                        end)
-                    end
-                    count = count + 1
-                    if count >= 20 then 
-                        count = 0 
-                        task.wait(0.1) -- Jeda stabil biar kagak stutter
-                    end 
-                end
-            end)
-
-            -- 3. Auto-Optimize part baru yang nongol
-            if descendantConn then descendantConn:Disconnect() end
-            descendantConn = Workspace.DescendantAdded:Connect(function(obj)
-                if isBoosting and obj:IsA("BasePart") then
-                    task.spawn(function()
-                        task.wait(0.5) -- Jeda biar kagak langsung beratin
-                        if isBoosting then
-                            pcall(function()
-                                obj.CastShadow = false
-                                if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
-                                    obj.CanTouch = false
-                                    obj.CanQuery = false
-                                end
-                            end)
-                        end
-                    end)
-                end
-            end)
+            -- KAGAK SENTUH PostEffects (Bloom, SunRays tetep nyala biar cakep!)
 
         else
             -- =====================================
             -- OFF: BALIKIN KE HD BAWAAN
             -- =====================================
             
-            -- 1. Balikin Instant Render
-            pcall(function() settings().Rendering.QualityLevel = Orig.QualityLevel end)
-            Lighting.GlobalShadows = Orig.Shadows
-            Lighting.FogEnd = Orig.FogEnd
+            pcall(function() settings().Rendering.QualityLevel = 3 end)
+            Lighting.GlobalShadows = OrigShadows
             
             if Terrain then
                 Terrain.Decoration = OrigTerrain.Deco
@@ -126,28 +108,25 @@ UI.CreateToggle(
                 Terrain.WaterWaveSpeed = OrigTerrain.Speed
                 Terrain.WaterReflectance = OrigTerrain.Reflect
             end
-
-            -- 2. Stop Background Optimizer
-            if descendantConn then descendantConn:Disconnect(); descendantConn = nil end
-
-            -- 3. Slow Revert (Balikin part pelan-pelan biar kagak freeze)
-            task.spawn(function()
-                local count = 0
-                for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if isBoosting then break end -- Berhenti kalau di-ON balik
-                    if obj:IsA("BasePart") then
-                        pcall(function()
-                            obj.CastShadow = true
-                            if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
-                                obj.CanTouch = true
-                                obj.CanQuery = true
-                            end
-                        end)
-                    end
-                    count = count + 1
-                    if count >= 20 then count = 0 task.wait(0.1) end
-                end
-            end)
         end
     end
 )
+
+-- ==========================================
+-- 3. AUTO-CLEANER (Buat part baru yang nongol)
+-- ==========================================
+Workspace.DescendantAdded:Connect(function(obj)
+    task.wait(0.5) -- Jeda biar kagak langsung beratin
+    if obj:IsA("BasePart") then
+        pcall(function()
+            if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
+                obj.CanTouch = false
+                obj.CanQuery = false
+            end
+            -- Kalau PVP Boost nyala, matiin bayangan part baru juga
+            if Settings.FPSBoost then
+                obj.CastShadow = false
+            end
+        end)
+    end
+end)
