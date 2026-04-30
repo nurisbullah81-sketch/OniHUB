@@ -12,7 +12,7 @@ local State = _G.Cat.State
 -- 1. PASANG UI
 local Page = UI.CreateTab("Devil Fruits", false)
 UI.CreateSection(Page, "FRUIT FINDER")
-UI.CreateToggle(Page, "Fruit ESP", "Show text on any spawned fruits", Settings.FruitESP, function(s) Settings.FruitESP = s UI.SaveSettings() end)
+UI.CreateToggle(Page, "Fruit ESP", "Show text on any spawned fruits", Settings.FruitESP, function(s) Settings.FruitESP = s end)
 
 -- 2. LOGIC ESP (MURNI DARI CODE LU)
 local Data = {}
