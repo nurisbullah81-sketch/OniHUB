@@ -8,12 +8,14 @@ local UI = _G.Cat.UI
 local Settings = _G.Cat.Settings
 local State = _G.Cat.State
 local SafeInvoke = _G.Cat.SafeInvoke
-local Page = UI.TabFrames["Devil Fruits"]
+
+-- FIX: Masuk ke kamar yang sama
+local Page = UI.CreateTab("Devil Fruits", false)
 
 -- 1. PASANG UI
 UI.CreateToggle(Page, "Auto Store Fruits", "Store collected fruits to inventory", Settings.AutoStoreFruit, function(s) Settings.AutoStoreFruit = s UI.SaveSettings() end)
 
--- 2. LOGIC AUTO STORE (MURNI DARI CODE LU)
+-- 2. LOGIC AUTO STORE
 local StoreBlacklist={}
 local isStoring = false
 
