@@ -744,17 +744,17 @@ local function CreateToggle(parent, text, description, stateRef, callback)
     ToggleBtn.MouseButton1Click:Connect(function() 
         stateRef = not stateRef 
         
-        -- Smooth Background Transition
-        TweenService:Create(SwitchBG, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
+        -- Smooth Background Transition (Safe for all executors)
+        TweenService:Create(SwitchBG, TweenInfo.new(0.2), {
             BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
         }):Play() 
         
-        -- Smooth Dot Movement
+        -- Smooth Dot Movement (Safe for all executors)
         local targetPos = stateRef 
             and UDim2.new(1, -16, 0.5, -7) 
             or UDim2.new(0, 2, 0.5, -7)
 
-        TweenService:Create(Dot, TweenInfo.new(0.25, Enum.EasingStyle.BackOut), {
+        TweenService:Create(Dot, TweenInfo.new(0.25), {
             Position = targetPos
         }):Play() 
         
