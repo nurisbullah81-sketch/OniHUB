@@ -353,6 +353,11 @@ local function CreateTitlePart(text, color, font)
     label.AutomaticSize = Enum.AutomaticSize.XY 
 end
 
+-- TAMBAHKAN 3 BARIS INI YANG HILANG:
+CreateTitlePart("CatHUB", Theme.CatPurple, Enum.Font.GothamBold) 
+CreateTitlePart("Blox Fruits", Theme.Text, Enum.Font.GothamMedium)
+CreateTitlePart("[Freemium]", Theme.Gold, Enum.Font.GothamMedium) 
+
 -- ==========================================
 -- 5. WINDOW CONTROLS & DRAGGING
 -- ==========================================
