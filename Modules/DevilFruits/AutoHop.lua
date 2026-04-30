@@ -1,17 +1,17 @@
--- ==========================================
--- MODULE: DEVIL FRUITS - AUTO HOP SERVER
--- ==========================================
+-- [[ ==========================================
+--      MODULE: DEVIL FRUITS - AUTO HOP SERVER
+--    ========================================== ]]
 
--- Services
+-- // Services
 local HttpService = game:GetService("HttpService")
 local VIM         = game:GetService("VirtualInputManager")
 local Players     = game:GetService("Players")
 
--- Variables
+-- // Variables
 local Me = Players.LocalPlayer
 
--- Wait for UI & Core Components
-while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings or not _G.Cat.State or not _G.Cat.ESP do 
+-- // Wait for UI & Core Components
+while not (_G.Cat and _G.Cat.UI and _G.Cat.Settings and _G.Cat.State and _G.Cat.ESP) do 
     task.wait(0.1) 
 end
 
@@ -46,7 +46,8 @@ function _G.Cat.HopServer()
     
     -- Save settings before hopping
     pcall(function() 
-        writefile("CatHUB_Config.json", HttpService:JSONEncode(Settings)) 
+        local encoded = HttpService:JSONEncode(Settings)
+        writefile("CatHUB_Config.json", encoded) 
     end)
     
     task.spawn(function()
@@ -71,8 +72,10 @@ function _G.Cat.HopServer()
                 local openBtn = Me.PlayerGui:FindFirstChild("ServerBrowserButton", true)
                 
                 if openBtn then 
-                    local p, s = openBtn.AbsolutePosition, openBtn.AbsoluteSize
-                    local tx, ty = p.X + (s.X/2), p.Y + (s.Y/2) + 58
+                    local pos  = openBtn.AbsolutePosition
+                    local size = openBtn.AbsoluteSize
+                    local tx   = pos.X + (size.X / 2)
+                    local ty   = pos.Y + (size.Y / 2) + 58
                     
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     task.wait(0.05)
@@ -88,7 +91,7 @@ function _G.Cat.HopServer()
 
             -- Wait for list loading
             local listArea = browser:FindFirstChild("Inside", true)
-            local count = 0
+            local count    = 0
             
             repeat
                 task.wait(0.2)
@@ -109,11 +112,13 @@ function _G.Cat.HopServer()
                 if not scrollFrame then continue end
 
                 local buttons = {}
-                local sPos, sSize = scrollFrame.AbsolutePosition, scrollFrame.AbsoluteSize
+                local sPos    = scrollFrame.AbsolutePosition
+                local sSize   = scrollFrame.AbsoluteSize
                 
                 for _, v in pairs(listArea:GetDescendants()) do
                     if v:IsA("TextButton") and v.Name == "Join" and v.Visible then
                         local vy = v.AbsolutePosition.Y
+                        -- Check if button is within the visible scroll area
                         if vy > sPos.Y and vy < (sPos.Y + sSize.Y - 30) then
                             table.insert(buttons, v)
                         end
@@ -124,9 +129,12 @@ function _G.Cat.HopServer()
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end
                     
-                    local bp, bs = target.AbsolutePosition, target.AbsoluteSize
-                    local tx, ty = bp.X + (bs.X/2), bp.Y + (bs.Y/2) + 58
+                    local bp = target.AbsolutePosition
+                    local bs = target.AbsoluteSize
+                    local tx = bp.X + (bs.X / 2)
+                    local ty = bp.Y + (bs.Y / 2) + 58
                     
+                    -- Click Join & Press Enter
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
                     task.wait(0.05)
@@ -146,7 +154,10 @@ function _G.Cat.HopServer()
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
         if browser then browser.Enabled = false end
         
-        if _G.Cat.ReleaseCharacter then _G.Cat.ReleaseCharacter() end
+        if _G.Cat.ReleaseCharacter then 
+            _G.Cat.ReleaseCharacter() 
+        end
+        
         isHopping = false
     end)
 end
