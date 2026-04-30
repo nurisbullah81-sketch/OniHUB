@@ -411,6 +411,7 @@ SideScroll.BorderSizePixel = 0
 -- Sidebar Layouts
 local SideList = Instance.new("UIListLayout", SideScroll)
 SideList.Padding = UDim.new(0, 4)
+SideList.SortOrder = Enum.SortOrder.LayoutOrder -- <--- TAMBAHKAN INI
 
 local SidePad = Instance.new("UIPadding", SideScroll)
 SidePad.PaddingLeft = UDim.new(0, 8)
@@ -444,7 +445,7 @@ local function CreateTab(name, isFirst)
         return Pages[name].Page 
     end
     
-        -- Tab Button
+    -- Tab Button
     local Btn = Instance.new("TextButton", SideScroll)
     Btn.Name = name .. "_TabBtn"
     Btn.LayoutOrder = TabPriority[name] or 99 -- Ini yang ngatur urutan
