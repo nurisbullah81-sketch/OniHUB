@@ -853,7 +853,16 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- ==========================================
--- 4. EXPORT PERKAKAS KE GLOBAL
+-- 4. PRE-CREATE TABS (MENGATUR URUTAN SIDEBAR)
+-- ==========================================
+-- Ini memastikan tombol sidebar muncul sesuai urutan ini, biar Status (Home) selalu di atas
+CreateTab("Status", true)       -- Halaman utama paling atas
+CreateTab("Auto Farm", false)
+CreateTab("Devil Fruits", false)
+CreateTab("Misc", false)
+
+-- ==========================================
+-- 5. EXPORT PERKAKAS KE GLOBAL
 -- ==========================================
 -- Ini yang bakal dipake sama file Logic (InstantTP, ESP, dll)
 _G.Cat.UI = {
