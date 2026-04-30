@@ -1,5 +1,6 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER (LAG FREE VERSION)
+--      MODULE: FPS BOOSTER (STATIC EDITION)
+--      Note: Jalan sekali, lalu diam. Anti-Lag!
 --    ========================================== ]]
 
 local Workspace    = game:GetService("Workspace")
@@ -11,62 +12,78 @@ repeat task.wait(0.1) until _G.Cat and _G.Cat.UI
 local UI = _G.Cat.UI
 
 -- ==========================================
--- TAB & UI
+-- UI SETUP
 -- ==========================================
 local MiscPage = UI.CreateTab("Misc", false)
-UI.CreateSection(MiscPage, "FPS OPTIMIZER")
+UI.CreateSection(MiscPage, "PERFORMANCE")
 
 local StateBoost = false
 
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
--- Backup Settings
-local OrigLighting = { Shadows = Lighting.GlobalShadows, Fog = Lighting.FogEnd }
+-- Backup Variable
+local Orig = {
+    Shadows = Lighting.GlobalShadows,
+    Fog = Lighting.FogEnd,
+    Brightness = Lighting.Brightness
+}
 local OrigTerrain = {}
+
 if Terrain then
-    pcall(function() OrigTerrain.Deco = Terrain.Decoration end)
-    pcall(function() OrigTerrain.Wave = Terrain.WaterWaveSize end)
-    pcall(function() OrigTerrain.Speed = Terrain.WaterWaveSpeed end)
-    pcall(function() OrigTerrain.Reflect = Terrain.WaterReflectance end)
+    pcall(function()
+        OrigTerrain.Deco = Terrain.Decoration
+        OrigTerrain.Wave = Terrain.WaterWaveSize
+        OrigTerrain.Speed = Terrain.WaterWaveSpeed
+        OrigTerrain.Reflect = Terrain.WaterReflectance
+    end)
 end
 
 -- ==========================================
--- LOGIC: PURE GRAPHICS TWEAK (No Map Scan)
+-- LOGIC: TOGGLE GRAPHICS (NO LOOPS!)
 -- ==========================================
-local function ApplyBoost()
-    -- 1. Lighting (Hilangin bayangan & kabut)
-    Lighting.FogEnd = 100000 
-    Lighting.GlobalShadows = false
-    Lighting.Brightness = 2 -- Biar terang tanpa shadow
-    
-    -- 2. Terrain (Bikin flat)
-    if Terrain then
-        pcall(function() Terrain.Decoration = false end)
-        pcall(function() Terrain.WaterWaveSize = 0 end)
-        pcall(function() Terrain.WaterWaveSpeed = 0 end)
-        pcall(function() Terrain.WaterReflectance = 0 end)
+local function ToggleBoost(state)
+    if state then
+        -- TERAPKAN PENGATURAN GRAFIS RENDAH
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 1000000
+        Lighting.Brightness = 0 -- Ga perlu terang berlebihan
+        
+        if Terrain then
+            Terrain.Decoration = false
+            Terrain.WaterWaveSize = 0
+            Terrain.WaterWaveSpeed = 0
+            Terrain.WaterReflectance = 0
+        end
+        
+        -- Matikan Streaming biar RAM lega
+        pcall(function() Workspace.StreamingIntegrityEnabled = false end)
+        
+        -- Hapus Partikel yang ada SAAT INI (Sekali jalan, bukan loop)
+        task.spawn(function()
+            for _, v in pairs(Workspace:GetDescendants()) do
+                if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Smoke") or v:IsA("Fire") then
+                    v.Enabled = false
+                end
+            end
+        end)
+    else
+        -- KEMBALIKAN KE NORMAL
+        Lighting.GlobalShadows = Orig.Shadows
+        Lighting.FogEnd = Orig.Fog
+        Lighting.Brightness = Orig.Brightness
+        
+        if Terrain then
+            pcall(function()
+                Terrain.Decoration = OrigTerrain.Deco
+                Terrain.WaterWaveSize = OrigTerrain.Wave
+                Terrain.WaterWaveSpeed = OrigTerrain.Speed
+                Terrain.WaterReflectance = OrigTerrain.Reflect
+            end)
+        end
     end
-    
-    -- 3. Streaming (Beban Memory)
-    pcall(function() Workspace.StreamingIntegrityEnabled = false end)
-    
-    warn("[CatHUB] Graphics Boost Active!")
 end
 
-local function RestoreNormal()
-    Lighting.GlobalShadows = OrigLighting.Shadows
-    Lighting.FogEnd = OrigLighting.Fog 
-    
-    if Terrain then
-        pcall(function() Terrain.Decoration = OrigTerrain.Deco end)
-        pcall(function() Terrain.WaterWaveSize = OrigTerrain.Wave end)
-        pcall(function() Terrain.WaterWaveSpeed = OrigTerrain.Speed end)
-        pcall(function() Terrain.WaterReflectance = OrigTerrain.Reflect end)
-    end
-end
-
--- // TOGGLE
-UI.CreateToggle(MiscPage, "Boost Graphics", "Optimize lighting & terrain (Stable)", StateBoost, function(state)
+UI.CreateToggle(MiscPage, "Optimize Graphics", "Disable shadows/fog (Recommended)", StateBoost, function(state)
     StateBoost = state
-    if state then ApplyBoost() else RestoreNormal() end
+    ToggleBoost(state)
 end)
