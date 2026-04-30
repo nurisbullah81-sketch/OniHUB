@@ -49,7 +49,7 @@ _G.Cat = {
         AutoAttack         = false,
         AntiAFK            = true, 
         AutoTeam           = false,
-        FPSBoost           = false, -- <--- TAMBAHKAN INI BANG!
+        FPSBoost           = false, -- <--- WAJIB ADA INI BANG!
         
         -- Webhook Alerts
         FruitWebhook       = false,
