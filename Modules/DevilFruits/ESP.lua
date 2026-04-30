@@ -1,148 +1,181 @@
--- ==========================================
--- MODULE: DEVIL FRUIT ESP (SUPER OPTIMIZED)
--- ==========================================
+-- [[ ==========================================
+--      MODULE: DEVIL FRUIT ESP (OPTIMIZED)
+--    ========================================== ]]
 
--- Services
-local Workspace   = game:GetService("Workspace")
-local Players     = game:GetService("Players")
+-- // Services
+local Workspace = game:GetService("Workspace")
+local Players   = game:GetService("Players")
 
--- Variables
+-- // Variables
 local Me = Players.LocalPlayer
 
--- Wait for Core
-while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings or not _G.Cat.State do 
+-- // Wait for Core System Initialization
+repeat 
     task.wait(0.1) 
-end
+until _G.Cat 
+    and _G.Cat.UI 
+    and _G.Cat.Settings 
+    and _G.Cat.State
 
+-- // Reference Global Components
 local UI       = _G.Cat.UI
 local Settings = _G.Cat.Settings
 local State    = _G.Cat.State
 
 -- ==========================================
--- 1. UI SETUP
+-- 1. UI INITIALIZATION
 -- ==========================================
 local Page = UI.CreateTab("Devil Fruits", false)
 
 UI.CreateSection(Page, "FRUIT FINDER")
 
+-- // ESP Toggle Setup
 UI.CreateToggle(
     Page, 
     "Fruit ESP", 
     "Show text on any spawned fruits", 
     Settings.FruitESP, 
-    function(s) 
-        Settings.FruitESP = s 
+    function(state) 
+        Settings.FruitESP = state 
     end
 )
 
 -- ==========================================
 -- 2. INTERNAL UTILITIES
 -- ==========================================
-local Data  = {} -- Stores ESP Objects
-local Mem   = {} -- Stores last known distance
+local Data = {} -- Stores ESP Objects
+local Mem  = {} -- Stores last known distance
 
--- Function: Get Fruit Position safely
+-- // Function: Get Fruit Position Safely
 local function GetPosition(fruit)
-    if not fruit or not fruit.Parent then return nil end
+    if not (fruit and fruit.Parent) then 
+        return nil 
+    end
     
     local ok, pos = pcall(function()
+        -- Handle Tool Type
         if fruit:IsA("Tool") then
             local handle = fruit:FindFirstChild("Handle")
             return handle and handle.Position
+        
+        -- Handle Model Type
         elseif fruit:IsA("Model") then
             if fruit.PrimaryPart then 
                 return fruit.PrimaryPart.Position 
             end
             
-            local alternative = fruit:FindFirstChild("HumanoidRootPart") 
+            -- Fallback Search
+            local alt = fruit:FindFirstChild("HumanoidRootPart") 
                 or fruit:FindFirstChildWhichIsA("BasePart")
-            return alternative and alternative.Position
+            
+            return alt and alt.Position
         end
     end)
     
     return ok and pos or nil
 end
 
--- Function: Check if object is a Devil Fruit
+-- // Function: Validate Devil Fruit Object
 local function IsFruit(obj)
-    if not obj or not obj.Parent then return false end
+    if not (obj and obj.Parent) then 
+        return false 
+    end
     
     local ok, result = pcall(function()
-        if (obj:IsA("Tool") or obj:IsA("Model")) and obj:FindFirstChild("Fruit") then
-            return true
-        end
-        return false
+        local isType = obj:IsA("Tool") or obj:IsA("Model")
+        local hasTag = obj:FindFirstChild("Fruit")
+        
+        return isType and hasTag
     end)
     
     return ok and result
 end
 
--- ==========================================
--- 3. ESP MANAGEMENT
--- ==========================================
+-- [[ ==========================================
+--      3. ESP MANAGEMENT (GUI HANDLERS)
+--    ========================================== ]]
 
+-- // Function: Add ESP to Fruit Object
 local function AddESP(fruit)
-    if not fruit or not fruit.Parent or Data[fruit] then return end
+    -- Early exit if invalid or already exists
+    local shouldIgnore = not (fruit and fruit.Parent) or Data[fruit]
+    if shouldIgnore then return end
     
     pcall(function()
-        local bb = Instance.new("BillboardGui", fruit)
-        bb.Name = "CatESP"
-        bb.Size = UDim2.new(0, 150, 0, 20)
-        bb.AlwaysOnTop = true
-        bb.StudsOffset = Vector3.new(0, 3, 0)
-        bb.Enabled = false
+        -- // 3.1: BillboardGui Setup
+        local bb         = Instance.new("BillboardGui", fruit)
+        bb.Name          = "CatESP"
+        bb.Size          = UDim2.new(0, 150, 0, 20)
+        bb.AlwaysOnTop   = true
+        bb.StudsOffset   = Vector3.new(0, 3, 0)
+        bb.Enabled       = false
         
-        local txt = Instance.new("TextLabel", bb)
-        txt.Size = UDim2.new(1, 0, 1, 0)
+        -- // 3.2: TextLabel Setup
+        local txt        = Instance.new("TextLabel", bb)
+        txt.Size         = UDim2.new(1, 0, 1, 0)
+        txt.Text         = string.format("%s []", fruit.Name)
+        txt.TextSize     = 13
+        txt.Font         = Enum.Font.GothamBold
+        txt.TextColor3   = Color3.fromRGB(255, 255, 255)
+        txt.TextXAlignment         = Enum.TextXAlignment.Left
         txt.BackgroundTransparency = 1
-        txt.Text = fruit.Name .. " []"
-        txt.TextColor3 = Color3.fromRGB(255, 255, 255)
         txt.TextStrokeTransparency = 0.3
-        txt.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        txt.Font = Enum.Font.GothamBold
-        txt.TextSize = 13
-        txt.TextXAlignment = Enum.TextXAlignment.Left
+        txt.TextStrokeColor3       = Color3.fromRGB(0, 0, 0)
         
-        Data[fruit] = { bb = bb, txt = txt }
-        Mem[fruit] = -1
+        -- // 3.3: Store References
+        Data[fruit] = { 
+            bb  = bb, 
+            txt = txt 
+        }
+        Mem[fruit]  = -1
     end)
 end
 
+-- // Function: Remove ESP from Fruit Object
 local function RemoveESP(fruit)
-    if Data[fruit] then
+    local entry = Data[fruit]
+    
+    if entry then
         pcall(function()
-            if Data[fruit].bb and Data[fruit].bb.Parent then
-                Data[fruit].bb:Destroy()
+            local gui = entry.bb
+            if gui and gui.Parent then
+                gui:Destroy()
             end
         end)
+        
+        -- Clear from tracking tables
         Data[fruit] = nil
-        Mem[fruit] = nil
+        Mem[fruit]  = nil
     end
 end
 
--- ==========================================
--- 4. WORKSPACE OBSERVER
--- ==========================================
+-- [[ ==========================================
+--      4. WORKSPACE OBSERVER (AUTO-DETECTION)
+--    ========================================== ]]
 
--- TUNGGU GAME READY DULU SEBELUM SCAN AWAL (BIAR KAGAK MISDETEKSI)
+-- // 4.1: Initial Scan on Startup
 task.spawn(function()
     _G.Cat.WaitUntilReady()
-    task.wait(3) -- Jeda 3 detik setelah hidup biar map ke-load semua
-    
+    task.wait(3) -- Buffering period for workspace assets to load
+
     for _, obj in pairs(Workspace:GetChildren()) do 
-        if IsFruit(obj) then AddESP(obj) end 
+        if IsFruit(obj) then 
+            AddESP(obj) 
+        end 
     end
 end)
 
--- Monitor New Fruits
+-- // 4.2: Listen for New Fruits Spawned
 Workspace.ChildAdded:Connect(function(obj) 
-    task.wait(1) -- Diperbesar dari 0.5 ke 1 detik, biar object "Fruit" didalemnya sempat ke-load oleh game
+    -- Delay ensures internal "Fruit" tags replicate to client
+    task.wait(1) 
     
     if IsFruit(obj) then 
         AddESP(obj) 
         
-        -- Webhook Integration
-        if Settings.FruitWebhook and _G.Cat.Webhook then
+        -- Trigger Webhook Notification
+        local canNotify = Settings.FruitWebhook and _G.Cat.Webhook
+        if canNotify then
             _G.Cat.Webhook:Send(
                 obj.Name, 
                 game.JobId, 
@@ -153,7 +186,7 @@ Workspace.ChildAdded:Connect(function(obj)
     end 
 end)
 
--- Monitor Fruit Removal
+-- // 4.3: Handle Object Removal
 Workspace.ChildRemoved:Connect(function(obj) 
     RemoveESP(obj) 
 end)
@@ -165,85 +198,115 @@ _G.Cat.ESP = {
     Data = Data,
     Pos  = GetPosition,
     
+    -- // Method: Find the closest fruit to LocalPlayer
     GetNearestFruit = function() 
-        local closest, minDist = nil, math.huge 
-        local hrp = Me.Character and Me.Character:FindFirstChild("HumanoidRootPart") 
+        local closest = nil
+        local minDist = math.huge 
+        local char    = Me.Character
+        local hrp     = char and char:FindFirstChild("HumanoidRootPart") 
         
         if not hrp then return nil end 
         
         for fruit, _ in pairs(Data) do 
             if fruit and fruit.Parent == Workspace then 
-                local p = GetPosition(fruit) 
-                if p then 
-                    local dist = (p - hrp.Position).Magnitude 
+                local fruitPos = GetPosition(fruit) 
+                
+                if fruitPos then 
+                    local dist = (fruitPos - hrp.Position).Magnitude 
+                    
                     if dist < minDist then 
-                        closest, minDist = fruit, dist 
+                        closest = fruit
+                        minDist = dist 
                     end 
                 end 
             else 
+                -- Cleanup if fruit is no longer in Workspace
                 RemoveESP(fruit) 
             end 
         end 
+        
         return closest 
     end,
     
+    -- // Method: Return list of all active fruit names
     GetFruitsList = function() 
         local names = {} 
+        
         for fruit, _ in pairs(Data) do 
             if fruit and fruit.Parent then 
                 table.insert(names, fruit.Name) 
             end 
         end 
+        
         return names 
     end
 }
 
--- ==========================================
--- 6. SUPER LIGHTWEIGHT LOOP (NAT HUB STYLE)
--- ==========================================
--- Gue buang RunService! Pake task.spawn biasa yang jauh lebih hemat RAM & CPU.
--- Update 2x per detik aja (0.5), mata lu kagak bakal ngeliat bedanya tapi PC lu LEGA!
+-- [[ ==========================================
+--      6. PERFORMANCE OPTIMIZED UPDATE LOOP
+--    ========================================== ]]
+
+-- // Optimization: High-efficiency loop (0.5s interval)
+-- // Reduces RAM/CPU overhead by avoiding Heartbeat/RenderStepped
 task.spawn(function()
     while task.wait(0.5) do
         pcall(function()
-            -- Kalau ESP dimatikan, sembunyikan semua text
+            -- // 6.1: Global ESP Toggle Check
             if not Settings.FruitESP then 
-                for _, d in pairs(Data) do 
-                    if d and d.bb then d.bb.Enabled = false end 
+                for _, entry in pairs(Data) do 
+                    if entry and entry.bb then 
+                        entry.bb.Enabled = false 
+                    end 
                 end 
                 return 
             end
             
-            local c = Me.Character 
-            local r = c and c:FindFirstChild("HumanoidRootPart")
-            local mp = r and r.Position
+            -- // 6.2: Reference Local Player State
+            local char  = Me.Character 
+            local hrp   = char and char:FindFirstChild("HumanoidRootPart")
+            local myPos = hrp and hrp.Position
             
-            for f, d in pairs(Data) do 
-                -- Bersihkan data buah yang udah ilang
-                if not f or not f.Parent or not d.bb or not d.bb.Parent then 
-                    RemoveESP(f) 
+            -- // 6.3: Process Tracked Fruits
+            for fruit, entry in pairs(Data) do 
+                -- Cleanup invalid or removed objects
+                local isValid = fruit 
+                    and fruit.Parent 
+                    and entry.bb 
+                    and entry.bb.Parent
+                
+                if not isValid then 
+                    RemoveESP(fruit) 
                     continue 
                 end 
                 
-                -- Kalau karakter belum load / lagi mati, kagak usah update jarak (hemat fps)
-                -- Tapi ESP tetep nyala kaya biasa!
-                if not mp then continue end 
+                -- Skip update if player is not loaded (saves FPS)
+                if not myPos then continue end 
                 
-                local p = GetPosition(f) 
-                if not p then 
-                    d.bb.Enabled = false
+                -- Fetch fruit position via utility
+                local fruitPos = GetPosition(fruit) 
+                if not fruitPos then 
+                    entry.bb.Enabled = false
                     continue 
                 end 
                 
-                local dx, dy, dz = p.X - mp.X, p.Y - mp.Y, p.Z - mp.Z 
-                local m = math.floor(math.sqrt(dx*dx + dy*dy + dz*dz)) 
+                -- // 6.4: Distance Calculation & Throttling
+                local dx = fruitPos.X - myPos.X
+                local dy = fruitPos.Y - myPos.Y
+                local dz = fruitPos.Z - myPos.Z
                 
-                -- Update text jarak kalo perubahan lebih dari 5 meter
-                if math.abs(m - (Mem[f] or -1)) > 5 then 
-                    Mem[f] = m 
-                    d.txt.Text = f.Name .. " [" .. m .. "m]" 
+                -- Optimization: Fast magnitude calculation
+                local dist = math.floor(math.sqrt(dx^2 + dy^2 + dz^2)) 
+                
+                -- Only update UI text if movement exceeds 5 studs (throttling)
+                local lastDist = Mem[fruit] or -1
+                local diff     = math.abs(dist - lastDist)
+
+                if diff > 5 then 
+                    Mem[fruit]     = dist 
+                    entry.txt.Text = string.format("%s [%dm]", fruit.Name, dist) 
                 end 
-                d.bb.Enabled = true 
+                
+                entry.bb.Enabled = true 
             end
         end)
     end
