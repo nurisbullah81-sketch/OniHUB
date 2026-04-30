@@ -9,14 +9,14 @@ local Settings = _G.Cat.Settings
 local State = _G.Cat.State
 local SafeInvoke = _G.Cat.SafeInvoke
 
--- FIX: Masuk ke kamar yang sama
+-- Masuk ke kamar Devil Fruits
 local Page = UI.CreateTab("Devil Fruits", false)
 
--- 1. PASANG UI
-UI.CreateToggle(Page, "Auto Store Fruits", "Store collected fruits to inventory", Settings.AutoStoreFruit, function(s) Settings.AutoStoreFruit = s UI.SaveSettings() end)
+-- 1. PASANG UI (UI.SaveSettings() dihapus biar kagak tabrakan sama StyleUI)
+UI.CreateToggle(Page, "Auto Store Fruits", "Store collected fruits to inventory", Settings.AutoStoreFruit, function(s) Settings.AutoStoreFruit = s end)
 
--- 2. LOGIC AUTO STORE
-local StoreBlacklist={}
+-- 2. LOGIC AUTO STORE (MURNI DARI CODE LU, CUMA DIBIKIN RAPI)
+local StoreBlacklist = {}
 local isStoring = false
 
 task.spawn(function() 
@@ -26,22 +26,56 @@ task.spawn(function()
             pcall(function() 
                 local character = Me.Character
                 if not character then isStoring = false return end 
+                
                 local fruitTool = nil
-                if Me.Backpack then for _, v in pairs(Me.Backpack:GetChildren()) do if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then fruitTool = v break end end end
-                if not fruitTool then for _, v in pairs(character:GetChildren()) do if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then fruitTool = v break end end end
+                
+                -- Cek Backpack
+                if Me.Backpack then 
+                    for _, v in pairs(Me.Backpack:GetChildren()) do 
+                        if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then 
+                            fruitTool = v 
+                            break 
+                        end 
+                    end 
+                end
+                
+                -- Cek Character (Tangan)
+                if not fruitTool then 
+                    for _, v in pairs(character:GetChildren()) do 
+                        if v:IsA("Tool") and string.find(v.Name, "Fruit") and not table.find(StoreBlacklist, v.Name) then 
+                            fruitTool = v 
+                            break 
+                        end 
+                    end 
+                end
 
                 if fruitTool then
                     local fruitName = fruitTool.Name
                     local fruitVal = fruitTool:FindFirstChild("Fruit")
-                    if fruitVal and fruitVal:IsA("StringValue") and fruitVal.Value ~= "" then fruitName = fruitVal.Value else fruitName = string.gsub(fruitTool.Name, " Fruit", "") fruitName = fruitName.."-"..fruitName end
+                    
+                    if fruitVal and fruitVal:IsA("StringValue") and fruitVal.Value ~= "" then 
+                        fruitName = fruitVal.Value 
+                    else 
+                        fruitName = string.gsub(fruitTool.Name, " Fruit", "") 
+                        fruitName = fruitName.."-"..fruitName 
+                    end
+                    
                     local storeSuccess = false
                     for _ = 1, 3 do 
                         if storeSuccess then break end
                         local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
-                        if remote then local ok, result = SafeInvoke(remote, "StoreFruit", fruitName, fruitTool) if ok and result == true then storeSuccess = true end end
+                        if remote then 
+                            local ok, result = SafeInvoke(remote, "StoreFruit", fruitName, fruitTool) 
+                            if ok and result == true then 
+                                storeSuccess = true 
+                            end 
+                        end
                         task.wait(0.5)
                     end
-                    if not storeSuccess then table.insert(StoreBlacklist, fruitTool.Name) end
+                    
+                    if not storeSuccess then 
+                        table.insert(StoreBlacklist, fruitTool.Name) 
+                    end
                 end
             end) 
             isStoring = false
