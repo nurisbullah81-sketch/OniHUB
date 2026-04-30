@@ -584,6 +584,10 @@ local function CreateTab(name, isFirst)
     -- Tab Button
     local Btn = Instance.new("TextButton", SideScroll)
     Btn.Name = name .. "_TabBtn"
+    Btn.LayoutOrder = TabPriority[name] or 99 -- <--- TAMBAHKAN BARIS INI BIAR URUTANNYA FIX
+    Btn.Size = UDim2.new(1, 0, 0, 32)
+    Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff 
+    Btn.Name = name .. "_TabBtn"
     Btn.Size = UDim2.new(1, 0, 0, 32)
     Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff
     Btn.Text = "    " .. name 
@@ -856,7 +860,15 @@ end)
 -- 4. PRE-CREATE TABS (MENGATUR URUTAN SIDEBAR)
 -- ==========================================
 -- Ini memastikan tombol sidebar muncul sesuai urutan ini, biar Status (Home) selalu di atas
-CreateTab("Status", true)       -- Halaman utama paling atas
+-- Tabel prioritas urutan Sidebar (Makin kecil makin di atas)
+local TabPriority = {
+    ["Status"] = 1,
+    ["Auto Farm"] = 2,
+    ["Devil Fruits"] = 3,
+    ["Misc"] = 4
+}
+
+CreateTab("Status", true)
 CreateTab("Auto Farm", false)
 CreateTab("Devil Fruits", false)
 CreateTab("Misc", false)
