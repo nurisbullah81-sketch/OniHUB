@@ -9,7 +9,9 @@ local UI = _G.Cat.UI
 local Settings = _G.Cat.Settings
 local State = _G.Cat.State
 local ESP = _G.Cat.ESP
-local Page = UI.TabFrames["Devil Fruits"] -- Ambil kamar yang udah dibikin ESP.lua
+
+-- FIX: Panggil CreateTab lagi buat masuk ke kamar yang udah ada!
+local Page = UI.CreateTab("Devil Fruits", false)
 
 -- 1. PASANG UI
 UI.CreateToggle(Page, "Tween to Fruits", "Smoothly fly to collect fruits", Settings.TweenFruit, function(s) Settings.TweenFruit = s UI.SaveSettings() end)
@@ -41,7 +43,6 @@ local StopSmartTween = function()
     end)
 end
 
--- Register ke global state biar Core.lua bisa matiin kalau game kagak ready
 State.StopSmartTween = StopSmartTween
 
 task.spawn(function() 
