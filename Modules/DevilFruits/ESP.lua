@@ -77,18 +77,12 @@ end
 
 -- // Function: Validate Devil Fruit Object
 local function IsFruit(obj)
-    if not (obj and obj.Parent) then 
-        return false 
-    end
+    if not (obj and obj.Parent) then return false end
     
-    local ok, result = pcall(function()
-        local isType = obj:IsA("Tool") or obj:IsA("Model")
-        local hasTag = obj:FindFirstChild("Fruit")
-        
-        return isType and hasTag
-    end)
+    -- Filter super cepat tanpa pcall yang bikin berat CPU
+    if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
     
-    return ok and result
+    return obj:FindFirstChild("Fruit") ~= nil
 end
 
 -- [[ ==========================================
@@ -167,11 +161,16 @@ end)
 
 -- // 4.2: Listen for New Fruits Spawned
 Workspace.ChildAdded:Connect(function(obj) 
-    -- Delay ensures internal "Fruit" tags replicate to client
-    task.wait(1) 
+    -- BLOKIR BARANG SAMPAH DETIK KE-0 BIAR KAGA LAG!
+    if not obj:IsA("Tool") and not obj:IsA("Model") then return end
     
-    if IsFruit(obj) then 
-        AddESP(obj) 
+    task.spawn(function()
+        -- Delay ensures internal "Fruit" tags replicate to client
+        task.wait(1) 
+        
+        if IsFruit(obj) then 
+            AddESP(obj)
+        end
         
         -- Trigger Webhook Notification
         local canNotify = Settings.FruitWebhook and _G.Cat.Webhook
@@ -183,7 +182,7 @@ Workspace.ChildAdded:Connect(function(obj)
                 Settings.FruitWebhookURL
             )
         end
-    end 
+    end)
 end)
 
 -- // 4.3: Handle Object Removal
@@ -290,12 +289,7 @@ task.spawn(function()
                 end 
                 
                 -- // 6.4: Distance Calculation & Throttling
-                local dx = fruitPos.X - myPos.X
-                local dy = fruitPos.Y - myPos.Y
-                local dz = fruitPos.Z - myPos.Z
-                
-                -- Optimization: Fast magnitude calculation
-                local dist = math.floor(math.sqrt(dx^2 + dy^2 + dz^2)) 
+                local dist = math.floor((fruitPos - myPos).Magnitude) 
                 
                 -- Only update UI text if movement exceeds 5 studs (throttling)
                 local lastDist = Mem[fruit] or -1
