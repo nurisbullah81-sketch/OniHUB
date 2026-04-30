@@ -187,18 +187,17 @@ _G.Cat.ESP = {
 }
 
 -- [[ ==========================================
---      5. SMART CCTV & ZERO-LAG DISTANCE UPDATER
+--      5. SMART CCTV X-RAY & ZERO-LAG UPDATER
 --    ========================================== ]]
 
 local RunService = game:GetService("RunService")
 local distanceLoop = nil
 
--- // Fungsi buat update jarak (Cuma jalan kalau ada buah!)
+-- // FUNGSI MESIN JARAK (Tidur kalau kaga ada buah)
 local function StartDistanceLoop()
-    if distanceLoop then return end -- Kalo udah nyala, biarin aja
+    if distanceLoop then return end 
     
     distanceLoop = RunService.Heartbeat:Connect(function()
-        -- Kalau toggle ESP dimatiin di UI, umpetin teksnya
         if not Settings.FruitESP then
             for _, entry in pairs(Data) do
                 if entry and entry.bb then entry.bb.Enabled = false end
@@ -216,8 +215,7 @@ local function StartDistanceLoop()
         for fruit, entry in pairs(Data) do
             hasFruits = true
             
-            -- Kalau buah ilang / udah dimakan, hapus dari memori
-            if not fruit or not fruit.Parent or fruit.Parent ~= Workspace then
+            if not fruit or not fruit.Parent then
                 RemoveESP(fruit)
                 continue
             end
@@ -231,7 +229,6 @@ local function StartDistanceLoop()
             local dist = math.floor((fruitPos - myPos).Magnitude)
             local lastDist = Mem[fruit] or -1
 
-            -- Update text cuma kalau lu jalan lebih dari 5 meter (Biar UI kaga kedut-kedut)
             if math.abs(dist - lastDist) > 5 then
                 Mem[fruit] = dist
                 entry.txt.Text = string.format("%s [%dm]", fruit.Name, dist)
@@ -240,7 +237,6 @@ local function StartDistanceLoop()
             entry.bb.Enabled = true
         end
 
-        -- MATIIN MESIN OTOMATIS KALAU UDAH KAGA ADA BUAH DI MAP! (0% CPU Idle)
         if not hasFruits then
             distanceLoop:Disconnect()
             distanceLoop = nil
@@ -248,16 +244,15 @@ local function StartDistanceLoop()
     end)
 end
 
--- // Fungsi CCTV buat ngawasin langit (Kaga pake loop!)
+-- // SENSOR X-RAY (Deteksi buah di seluruh pelosok map/folder)
 local function OnItemSpawned(obj)
-    -- Filter super cepat: Cek apakah benda yang jatuh namanya ada tulisan "Fruit"
+    -- Filter super ringan: Pastiin yang baru masuk map itu namanya berakhiran "Fruit"
     if typeof(obj.Name) == "string" and string.match(obj.Name, "Fruit$") then
-        task.delay(0.5, function() -- Kasih jeda 0.5 detik biar game selesai ngerender modelnya
+        task.delay(0.5, function() -- Jeda 0.5s biar model buah kelar kerender
             if IsFruit(obj) and not Data[obj] then
                 AddESP(obj)
-                StartDistanceLoop() -- WANGUNIN MESIN PENGHITUNG JARAK!
+                StartDistanceLoop() -- WANGUNIN MESIN JARAK!
                 
-                -- Webhook Discord tetep jalan 100%
                 if Settings.FruitWebhook and _G.Cat.Webhook then
                     _G.Cat.Webhook:Send(
                         obj.Name, 
@@ -271,24 +266,27 @@ local function OnItemSpawned(obj)
     end
 end
 
--- // Pasang CCTV di Workspace
-Workspace.ChildAdded:Connect(OnItemSpawned)
+-- Pasang X-Ray pas buah masuk
+Workspace.DescendantAdded:Connect(OnItemSpawned)
 
--- // Pasang CCTV buat buah yang ilang/diambil orang
-Workspace.ChildRemoved:Connect(function(obj)
+-- Pasang X-Ray pas buah diambil orang / despawn
+Workspace.DescendantRemoving:Connect(function(obj)
     if Data[obj] then
         RemoveESP(obj)
     end
 end)
 
--- // Sapu bersih 1x doang pas script baru di-execute
+-- // GELEDAH MAP 1X SAAT EXECUTE (Safety First!)
 task.spawn(function()
-    for _, obj in ipairs(Workspace:GetChildren()) do
-        if IsFruit(obj) and not Data[obj] then
-            AddESP(obj)
+    -- Kita pakai GetDescendants() buat nembus semua folder pas awal nge-run!
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if typeof(obj.Name) == "string" and string.match(obj.Name, "Fruit$") then
+            if IsFruit(obj) and not Data[obj] then
+                AddESP(obj)
+            end
         end
     end
-    -- Kalau dari hasil scan awal ternyata ada buah, langsung nyalain mesin jaraknya
+    
     if next(Data) ~= nil then
         StartDistanceLoop()
     end
