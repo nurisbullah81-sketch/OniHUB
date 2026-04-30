@@ -105,15 +105,15 @@ local function ReadValue(obj)
     if obj:IsA("ValueBase") then 
         local val = obj.Value 
         
-        -- Handle Number/Int types
         if type(val) == "number" then 
             return val 
         end 
         
-        -- Handle String types (Extract first digits)
         if type(val) == "string" then 
-            local match = string.match(val, "%d+") 
-            return tonumber(match) or 0 
+            -- Hapus koma dan karakter aneh, murni ambil angkanya aja
+            local cleanNum = string.gsub(val, ",", "")
+            cleanNum = string.match(cleanNum, "%d+")
+            return tonumber(cleanNum) or 0 
         end 
     end
     
@@ -133,8 +133,7 @@ task.spawn(function()
             
             local lvl, money, frag, bounty = 0, 0, 0, 0
             
-            -- // 3.2: OPTIMIZED SCANNER (NO REGEX, NO STRING MANIPULATION!)
-            -- Langsung tembak nama aslinya, jauh lebih enteng buat CPU!
+            -- // 3.2: OPTIMIZED SCANNER (ANTI-0 BOUNTY)
             if dataFolder then
                 lvl    = ReadValue(dataFolder:FindFirstChild("Level"))
                 money  = ReadValue(dataFolder:FindFirstChild("Beli"))
@@ -142,9 +141,12 @@ task.spawn(function()
             end
             
             if leaderstats then
-                bounty = ReadValue(leaderstats:FindFirstChild("Bounty"))
-                if bounty == 0 then -- Fallback kalau dia lagi pake faction Honor
-                    bounty = ReadValue(leaderstats:FindFirstChild("Honor"))
+                -- Cari manual tanpa regex berat, dijamin nemu biarpun Marine/Pirate
+                for _, child in ipairs(leaderstats:GetChildren()) do
+                    if child.Name == "Bounty" or child.Name == "Honor" or string.find(child.Name, "Bounty") then
+                        bounty = ReadValue(child)
+                        break
+                    end
                 end
             end
 
