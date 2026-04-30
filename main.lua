@@ -149,3 +149,6 @@ Load("Modules/DevilFruits/AutoHop.lua")   -- Server Browser Logic
 -- // Phase 4: Utilities & Protection
 Load("Modules/DevilFruits/Webhook.lua") -- Alerts & Logging
 Load("Modules/Misc/AntiAFK.lua")        -- Idle Protection & Auto Team
+
+-- // Phase 5: Miscellaneous & Optimization
+Load("Modules/Misc/FPSBooster.lua")     -- Max Performance (Anti-Lag)
