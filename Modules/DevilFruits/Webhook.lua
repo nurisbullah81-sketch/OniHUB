@@ -8,18 +8,18 @@ while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings do task.wait(0.1) end
 local UI = _G.Cat.UI
 local Settings = _G.Cat.Settings
 
--- FIX: Masuk ke kamar yang sama
 local Page = UI.CreateTab("Devil Fruits", false)
 local Theme = UI.Theme
 
+-- ==========================================
 -- 1. PASANG UI WEBHOOK
+-- ==========================================
 UI.CreateSection(Page, "DISCORD WEBHOOK")
 UI.CreateToggle(Page, "Fruit Webhook", "Send alerts to Discord on spawn", Settings.FruitWebhook, function(s) Settings.FruitWebhook = s end)
 
 local WHConfig = Instance.new("Frame", Page) WHConfig.LayoutOrder = #Page:GetChildren() WHConfig.Size = UDim2.new(1, 0, 0, 106) WHConfig.BackgroundTransparency = 1
 local WHConfigLayout = Instance.new("UIListLayout", WHConfig) WHConfigLayout.Padding = UDim.new(0, 6) WHConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- URL Box
 local WHURLFrame = Instance.new("Frame", WHConfig)
 WHURLFrame.LayoutOrder = 1
 WHURLFrame.Size = UDim2.new(1, 0, 0, 38)
@@ -59,7 +59,9 @@ local WHTestBtn = Instance.new("TextButton", WHConfig) WHTestBtn.LayoutOrder = 3
 WHTestBtn.Text = "Test Webhook" WHTestBtn.TextColor3 = Theme.CatPurple WHTestBtn.Font = Enum.Font.GothamBold WHTestBtn.TextSize = 11 WHTestBtn.AutoButtonColor = false
 Instance.new("UICorner", WHTestBtn).CornerRadius = UDim.new(0, 6) Instance.new("UIStroke", WHTestBtn).Color = Theme.Line
 
--- 2. LOGIC WEBHOOK
+-- ==========================================
+-- 2. LOGIC WEBHOOK (SILENT)
+-- ==========================================
 local Webhook = {}
 
 local function GetDynamicRarity(rawFruitName)
@@ -73,8 +75,7 @@ local function GetDynamicRarity(rawFruitName)
 end
 
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
-    warn("[CatHUB] Memulai Send() untuk buah: " .. tostring(fruitName))
-    if not webhookURL or webhookURL == "" then warn("[CatHUB] Batal: URL Kosong di sistem!") return end
+    if not webhookURL or webhookURL == "" then return end
     
     webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1") 
     webhookURL = string.gsub(webhookURL, "discord%.com", "webhook.lewisakura.moe")
@@ -89,7 +90,7 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
         if fruitRarity == "Mythical" then shouldSend = true end 
     end
     
-    if not shouldSend then warn("[CatHUB] Batal: Buah " .. fruitName .. " kaga lolos filter rarity: " .. raritySetting) return end
+    if not shouldSend then return end
     
     local embedColor = 16777215 
     if fruitRarity == "Legendary" then embedColor = 16753920 
@@ -107,12 +108,7 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     
     local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if req then 
-        task.spawn(function() 
-            local ok, res = pcall(function() return req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) end) 
-            if ok then warn("[CatHUB] Berhasil nembak webhook! Status: " .. tostring(res.StatusCode)) else warn("[CatHUB] Gagal nembak HTTP: " .. tostring(res)) end
-        end) 
-    else
-        warn("[CatHUB] Executor lu kaga support fungsi Request!")
+        task.spawn(function() pcall(function() return req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) end) end) 
     end
 end
 
@@ -134,68 +130,73 @@ WHTestBtn.MouseButton1Click:Connect(function()
     WHTestBtn.Text = "Sending..." local ok, err = Webhook:Test(Settings.FruitWebhookURL) if ok then WHTestBtn.Text = "Test Sent!" else WHTestBtn.Text = "Fail: " .. string.sub(tostring(err), 1, 15) end task.wait(2) WHTestBtn.Text = "Test Webhook"
 end)
 
--- 3. CCTV TITANIUM V4 (THE ULTIMATE FIX)
+-- ==========================================
+-- 3. CCTV TITANIUM V5 (SILENT ASSASSIN & INSTANCE TRACKER)
+-- ==========================================
 task.spawn(function()
     local player = Players.LocalPlayer or Players.PlayerAdded:Wait() 
     while not player do task.wait(0.5) player = Players.LocalPlayer end
     
-    local sentFruits = {} 
-    local isScannerReady = false 
+    local seenTools = {} 
+    local ignoreNewTools = true 
     
-    -- Kasih delay 5 detik biar kekuatan buah yang nempel ga di-spam pas loading server
-    task.delay(5, function() isScannerReady = true warn("[CatHUB] Scanner CCTV Ready!") end)
+    -- Delay 7 detik pas baru spawn/masuk server biar item bawaan (Kitsune lu) dicuekin
+    task.delay(7, function() ignoreNewTools = false end)
     
     local function CheckForFruit(item)
-        warn("[CatHUB] CCTV Deteksi ada item baru di tangan/tas: " .. tostring(item.Name))
+        if not item:IsA("Tool") then return end 
         
-        if not isScannerReady then warn("[CatHUB] Batal: Scanner masih mode delay awal (cegah spam).") return end
-        if not Settings.FruitWebhook then warn("[CatHUB] Batal: Toggle 'Fruit Webhook' di UI lu masih mati!") return end 
+        -- INI OBAT ANTI-SPAM MUTLAK: Kalau item fisiknya udah pernah diliat, skip aja!
+        if seenTools[item] then return end 
+        seenTools[item] = true 
         
-        if item:IsA("Tool") then
-            local isFruit = false 
-            local fruitName = item.Name 
-            
-            -- Pola 1: Buah Fisik (Kitsune-Kitsune)
-            local len = string.len(item.Name) 
-            local half = math.floor(len / 2)
-            if half > 0 then 
-                local part1 = string.sub(item.Name, 1, half) 
-                local part2 = string.sub(item.Name, half + 2, len) 
-                local mid = string.sub(item.Name, half + 1, half + 1) 
-                if mid == "-" and part1 == part2 then 
-                    isFruit = true; 
-                    fruitName = part1 
-                end 
+        if ignoreNewTools then return end 
+        if not Settings.FruitWebhook then return end 
+        
+        local isFruit = false 
+        local fruitName = item.Name 
+        
+        -- Pola 1: Name-Name (Kitsune-Kitsune)
+        local len = string.len(item.Name) 
+        local half = math.floor(len / 2)
+        if half > 0 then 
+            local part1 = string.sub(item.Name, 1, half) 
+            local part2 = string.sub(item.Name, half + 2, len) 
+            local mid = string.sub(item.Name, half + 1, half + 1) 
+            if mid == "-" and part1 == part2 then 
+                isFruit = true; fruitName = part1 
+            end 
+        end
+        
+        -- Pola 2: Nama Klasik (Ghost Fruit)
+        if not isFruit and string.find(string.lower(item.Name), "fruit") then 
+            isFruit = true; fruitName = string.gsub(item.Name, " Fruit", "") 
+        end
+        
+        -- Pola 3: Fallback darurat (Siapa tau ada buah physical murni namanya "Ghost")
+        local cleanName = string.lower(fruitName)
+        local allFruits = {"kitsune", "tiger", "leopard", "dragon", "venom", "dough", "t-rex", "trex", "mammoth", "spirit", "control", "gravity", "blizzard", "portal", "lightning", "rumble", "pain", "buddha", "quake", "sound", "spider", "string", "love", "phoenix", "ghost", "magma", "light", "rubber", "barrier", "dark", "sand", "ice", "falcon", "flame", "spike", "smoke", "bomb", "spring", "chop", "spin", "rocket"}
+        if not isFruit then
+            for _, v in pairs(allFruits) do
+                if cleanName == v then
+                    isFruit = true; fruitName = item.Name; break
+                end
             end
-            
-            -- Pola 2: Nama Klasik (Kitsune Fruit)
-            if not isFruit and string.find(string.lower(item.Name), "fruit") then 
-                isFruit = true; 
-                fruitName = string.gsub(item.Name, " Fruit", "") 
-            end
-            
-            if isFruit then 
-                warn("[CatHUB] Valid! Ini beneran buah: " .. fruitName)
-                if sentFruits[fruitName] then warn("[CatHUB] Batal: Ditahan memori Anti-Spam (jangan keluar-masukin buah terus).") return end 
-                
-                sentFruits[fruitName] = true 
-                task.delay(30, function() sentFruits[fruitName] = nil end) 
-                
-                if _G.Cat.Webhook then 
-                    warn("[CatHUB] Meneruskan ke Mesin Webhook...")
-                    local jobId = game.JobId 
-                    if jobId == "" then jobId = "Singleplayer/Test-Server" end 
-                    _G.Cat.Webhook:Send(fruitName, jobId, Settings.FruitWebhookRarity, Settings.FruitWebhookURL) 
-                else
-                    warn("[CatHUB] FATAL ERROR: Mesin _G.Cat.Webhook hilang atau belum me-load!")
-                end 
-            else
-                warn("[CatHUB] Item dicuekin karena kaga lolos pola buah.")
-            end
+        end
+        
+        -- Eksekusi Webhook cuma buat item BARU yang beneran lolos sensor
+        if isFruit then 
+            if _G.Cat.Webhook then 
+                local jobId = game.JobId 
+                if jobId == "" then jobId = "Singleplayer/Test-Server" end 
+                _G.Cat.Webhook:Send(fruitName, jobId, Settings.FruitWebhookRarity, Settings.FruitWebhookURL) 
+            end 
         end
     end
     
     player.CharacterAdded:Connect(function(char) 
+        ignoreNewTools = true
+        task.delay(7, function() ignoreNewTools = false end)
         char.ChildAdded:Connect(CheckForFruit) 
         local backpack = player:WaitForChild("Backpack", 5) 
         if backpack then backpack.ChildAdded:Connect(CheckForFruit) end 
@@ -204,4 +205,12 @@ task.spawn(function()
     if player.Character then player.Character.ChildAdded:Connect(CheckForFruit) end
     local currentBackpack = player:WaitForChild("Backpack", 5) 
     if currentBackpack then currentBackpack.ChildAdded:Connect(CheckForFruit) end
+    
+    -- DAFTARIN SEMUA ITEM SEKARANG KE DALAM MEMORI (Biar equip/unequip kaga ngespam)
+    if player.Character then
+        for _, v in pairs(player.Character:GetChildren()) do if v:IsA("Tool") then seenTools[v] = true end end
+    end
+    if currentBackpack then
+        for _, v in pairs(currentBackpack:GetChildren()) do if v:IsA("Tool") then seenTools[v] = true end end
+    end
 end)
