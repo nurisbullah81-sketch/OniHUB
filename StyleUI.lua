@@ -40,151 +40,6 @@ if not _G.Cat.Settings then
 end
 
 -- ==========================================
--- 2. WEBHOOK ENGINE (PROXY LEWISAKURA)
--- ==========================================
--- Ini tetep di StyleUI karena dia infrastruktur dasar yang dipake CCTV nanti
-local Webhook = {}
-
-local function GetDynamicRarity(rawFruitName)
-    local cleanName = string.lower(rawFruitName)
-    
-    local mythical = {
-        "kitsune", "tiger", "leopard", "dragon", 
-        "venom", "dough", "t-rex", "trex", 
-        "mammoth", "spirit", "control", "gravity"
-    }
-    
-    local legendary = {
-        "blizzard", "portal", "lightning", "rumble", 
-        "pain", "buddha", "quake", "sound", 
-        "spider", "string", "love", "phoenix"
-    }
-
-    for _, kw in pairs(mythical) do 
-        if string.find(cleanName, kw) then return "Mythical" end 
-    end
-    
-    for _, kw in pairs(legendary) do 
-        if string.find(cleanName, kw) then return "Legendary" end 
-    end
-    
-    return "Common"
-end
-
-function Webhook:Test(webhookURL)
-    if not webhookURL or webhookURL == "" then 
-        return false, "No URL" 
-    end
-
-    -- Clean & Proxy
-    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
-    webhookURL = string.gsub(webhookURL, "discord%.com", "webhook.lewisakura.moe")
-
-    local payload = HttpService:JSONEncode({
-        content = "✅ **CatHUB Webhook Aktif!**",
-        embeds = {
-            {
-                title = "Koneksi Berhasil (Lewisakura Proxy)",
-                description = "Script lu udah terhubung 100% ke channel Discord ini bang.",
-                color = 32768,
-                footer = { text = "CatHUB Diagnostic" }
-            }
-        }
-    })
-
-    -- Executor Compatibility
-    local req = (syn and syn.request) 
-        or (http and http.request) 
-        or http_request 
-        or (fluxus and fluxus.request) 
-        or request
-
-    if not req then return false, "No HTTP Req" end
-
-    local ok, res = pcall(function() 
-        return req({ 
-            Url = webhookURL, 
-            Method = "POST", 
-            Headers = { ["Content-Type"] = "application/json" }, 
-            Body = payload 
-        }) 
-    end)
-
-    if ok and res and (res.StatusCode == 200 or res.StatusCode == 204) then 
-        return true, "Success" 
-    end
-
-    return false, "Pcall Error"
-end
-
-function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
-    if not webhookURL or webhookURL == "" then return end
-
-    -- Clean & Proxy
-    webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
-    webhookURL = string.gsub(webhookURL, "discord%.com", "webhook.lewisakura.moe")
-
-    local fruitRarity = GetDynamicRarity(fruitName)
-    local shouldSend = false
-
-    -- Filter Logic
-    if raritySetting == "All Fruits" then 
-        shouldSend = true
-    elseif raritySetting == "Legendary & Mythical" then 
-        if string.find(fruitRarity, "Legendary") or string.find(fruitRarity, "Mythical") then 
-            shouldSend = true 
-        end
-    elseif raritySetting == "Mythical Only" then 
-        if string.find(fruitRarity, "Mythical") then 
-            shouldSend = true 
-        end 
-    end
-
-    if not shouldSend then return end
-
-    -- Embed Styling
-    local embedColor = 16777215
-    if string.find(fruitRarity, "Legendary") then 
-        embedColor = 16753920 
-    elseif string.find(fruitRarity, "Mythical") then 
-        embedColor = 16711935 
-    end
-
-    local payload = HttpService:JSONEncode({
-        content = "🚨 **FRUIT SPAWN DETECTED** 🚨",
-        embeds = {
-            {
-                title = fruitRarity .. " Fruit: " .. fruitName,
-                description = "**JobID:** `" .. jobId .. "`\n\nUse this JobID to teleport to the server!",
-                color = embedColor,
-                footer = { text = "CatHUB Premium Scanner" }
-            }
-        }
-    })
-
-    local req = (syn and syn.request) 
-        or (http and http.request) 
-        or http_request 
-        or (fluxus and fluxus.request) 
-        or request
-
-    if req then 
-        task.spawn(function() 
-            pcall(function() 
-                req({
-                    Url = webhookURL, 
-                    Method = "POST", 
-                    Headers = { ["Content-Type"] = "application/json" }, 
-                    Body = payload
-                }) 
-            end) 
-        end) 
-    end
-end
-
-_G.Cat.Webhook = Webhook
-
--- ==========================================
 -- 3. UI RENDERING (KERANGKA MURNI)
 -- ==========================================
 local Gui = Instance.new("ScreenGui", CoreGui)
@@ -575,19 +430,24 @@ ContentArea.BackgroundTransparency = 1
 local Pages = {}
 local AllToggles = {}
 
+-- Tabel prioritas urutan Sidebar (Makin kecil makin di atas)
+local TabPriority = {
+    ["Status"] = 1,
+    ["Auto Farm"] = 2,
+    ["Devil Fruits"] = 3,
+    ["Misc"] = 4
+}
+
 local function CreateTab(name, isFirst)
     -- PENCEGAH DUPLIKAT: Kalau tab nya udah ada, cukup return Page nya doang
     if Pages[name] then 
         return Pages[name].Page 
     end
     
-    -- Tab Button
+        -- Tab Button
     local Btn = Instance.new("TextButton", SideScroll)
     Btn.Name = name .. "_TabBtn"
-    Btn.LayoutOrder = TabPriority[name] or 99 -- <--- TAMBAHKAN BARIS INI BIAR URUTANNYA FIX
-    Btn.Size = UDim2.new(1, 0, 0, 32)
-    Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff 
-    Btn.Name = name .. "_TabBtn"
+    Btn.LayoutOrder = TabPriority[name] or 99 -- Ini yang ngatur urutan
     Btn.Size = UDim2.new(1, 0, 0, 32)
     Btn.BackgroundColor3 = isFirst and Theme.TabOn or Theme.TabOff
     Btn.Text = "    " .. name 
