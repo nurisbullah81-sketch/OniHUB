@@ -1,5 +1,5 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER (ZERO GC SPIKE EDITION)
+--      MODULE: FPS BOOSTER (LAG FREE VERSION)
 --    ========================================== ]]
 
 local Workspace    = game:GetService("Workspace")
@@ -16,14 +16,12 @@ local UI = _G.Cat.UI
 local MiscPage = UI.CreateTab("Misc", false)
 UI.CreateSection(MiscPage, "FPS OPTIMIZER")
 
-local StateMed  = false
-local StateHigh = false
-local StateExt  = false
+local StateBoost = false
 
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
 -- Backup Settings
-local OrigLighting = { Shadows = Lighting.GlobalShadows }
+local OrigLighting = { Shadows = Lighting.GlobalShadows, Fog = Lighting.FogEnd }
 local OrigTerrain = {}
 if Terrain then
     pcall(function() OrigTerrain.Deco = Terrain.Decoration end)
@@ -32,57 +30,32 @@ if Terrain then
     pcall(function() OrigTerrain.Reflect = Terrain.WaterReflectance end)
 end
 
-pcall(function() Workspace.StreamingIntegrityEnabled = false end)
-
 -- ==========================================
--- LOGIC: ONE-SHOT SWEEP (Anti Lag Loop)
+-- LOGIC: PURE GRAPHICS TWEAK (No Map Scan)
 -- ==========================================
-local function SweepClean(level)
-    -- 1. Environment (Instant)
-    Lighting.FogEnd = 9e9 
+local function ApplyBoost()
+    -- 1. Lighting (Hilangin bayangan & kabut)
+    Lighting.FogEnd = 100000 
     Lighting.GlobalShadows = false
+    Lighting.Brightness = 2 -- Biar terang tanpa shadow
     
+    -- 2. Terrain (Bikin flat)
     if Terrain then
         pcall(function() Terrain.Decoration = false end)
         pcall(function() Terrain.WaterWaveSize = 0 end)
         pcall(function() Terrain.WaterWaveSpeed = 0 end)
         pcall(function() Terrain.WaterReflectance = 0 end)
     end
-
-    -- 2. Async Cleaner (Berjalan pelan di background tanpa nge-freeze)
-    task.spawn(function()
-        -- Ambil data SEKALI. Jangan pernah loop GetDescendants!
-        local objs = Workspace:GetDescendants()
-        
-        for i, obj in ipairs(objs) do
-            -- Jeda setiap 50 object biar FPS tetap 60
-            if i % 50 == 0 then task.wait() end 
-            
-            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
-                obj.Enabled = false
-            elseif obj:IsA("BasePart") then
-                if obj.Anchored then
-                    obj.CanTouch = false
-                    obj.CanQuery = false
-                end
-                if level == "High" or level == "Extreme" then
-                    obj.CastShadow = false
-                end
-                if level == "Extreme" then
-                    obj.Material = Enum.Material.SmoothPlastic
-                    obj.Reflectance = 0
-                end
-            elseif (obj:IsA("Decal") or obj:IsA("Texture")) and level == "Extreme" then
-                obj.Transparency = 1
-            end
-        end
-        warn("[CatHUB] FPS Sweep Complete!")
-    end)
+    
+    -- 3. Streaming (Beban Memory)
+    pcall(function() Workspace.StreamingIntegrityEnabled = false end)
+    
+    warn("[CatHUB] Graphics Boost Active!")
 end
 
 local function RestoreNormal()
     Lighting.GlobalShadows = OrigLighting.Shadows
-    Lighting.FogEnd = 2000 
+    Lighting.FogEnd = OrigLighting.Fog 
     
     if Terrain then
         pcall(function() Terrain.Decoration = OrigTerrain.Deco end)
@@ -92,18 +65,8 @@ local function RestoreNormal()
     end
 end
 
--- // TOGGLES
-UI.CreateToggle(MiscPage, "Medium Boost", "Clean once (Stable)", StateMed, function(state)
-    StateMed = state
-    if state then SweepClean("Medium") else RestoreNormal() end
-end)
-
-UI.CreateToggle(MiscPage, "High Boost", "Clean once (High)", StateHigh, function(state)
-    StateHigh = state
-    if state then SweepClean("High") else RestoreNormal() end
-end)
-
-UI.CreateToggle(MiscPage, "Extreme Boost", "Clean once (Max)", StateExt, function(state)
-    StateExt = state
-    if state then SweepClean("Extreme") else RestoreNormal() end
+-- // TOGGLE
+UI.CreateToggle(MiscPage, "Boost Graphics", "Optimize lighting & terrain (Stable)", StateBoost, function(state)
+    StateBoost = state
+    if state then ApplyBoost() else RestoreNormal() end
 end)
