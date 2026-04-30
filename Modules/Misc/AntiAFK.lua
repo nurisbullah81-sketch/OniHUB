@@ -1,78 +1,93 @@
--- ==========================================
--- MODULE: ANTI-AFK & AUTO TEAM
--- ==========================================
+-- [[ ==========================================
+--      MODULE: MISC - ANTI-AFK & AUTO-TEAM
+--    ========================================== ]]
 
--- Services
-local VirtualUser      = game:GetService("VirtualUser")
+-- // Services
+local VirtualUser       = game:GetService("VirtualUser")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players           = game:GetService("Players")
 
--- Variables
+-- // Variables
 local Me = Players.LocalPlayer
 
--- Wait for UI & Settings Core
-while not _G.Cat or not _G.Cat.UI or not _G.Cat.Settings do 
+-- // Wait for Core System Initialization
+repeat 
     task.wait(0.1) 
-end
+until _G.Cat 
+    and _G.Cat.UI 
+    and _G.Cat.Settings
 
-local UI       = _G.Cat.UI
-local Settings = _G.Cat.Settings
+-- // Reference Global Components
+local UI         = _G.Cat.UI
+local Settings   = _G.Cat.Settings
 local SafeInvoke = _G.Cat.SafeInvoke
 
 -- ==========================================
--- 1. UI SETUP (Tab Misc)
+-- 1. UI INITIALIZATION (MISC TAB)
 -- ==========================================
 local Page = UI.CreateTab("Misc", false)
 
--- Anti AFK Toggle
+-- // Toggle: Anti-AFK System
 UI.CreateToggle(
     Page, 
     "Anti AFK", 
     "Prevents 20-minute idle kick", 
     Settings.AntiAFK, 
-    function(s) 
-        Settings.AntiAFK = s 
+    function(state) 
+        Settings.AntiAFK = state 
     end
 )
 
--- Auto Team Toggle
+-- // Toggle: Auto Team (Marines Selection)
 UI.CreateToggle(
     Page, 
     "Auto Team Marines", 
     "Automatically picks Marines on join", 
     Settings.AutoTeam or false, 
-    function(s) 
-        Settings.AutoTeam = s 
+    function(state) 
+        Settings.AutoTeam = state 
     end
 )
 
 -- ==========================================
--- 2. LOGIC: ANTI AFK
+-- 2. LOGIC: ANTI-IDLE SYSTEM
 -- ==========================================
+
+-- // Event: Prevents the 20-minute AFK kick
 Me.Idled:Connect(function()
     if Settings.AntiAFK then
-        -- Simulates user input to prevent idle kick
-        VirtualUser:CaptureController()
-        VirtualUser:ClickButton2(Vector2.new())
+        pcall(function()
+            -- Bypasses idle detection via virtual input simulation
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new(0, 0))
+        end)
     end
 end)
 
--- ==========================================
--- 3. LOGIC: AUTO TEAM
--- ==========================================
+-- [[ ==========================================
+--      3. LOGIC: AUTO TEAM SELECTION
+--    ========================================== ]]
 
--- Helper: Finding the Marine Button in UI
+-- // Helper: Scan UI for the Marine Recruitment Button
 local function GetMarineButton()
-    for _, v in pairs(Me.PlayerGui:GetDescendants()) do
-        if v.Name == "ChooseTeam" and v.Visible then
-            local marineContainer = v:FindFirstChild("Marines", true)
+    local playerGui = Me.PlayerGui
+    
+    for _, ui in ipairs(playerGui:GetDescendants()) do
+        -- Search for the Team Choice container
+        if ui.Name == "ChooseTeam" and ui.Visible then
+            local marineFrame = ui:FindFirstChild("Marines", true)
             
-            if marineContainer then
-                local btn = marineContainer:FindFirstChildWhichIsA("TextButton", true)
+            if marineFrame then
+                local btn = marineFrame:FindFirstChildWhichIsA("TextButton", true)
                 
-                -- Ensure button is valid and visible
-                if btn and btn.AbsoluteSize.X > 0 and btn.AbsoluteSize.Y > 0 then 
-                    return btn 
+                -- Validate button dimensions to ensure it's clickable
+                if btn then
+                    local isVisible = btn.AbsoluteSize.X > 0 
+                        and btn.AbsoluteSize.Y > 0
+                    
+                    if isVisible then 
+                        return btn 
+                    end
                 end
             end
         end
@@ -80,17 +95,20 @@ local function GetMarineButton()
     return nil
 end
 
--- Auto Team Loop
+-- // Background Task: Auto Team Monitor
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
-            if Settings.AutoTeam and Me.Team == nil then
+            -- Activation Condition: Toggle is ON and Player has no team
+            local shouldJoin = Settings.AutoTeam and Me.Team == nil
+            
+            if shouldJoin then
                 local btn = GetMarineButton()
                 
                 if btn then
-                    -- 1. Try Remote Method (Faster)
-                    local remotePath = ReplicatedStorage:FindFirstChild("Remotes")
-                    local commF      = remotePath and remotePath:FindFirstChild("CommF_")
+                    -- // STEP 1: Remote Invocation (Silent Join)
+                    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                    local commF   = remotes and remotes:FindFirstChild("CommF_")
                     
                     if commF then 
                         SafeInvoke(commF, "SetTeam", "Marines") 
@@ -98,24 +116,31 @@ task.spawn(function()
                     
                     task.wait(0.5)
                     
-                    -- 2. Fallback: Force Click Button
+                    -- // STEP 2: Fallback (Force UI Activation)
+                    -- Used if Remote method is patched or fails
                     pcall(function() btn.MouseButton1Click:Fire() end)
                     pcall(function() btn.Activated:Fire() end)
                     
                     task.wait(1)
                     
-                    -- 3. Camera Fix after joining
+                    -- // STEP 3: Post-Join Environment Fix
                     if Me.Team ~= nil then
-                        local chooseTeamUI = btn:FindFirstAncestor("ChooseTeam")
-                        if chooseTeamUI then 
-                            chooseTeamUI.Visible = false 
+                        -- Hide UI if it gets stuck
+                        local rootUI = btn:FindFirstAncestor("ChooseTeam")
+                        if rootUI then 
+                            rootUI.Visible = false 
                         end
                         
-                        local cam = workspace.CurrentCamera
-                        cam.CameraType = Enum.CameraType.Custom
+                        -- Restore Camera Control
+                        local camera = workspace.CurrentCamera
+                        camera.CameraType = Enum.CameraType.Custom
                         
-                        if Me.Character and Me.Character:FindFirstChild("Humanoid") then 
-                            cam.CameraSubject = Me.Character.Humanoid 
+                        -- Re-focus Camera on Character
+                        local char = Me.Character
+                        local hum  = char and char:FindFirstChild("Humanoid")
+                        
+                        if hum then 
+                            camera.CameraSubject = hum 
                         end
                     end
                 end
