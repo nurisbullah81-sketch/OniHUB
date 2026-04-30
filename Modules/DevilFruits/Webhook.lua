@@ -14,7 +14,7 @@ local Theme = UI.Theme
 
 -- 1. PASANG UI WEBHOOK
 UI.CreateSection(Page, "DISCORD WEBHOOK")
-UI.CreateToggle(Page, "Fruit Webhook", "Send alerts to Discord on spawn", Settings.FruitWebhook, function(s) Settings.FruitWebhook = s UI.SaveSettings() end)
+UI.CreateToggle(Page, "Fruit Webhook", "Send alerts to Discord on spawn", Settings.FruitWebhook, function(s) Settings.FruitWebhook = s end)
 
 local WHConfig = Instance.new("Frame", Page) WHConfig.LayoutOrder = #Page:GetChildren() WHConfig.Size = UDim2.new(1, 0, 0, 106) WHConfig.BackgroundTransparency = 1
 local WHConfigLayout = Instance.new("UIListLayout", WHConfig) WHConfigLayout.Padding = UDim.new(0, 6) WHConfigLayout.SortOrder = Enum.SortOrder.LayoutOrder
