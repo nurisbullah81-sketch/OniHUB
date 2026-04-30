@@ -200,48 +200,19 @@ _G.Cat.ESP = {
 -- ==========================================
 -- 6. RENDER LOOP (Distance Updates)
 -- ==========================================
-RunService.RenderStepped:Connect(function()
-    FC = FC + 1
-    if FC % SKIP ~= 0 then return end
-    
-    pcall(function()
-        -- Handle Disabled ESP
-        if not Settings.FruitESP then
-            for _, d in pairs(Data) do
-                if d and d.bb then d.bb.Enabled = false end
-            end
-            return
+-- GANTI RenderStepped JADI Heartbeat BIAR HEMAT FPS
+RunService.Heartbeat:Connect(function() 
+    FC=FC+1 
+    if FC%10~=0 then return end -- Cek 10x per detik aja, kagak usah 60x
+    pcall(function() 
+        if not Settings.FruitESP then for _,d in pairs(Data) do if d and d.bb then d.bb.Enabled=false end end return end 
+        if not _G.Cat.State.IsGameReady then return end -- KAGAK USAH JALAN KALO LAGI LOADING/MATI
+        local c=Me.Character if not c then return end local r=c:FindFirstChild("HumanoidRootPart") if not r then return end local mp=r.Position 
+        for f,d in pairs(Data) do 
+            if not f or not f.Parent or not d.bb or not d.bb.Parent then Rem(f) continue end 
+            local p=Pos(f) if not p then d.bb.Enabled=false continue end 
+            local dx,dy,dz=p.X-mp.X,p.Y-mp.Y,p.Z-mp.Z local m=math.floor(math.sqrt(dx*dx+dy*dy+dz*dz)) 
+            if math.abs(m-(Mem[f]or-1))>5 then Mem[f]=m d.txt.Text=f.Name.." ["..m.."m]" end d.bb.Enabled=true 
         end
-
-        local char = Me.Character
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if not root then return end
-        
-        local myPos = root.Position
-
-        for fruit, d in pairs(Data) do
-            if not fruit or not fruit.Parent or not d.bb then
-                RemoveESP(fruit)
-                continue
-            end
-
-            local fPos = GetPosition(fruit)
-            if not fPos then
-                d.bb.Enabled = false
-                continue
-            end
-
-            -- Euclidean Distance Calculation
-            local dx, dy, dz = fPos.X - myPos.X, fPos.Y - myPos.Y, fPos.Z - myPos.Z
-            local dist = math.floor(math.sqrt(dx^2 + dy^2 + dz^2))
-
-            -- Update label only if distance changes significantly (>5m)
-            if math.abs(dist - (Mem[fruit] or -1)) > 5 then
-                Mem[fruit] = dist
-                d.txt.Text = string.format("%s [%dm]", fruit.Name, dist)
-            end
-            
-            d.bb.Enabled = true
-        end
-    end)
+    end) 
 end)
