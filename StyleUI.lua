@@ -619,13 +619,12 @@ end)
 CreateToggle(MiscTab, "Anti AFK", "Prevents 20-minute idle kick", _G.Cat.Settings.AntiAFK, function(state) _G.Cat.Settings.AntiAFK = state end)
 
 -- ==========================================
--- 4. CCTV TITANIUM (ANTI-ERROR & ANTI-NIL)
+-- 4. CCTV TITANIUM V2 (ANTI-SPAM KEKUATAN)
 -- ==========================================
 task.spawn(function()
     local Players = game:GetService("Players")
-    
-    -- [OBAT NIL]: Nungguin orangnya beneran ada dulu biar ga nabrak
     local player = Players.LocalPlayer or Players.PlayerAdded:Wait()
+    
     while not player do
         task.wait(0.5)
         player = Players.LocalPlayer
@@ -633,14 +632,23 @@ task.spawn(function()
     
     local sentFruits = {}
     
+    -- [OBAT SPAM SERVER HOP]: Kasih jeda 5 detik pas baru masuk server
+    local isScannerReady = false
+    task.delay(5, function() isScannerReady = true end)
+    
     local function CheckForFruit(item)
+        if not isScannerReady then return end
         if not _G.Cat.Settings.FruitWebhook then return end 
         
         if item:IsA("Tool") then
+            -- [FILTER MUTLAK]: Buah fisik BISA di-drop. Kekuatan/Ability KAGA BISA!
+            -- Ini ngebunuh spam dari buah yang udah lu makan.
+            if not item.CanBeDropped then return end 
+            
             local isFruit = false
             local fruitName = item.Name
             
-            -- Pola 1: Buah Fisik ("Venom-Venom")
+            -- Pola 1: Buah Fisik ("Kitsune-Kitsune")
             local len = string.len(item.Name)
             local half = math.floor(len / 2)
             if half > 0 then
@@ -660,10 +668,10 @@ task.spawn(function()
             end
             
             if isFruit then
-                -- Anti Spam
+                -- Anti Spam waktu (30 detik kaga bakal ngirim buah yang sama)
                 if sentFruits[fruitName] then return end
                 sentFruits[fruitName] = true
-                task.delay(15, function() sentFruits[fruitName] = nil end)
+                task.delay(30, function() sentFruits[fruitName] = nil end)
                 
                 if _G.Cat.Webhook then
                     local jobId = game.JobId
@@ -680,19 +688,16 @@ task.spawn(function()
         end
     end
 
-    -- [OBAT RESPAWN]: Pasang CCTV pas lu hidup ulang
+    -- Pasang ulang CCTV kalau mati/respawn
     player.CharacterAdded:Connect(function(char)
-        -- 1. Pasang di Tangan baru
         char.ChildAdded:Connect(CheckForFruit)
-        
-        -- 2. Pasang di Tas baru (Tunggu tasnya dibikin sama game)
         local backpack = player:WaitForChild("Backpack", 5)
         if backpack then
             backpack.ChildAdded:Connect(CheckForFruit)
         end
     end)
     
-    -- Pasang CCTV buat karakter yang sekarang lagi idup
+    -- Pasang CCTV buat tangan & tas sekarang
     if player.Character then
         player.Character.ChildAdded:Connect(CheckForFruit)
     end
@@ -700,10 +705,5 @@ task.spawn(function()
     local currentBackpack = player:WaitForChild("Backpack", 5)
     if currentBackpack then
         currentBackpack.ChildAdded:Connect(CheckForFruit)
-        
-        -- Bonus: Scan tas lu JAGA-JAGA lu udah megang buahnya duluan
-        for _, item in pairs(currentBackpack:GetChildren()) do
-            CheckForFruit(item)
-        end
     end
 end)
