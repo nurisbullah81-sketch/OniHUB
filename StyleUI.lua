@@ -110,13 +110,23 @@ function Webhook:Test(webhookURL)
 end
 
 function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
-    if not webhookURL or webhookURL == "" then return end
+    warn("[CatHUB-WEBHOOK] ===== PANGGILAN SEND DITERIMA =====")
+    warn("[CatHUB-WEBHOOK] Nama Buah: " .. tostring(fruitName))
+    warn("[CatHUB-WEBHOOK] Setting Rarity di UI: " .. tostring(raritySetting))
+    warn("[CatHUB-WEBHOOK] URL: " .. tostring(webhookURL))
+    
+    if not webhookURL or webhookURL == "" then 
+        warn("[CatHUB-WEBHOOK] GAGAL: URL KOSONG!")
+        return 
+    end
     
     -- [OBAT 403]: Pakai Proxy Lewisakura
     webhookURL = string.gsub(webhookURL, "^%s*(.-)%s*$", "%1")
     webhookURL = string.gsub(webhookURL, "discord%.com", "webhook.lewisakura.moe")
     
     local fruitRarity = GetDynamicRarity(fruitName)
+    warn("[CatHUB-WEBHOOK] Rarity Asli dari Game: " .. tostring(fruitRarity))
+    
     local shouldSend = false
     
     if raritySetting == "All Fruits" then
@@ -127,7 +137,12 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
         if string.find(fruitRarity, "Mythical") then shouldSend = true end
     end
     
-    if not shouldSend then return end
+    if not shouldSend then 
+        warn("[CatHUB-WEBHOOK] DIBATALKAN: Buah kaga lolos filter UI lu!")
+        return 
+    end
+    
+    warn("[CatHUB-WEBHOOK] Lolos filter! Mengeksekusi pengiriman ke Discord...")
     
     local embedColor = 16777215
     if string.find(fruitRarity, "Legendary") then embedColor = 16753920
@@ -146,8 +161,21 @@ function Webhook:Send(fruitName, jobId, raritySetting, webhookURL)
     local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
     if req then
         task.spawn(function()
-            pcall(function() req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) end)
+            local ok, res = pcall(function() 
+                return req({Url = webhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = payload}) 
+            end)
+            
+            if not ok then
+                warn("[CatHUB-WEBHOOK] PCALL ERROR (Script gagal): " .. tostring(res))
+            else
+                warn("[CatHUB-WEBHOOK] STATUS DARI DISCORD/PROXY: " .. tostring(res.StatusCode))
+                if res.StatusCode ~= 200 and res.StatusCode ~= 204 then
+                    warn("[CatHUB-WEBHOOK] ALASAN DITOLAK: " .. tostring(res.Body))
+                end
+            end
         end)
+    else
+        warn("[CatHUB-WEBHOOK] FATAL: Executor lu kaga support fungsi Request!")
     end
 end
 
