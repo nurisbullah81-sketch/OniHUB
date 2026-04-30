@@ -1,4 +1,4 @@
--- Modules/Misc/Misc.lua
+-- Modules/Misc/AntiAFK.lua
 local VirtualUser = game:GetService("VirtualUser")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -12,8 +12,9 @@ local SafeInvoke = _G.Cat.SafeInvoke
 -- 1. PASANG UI (Minta Kamar Misc)
 local Page = UI.CreateTab("Misc", false)
 
-UI.CreateToggle(Page, "Anti AFK", "Prevents 20-minute idle kick", Settings.AntiAFK, function(s) Settings.AntiAFK = s UI.SaveSettings() end)
-UI.CreateToggle(Page, "Auto Team Marines", "Automatically picks Marines on join", Settings.AutoTeam or false, function(s) Settings.AutoTeam = s UI.SaveSettings() end)
+-- FIX: UI.SaveSettings() dihapus karena StyleUI.lua udah auto-save
+UI.CreateToggle(Page, "Anti AFK", "Prevents 20-minute idle kick", Settings.AntiAFK, function(s) Settings.AntiAFK = s end)
+UI.CreateToggle(Page, "Auto Team Marines", "Automatically picks Marines on join", Settings.AutoTeam or false, function(s) Settings.AutoTeam = s end)
 
 -- 2. LOGIC ANTI AFK
 Me.Idled:Connect(function()
