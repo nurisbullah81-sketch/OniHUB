@@ -47,26 +47,30 @@ UI.CreateToggle(
 )
 
 -- ==========================================
--- 2. LOGIC: AUTO ATTACK ENGINE (FPS BOOSTER APPROVED)
+-- 2. LOGIC: AUTO ATTACK ENGINE (DIRECT METHOD)
 -- ==========================================
 
 task.spawn(function()
-    while task.wait(0.15) do -- Mundurin dikit ke 0.15s biar CPU bisa napas
-        if Settings.AutoAttack and State.IsGameReady then
+    while task.wait(0.1) do -- Speed serangan dikit dinaikin, 0.1 udah cukup cepat
+        -- Cek State yang ASLI, jangan pake fallback palsu
+        local isReady = _G.Cat.State and _G.Cat.State.IsGameReady
+        
+        if Settings.AutoAttack and isReady then
             local char = Me.Character
-            local hum  = char and char:FindFirstChild("Humanoid")
+            -- Cek Humanoid sekali aja biar efisien
+            if not (char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0) then 
+                continue 
+            end
+
+            -- Logic Cari Senjata
+            local weapon = char:FindFirstChildOfClass("Tool")
             
-            if hum and hum.Health > 0 then
-                -- FIX LAG MUTLAK: Script cuma bakal nge-klik KALAU lu lagi megang senjata!
-                -- Kalau tangan kosong, script istirahat, jadi kaga ada lag!
-                local weapon = char:FindFirstChildOfClass("Tool")
-                
-                if weapon then
-                    -- Klik dipisah dari loop pcall biar kaga numpuk sampah memori
-                    VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                    task.wait(0.05) -- Kasih jeda mencet mouse biar kaga ke-detect spam
-                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                end
+            if weapon then
+                -- GUE PAKAI :Activate() BIAR LEBIH CLEAN DARI VIM
+                -- Ini nggak bakal ganggu input mouse lu pas PVP
+                pcall(function()
+                    weapon:Activate()
+                end)
             end
         end
     end
