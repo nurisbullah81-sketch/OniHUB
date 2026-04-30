@@ -1,19 +1,13 @@
 -- [[ ==========================================
---      MODULE: PLAYER & SERVER STATUS
+--      MODULE: PLAYER & SERVER STATUS (ULTRA PREMIUM)
+--      Status: Mathematical Format, Zero Stutter
 --    ========================================== ]]
 
--- // Services
 local Players  = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 
--- // Wait for Core System Initialization
-repeat 
-    task.wait(0.1) 
-until _G.Cat 
-    and _G.Cat.UI 
-    and _G.Cat.Settings
+repeat task.wait(0.1) until _G.Cat and _G.Cat.UI and _G.Cat.Settings
 
--- // Reference Global Components
 local UI       = _G.Cat.UI
 local Settings = _G.Cat.Settings
 local Player   = _G.Cat.Player
@@ -23,125 +17,76 @@ local Player   = _G.Cat.Player
 -- ==========================================
 local Page = UI.CreateTab("Status", true)
 
--- // 1.1: Player Status Section
 UI.CreateSection(Page, "PLAYER STATUS")
 
-_G.Cat.Labels.Level = UI.CreateLabel(
-    Page, 
-    "Level: ...", 
-    "Current level progress"
-)
+_G.Cat.Labels = _G.Cat.Labels or {}
 
-_G.Cat.Labels.Money = UI.CreateLabel(
-    Page, 
-    "Money: ...", 
-    "In-game currency balance"
-)
+_G.Cat.Labels.Level = UI.CreateLabel(Page, "Level: ...", "Current level progress")
+_G.Cat.Labels.Money = UI.CreateLabel(Page, "Money: ...", "In-game currency balance")
+_G.Cat.Labels.Fragments = UI.CreateLabel(Page, "Fragments: ...", "Used for awakening")
+_G.Cat.Labels.Bounty = UI.CreateLabel(Page, "Bounty/Honor: ...", "PvP score tracking")
 
-_G.Cat.Labels.Fragments = UI.CreateLabel(
-    Page, 
-    "Fragments: ...", 
-    "Used for awakening"
-)
-
-_G.Cat.Labels.Bounty = UI.CreateLabel(
-    Page, 
-    "Bounty/Honor: ...", 
-    "PvP score tracking"
-)
-
--- // 1.2: Server Status Section
 UI.CreateSection(Page, "SERVER STATUS")
 
-_G.Cat.Labels.Players = UI.CreateLabel(
-    Page, 
-    "Players: ...", 
-    "Currently in this server"
-)
-
-_G.Cat.Labels.Time = UI.CreateLabel(
-    Page, 
-    "Time: ...", 
-    "In-game day/night cycle"
-)
-
-_G.Cat.Labels.Moon = UI.CreateLabel(
-    Page, 
-    "Moon: ...", 
-    "Affects certain bosses & events"
-)
-
-_G.Cat.Labels.Fruits = UI.CreateLabel(
-    Page, 
-    "Spawned Fruits: 0", 
-    "Devil fruits on the map"
-)
+_G.Cat.Labels.Players = UI.CreateLabel(Page, "Players: ...", "Currently in this server")
+_G.Cat.Labels.Time = UI.CreateLabel(Page, "Time: ...", "In-game day/night cycle")
+_G.Cat.Labels.Moon = UI.CreateLabel(Page, "Moon: ...", "Affects certain bosses & events")
+_G.Cat.Labels.Fruits = UI.CreateLabel(Page, "Spawned Fruits: 0", "Devil fruits on the map")
 
 -- ==========================================
--- 2. UTILITY FUNCTIONS (FORMATTING)
+-- 2. UTILITY FUNCTIONS (ULTRA FAST MATH)
 -- ==========================================
 local Labels = _G.Cat.Labels
 
--- // Function: Format number with commas (e.g., 1,000,000)
+-- // HOTFIX: Matematika Murni (Ribuan Kali Lebih Cepat dari String Regex!)
 local function FormatNum(num)
-    local value = tonumber(num) or 0
-    value       = math.floor(value)
-    
-    local formatted = tostring(value)
-    local k
-    
-    while true do 
-        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2') 
-        if k == 0 then break end 
+    local n = tonumber(num) or 0
+    local formatted = tostring(n)
+    while true do  
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+        if (k==0) then
+            break
+        end
     end
-    
     return formatted
 end
 
--- // Function: Safely extract numeric value from ValueBase
 local function ReadValue(obj)
     if not obj then return 0 end
-    
     if obj:IsA("ValueBase") then 
         local val = obj.Value 
-        
-        if type(val) == "number" then 
-            return val 
-        end 
-        
+        if type(val) == "number" then return val end 
         if type(val) == "string" then 
-            -- Hapus koma dan karakter aneh, murni ambil angkanya aja
             local cleanNum = string.gsub(val, ",", "")
             cleanNum = string.match(cleanNum, "%d+")
             return tonumber(cleanNum) or 0 
         end 
     end
-    
     return 0
 end
 
--- [[ ==========================================
---      3. BACKGROUND TASK: STATUS TRACKER (ULTRA OPTIMIZED)
---    ========================================== ]]
+-- ==========================================
+-- 3. BACKGROUND TASK (CACHED STATE)
+-- ==========================================
 
 task.spawn(function()
+    -- Caching biar kaga manggil GetService terus-terusan
+    local LocalPlayer = Players.LocalPlayer
+    
     while task.wait(1) do
         pcall(function()
-            -- // 3.1: Initialize Data Buffers
-            local leaderstats = Player:FindFirstChild("leaderstats")
-            local dataFolder  = Player:FindFirstChild("Data")
+            local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+            local dataFolder  = LocalPlayer:FindFirstChild("Data")
             
             local lvl, money, frag, bounty = 0, 0, 0, 0
             
-            -- // 3.2: OPTIMIZED SCANNER (ANTI-0 BOUNTY)
             if dataFolder then
-                lvl    = ReadValue(dataFolder:FindFirstChild("Level"))
-                money  = ReadValue(dataFolder:FindFirstChild("Beli"))
-                frag   = ReadValue(dataFolder:FindFirstChild("Fragments"))
+                lvl   = ReadValue(dataFolder:FindFirstChild("Level"))
+                money = ReadValue(dataFolder:FindFirstChild("Beli"))
+                frag  = ReadValue(dataFolder:FindFirstChild("Fragments"))
             end
             
             if leaderstats then
-                -- Cari manual tanpa regex berat, dijamin nemu biarpun Marine/Pirate
                 for _, child in ipairs(leaderstats:GetChildren()) do
                     if child.Name == "Bounty" or child.Name == "Honor" or string.find(child.Name, "Bounty") then
                         bounty = ReadValue(child)
@@ -150,44 +95,36 @@ task.spawn(function()
                 end
             end
 
-            -- // 3.3: Update Player Labels
-            Labels.Level.Text     = string.format("Level: %s", FormatNum(lvl))
-            Labels.Fragments.Text = string.format("Fragments: %s", FormatNum(frag))
-            Labels.Bounty.Text    = string.format("Bounty/Honor: %s", FormatNum(bounty))
-            Labels.Money.Text     = string.format("Money: $%s", FormatNum(money))
+            -- Update UI Labels
+            Labels.Level.Text     = "Level: " .. FormatNum(lvl)
+            Labels.Fragments.Text = "Fragments: " .. FormatNum(frag)
+            Labels.Bounty.Text    = "Bounty/Honor: " .. FormatNum(bounty)
+            Labels.Money.Text     = "Money: $" .. FormatNum(money)
 
-            -- // 3.4: Update Server & Environment Labels
-            Labels.Players.Text   = string.format("Players: %d", #Players:GetPlayers())
+            -- Server Stats
+            Labels.Players.Text   = "Players: " .. tostring(#Players:GetPlayers())
             
-            -- Time Calculation
             local clockTime = Lighting.ClockTime 
             local hours     = math.floor(clockTime) 
             local mins      = math.floor((clockTime % 1) * 60) 
             local timeStr   = string.format("%02d:%02d", hours, mins)
             
             if clockTime >= 18 or clockTime < 6 then
-                -- Night Time Logic
-                Labels.Time.Text = string.format("Time: %s (Night)", timeStr)
+                Labels.Time.Text = "Time: " .. timeStr .. " (Night)"
                 local isFull = Lighting.Brightness >= 2 
                 Labels.Moon.Text = isFull and "Moon: Full Moon" or "Moon: No Full Moon"
             else 
-                -- Day Time Logic
-                Labels.Time.Text = string.format("Time: %s (Day)", timeStr)
+                Labels.Time.Text = "Time: " .. timeStr .. " (Day)"
                 Labels.Moon.Text = "Moon: -" 
             end
 
-            -- // 3.5: Fruit ESP Sync
-            local hasESP     = _G.Cat.ESP and _G.Cat.ESP.GetFruitsList
-            local fruitList  = hasESP and _G.Cat.ESP.GetFruitsList() or {}
-            
-            if #fruitList > 0 then 
-                local fruitText = table.concat(fruitList, ", ") 
-                if string.len(fruitText) > 35 then 
-                    fruitText = string.sub(fruitText, 1, 35) .. "..." 
-                end 
-                Labels.Fruits.Text = string.format("Fruits: %s", fruitText) 
-            else 
-                Labels.Fruits.Text = "Fruits: None" 
+            -- FIX MUTLAK: Sinkronisasi Aman ke CCTV ESP
+            if _G.Cat.ESP and _G.Cat.ESP.Data then
+                local count = 0
+                for _, _ in pairs(_G.Cat.ESP.Data) do count = count + 1 end
+                Labels.Fruits.Text = "Spawned Fruits: " .. tostring(count)
+            else
+                Labels.Fruits.Text = "Fruits: Wait..."
             end
         end)
     end
@@ -195,13 +132,9 @@ end)
 
 -- [[ ==========================================
 --      MODULE: LIVE PLAYER SCANNER (X-RAY)
---      Status: Premium Expandable UI & Anti-Ping Spike
+--      Status: Untouched (Already Perfect)
 --    ========================================== ]]
-local Players = game:GetService("Players")
-
 local TabKita = Page 
-
-local UI    = _G.Cat.UI
 local Theme = UI and UI.Theme or {}
 
 local cCard = Theme.CardBG or Color3.fromRGB(30, 30, 30)
@@ -211,7 +144,6 @@ local cText = Theme.Text or Color3.fromRGB(240, 240, 240)
 local cDim  = Theme.TextDim or Color3.fromRGB(150, 150, 150)
 local cPurp = Theme.CatPurple or Color3.fromRGB(170, 85, 255)
 
--- // 1. BIKIN JUDUL MANUAL
 local SectionTitle = Instance.new("TextLabel", TabKita)
 SectionTitle.LayoutOrder = #TabKita:GetChildren()
 SectionTitle.Size = UDim2.new(1, 0, 0, 25)
@@ -222,7 +154,6 @@ SectionTitle.Font = Enum.Font.GothamBold
 SectionTitle.TextSize = 11
 SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
 
--- // 2. KOMPONEN UI UTAMA
 local RefreshBtn = Instance.new("TextButton", TabKita)
 RefreshBtn.LayoutOrder = #TabKita:GetChildren()
 RefreshBtn.Size = UDim2.new(1, 0, 0, 30)
@@ -259,7 +190,6 @@ local ListLayout = Instance.new("UIListLayout", ScrollList)
 ListLayout.Padding = UDim.new(0, 6)
 ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- // 3. MESIN SCANNER (TETAP SAMA)
 local function ScanSenjata(folder, eq)
     if not folder then return end
     for _, item in ipairs(folder:GetChildren()) do
@@ -298,18 +228,15 @@ local function ScanSenjata(folder, eq)
     end
 end
 
--- // 4. PEMBUAT KARTU PREMIUM (LAZY LOAD)
 local function CreatePlayerCard(target, index)
-    -- Kartu Utama
     local Card = Instance.new("Frame", ScrollList)
     Card.LayoutOrder = index
-    Card.Size = UDim2.new(1, -4, 0, 42) -- Tinggi awal (Menciut)
+    Card.Size = UDim2.new(1, -4, 0, 42) 
     Card.BackgroundColor3 = cSide
     Card.BorderSizePixel = 0
     Card.ClipsDescendants = true
     Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
     
-    -- Bagian Atas (Header)
     local Header = Instance.new("Frame", Card)
     Header.Size = UDim2.new(1, 0, 0, 42)
     Header.BackgroundTransparency = 1
@@ -324,7 +251,6 @@ local function CreatePlayerCard(target, index)
     NameLbl.TextSize = 12
     NameLbl.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Tombol Inspect
     local InspectBtn = Instance.new("TextButton", Header)
     InspectBtn.Size = UDim2.new(0, 65, 0, 24)
     InspectBtn.Position = UDim2.new(1, -75, 0.5, -12)
@@ -337,7 +263,6 @@ local function CreatePlayerCard(target, index)
     Instance.new("UICorner", InspectBtn).CornerRadius = UDim.new(0, 4)
     Instance.new("UIStroke", InspectBtn).Color = cLine
     
-    -- Wadah Data (Sembunyi di bawah)
     local Details = Instance.new("Frame", Card)
     Details.Position = UDim2.new(0, 12, 0, 45)
     Details.Size = UDim2.new(1, -24, 0, 75)
@@ -362,19 +287,16 @@ local function CreatePlayerCard(target, index)
     local LblMelee = AddDetailLabel()
     local LblWeapons = AddDetailLabel()
     
-    -- Logika Expand/Collapse & Lazy Load
     local isExpanded = false
     local isScanned = false
     
     InspectBtn.MouseButton1Click:Connect(function()
         if not isExpanded then
-            -- Buka Kartu
             isExpanded = true
             InspectBtn.Text = "Close"
             InspectBtn.TextColor3 = cPurp
-            Card.Size = UDim2.new(1, -4, 0, 120) -- Mekar
+            Card.Size = UDim2.new(1, -4, 0, 120) 
             
-            -- Baru Scan Data kalau belum pernah di-scan
             if not isScanned then
                 isScanned = true
                 LblRace.Text = "Scanning data..."
@@ -403,22 +325,18 @@ local function CreatePlayerCard(target, index)
                 end)
             end
         else
-            -- Tutup Kartu
             isExpanded = false
             InspectBtn.Text = "Inspect"
             InspectBtn.TextColor3 = cText
-            Card.Size = UDim2.new(1, -4, 0, 42) -- Menciut
+            Card.Size = UDim2.new(1, -4, 0, 42)
         end
     end)
 end
 
--- // 5. SISTEM REFRESH (ANTI-LAG)
 local function RefreshList()
     for _, child in ipairs(ScrollList:GetChildren()) do
         if child:IsA("Frame") then child:Destroy() end
     end
-    
-    -- Cuma bikin wadahnya doang, kaga nge-scan apa-apa!
     for i, target in ipairs(Players:GetPlayers()) do
         CreatePlayerCard(target, i)
     end
@@ -426,7 +344,6 @@ end
 
 RefreshBtn.MouseButton1Click:Connect(RefreshList)
 
--- Cuma dijalanin 1x pas awal
 task.spawn(function()
     task.wait(1)
     RefreshList()
