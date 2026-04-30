@@ -1,93 +1,156 @@
 -- [[ ==========================================
---      MODULE: FPS BOOSTER (MULTI-TIER DEWA)
---      Status: Fix Crash Terrain & 3 Mode Boost
+--      MODULE: FPS BOOSTER (GOD TIER V5)
+--      Engine: Silent Optimizer + 3 Mode Boost
 --    ========================================== ]]
 
 local Workspace  = game:GetService("Workspace")
 local Lighting   = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
-repeat task.wait(0.1) until _G.Cat and _G.Cat.UI
+repeat task.wait(0.1) until _G.Cat and _G.Cat.UI and _G.Cat.Settings
 
-local UI = _G.Cat.UI
+local UI       = _G.Cat.UI
+local Settings = _G.Cat.Settings
+
 local Page = UI.CreateTab("Misc", false)
-
 UI.CreateSection(Page, "FPS OPTIMIZER (PILIH SALAH SATU)")
 
 local Terrain = Workspace:FindFirstChildOfClass("Terrain")
 
--- Simpan state original buat Lighting aja (Texture kaga disimpen biar hemat RAM)
+-- Simpan original state
 local OrigLighting = {
     Shadows = Lighting.GlobalShadows,
-    FogEnd = Lighting.FogEnd
+    FogEnd = Lighting.FogEnd,
+    QualityLevel = 3
 }
+pcall(function() OrigLighting.QualityLevel = settings().Rendering.QualityLevel end)
 
--- // FUNGSI INTI MESIN PENGHANCUR LAG
-local function ApplyBoost(level)
-    task.spawn(function()
-        -- 1. Optimasi Instan (Jalan di Semua Level)
-        pcall(function() settings().Rendering.QualityLevel = 1 end)
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
-        
-        if Terrain then
-            -- FIX MUTLAK: Pake pcall biar kaga crash kayak script z.ai!
-            pcall(function() Terrain.Decoration = false end) 
-            Terrain.WaterWaveSize = 0
-            Terrain.WaterWaveSpeed = 0
-            Terrain.WaterReflectance = 0
-        end
+local OrigTerrain = {}
+if Terrain then
+    OrigTerrain.Deco = Terrain.Decoration
+    OrigTerrain.Wave = Terrain.WaterWaveSize
+    OrigTerrain.Speed = Terrain.WaterWaveSpeed
+    OrigTerrain.Reflect = Terrain.WaterReflectance
+end
 
-        -- 2. Operasi Pembersihan Map (Background Task)
-        local count = 0
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                -- Bunuh sensor sentuh benda mati (Bikin CPU super lega)
+-- ==========================================
+-- 1. SILENT AUTO-OPTIMIZER (Jalan Otomatis Di Latar Belakang)
+-- Ini kagak ngurus bayangan/material (grafik tetep HD). Cuma matiin sensor fisik benda mati biar CPU lega!
+-- ==========================================
+task.spawn(function()
+    local count = 0
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            pcall(function()
                 if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
                     obj.CanTouch = false
                     obj.CanQuery = false
                 end
-                
-                -- Level High & Extreme: Hapus semua bayangan mikro
-                if level == "High" or level == "Extreme" then
-                    obj.CastShadow = false
-                end
+            end)
+        end
+        count = count + 1
+        -- Pake 30 part/detik. Pelan tapi pasti, kagak bakin stutter seperti code z.ai
+        if count >= 30 then 
+            count = 0 
+            task.wait(0.1) 
+        end
+    end
+end)
 
-                -- Level Extreme: Ubah semua jadi plastik polos (Burik Parah)
-                if level == "Extreme" then
-                    obj.Material = Enum.Material.SmoothPlastic
-                    obj.Reflectance = 0
-                end
+-- Auto-optimize part baru yang masuk map
+Workspace.DescendantAdded:Connect(function(obj)
+    task.wait(0.5) -- Jeda biar kagak langsung beratin
+    if obj:IsA("BasePart") then
+        pcall(function()
+            if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
+                obj.CanTouch = false
+                obj.CanQuery = false
+            end
+        end)
+    end
+end)
+
+-- ==========================================
+-- 2. FUNGSI MESIN BOOST
+-- ==========================================
+local currentMode = "None"
+
+local function ApplyBoost(level)
+    currentMode = level
+    
+    -- 1. Optimasi Instan (Lighting & Air)
+    pcall(function() settings().Rendering.QualityLevel = 1 end)
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    
+    if Terrain then
+        pcall(function() Terrain.Decoration = false end) -- Anti Crash
+        pcall(function() Terrain.WaterWaveSize = 0 end)
+        pcall(function() Terrain.WaterWaveSpeed = 0 end)
+        pcall(function() Terrain.WaterReflectance = 0 end)
+    end
+
+    -- 2. Operasi Pembersihan Map (Background Task)
+    task.spawn(function()
+        local count = 0
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            -- Berhenti kalau ganti mode atau di-off
+            if currentMode ~= level then break end 
+            
+            if obj:IsA("BasePart") then
+                pcall(function()
+                    -- Matiin sensor fisik benda mati
+                    if obj.Anchored and not obj.Parent:FindFirstChild("Humanoid") then
+                        obj.CanTouch = false
+                        obj.CanQuery = false
+                    end
+                    
+                    -- Level High & Extreme: Matiin Bayangan Mikro
+                    if level == "High" or level == "Extreme" then
+                        obj.CastShadow = false
+                    end
+
+                    -- Level Extreme: Plastik Polos + Hapus Tekstur
+                    if level == "Extreme" then
+                        obj.Material = Enum.Material.SmoothPlastic
+                        obj.Reflectance = 0
+                    end
+                end)
                 
-            -- Level Extreme: Hapus semua stiker & tekstur HD
             elseif (obj:IsA("Decal") or obj:IsA("Texture")) and level == "Extreme" then
-                obj.Transparency = 1
+                pcall(function() obj.Transparency = 1 end)
             end
             
-            -- Kasih napas CPU biar kaga freeze pas proses ribuan part
             count = count + 1
-            if count >= 500 then
+            if count >= 30 then
                 count = 0
-                task.wait()
+                task.wait(0.1) -- Jeda biar kagak freeze
             end
         end
-        warn("✅ [CatHUB] " .. level .. " Boost Berhasil Diaktifkan!")
     end)
 end
 
 local function RestoreNormal()
-    pcall(function() settings().Rendering.QualityLevel = 3 end)
+    currentMode = "None"
+    pcall(function() settings().Rendering.QualityLevel = OrigLighting.QualityLevel end)
     Lighting.GlobalShadows = OrigLighting.Shadows
     Lighting.FogEnd = OrigLighting.FogEnd
-    -- Catatan: Mode Extreme kaga bisa balikin tekstur tanpa rejoin (Biar RAM kaga jebol)
+    
+    if Terrain then
+        pcall(function() Terrain.Decoration = OrigTerrain.Deco end)
+        pcall(function() Terrain.WaterWaveSize = OrigTerrain.Wave end)
+        pcall(function() Terrain.WaterWaveSpeed = OrigTerrain.Speed end)
+        pcall(function() Terrain.WaterReflectance = OrigTerrain.Reflect end)
+    end
 end
 
 -- ==========================================
--- MENU TOGGLES
+-- 3. MENU TOGGLES
 -- ==========================================
 
 UI.CreateToggle(
     Page, 
-    "1. Medium Boost (PvP Mode)", 
+    "1. Medium Boost (PvP)", 
     "Turunin grafik ringan, air rata, no shadow. Cocok buat PvP.", 
     false, 
     function(state)
@@ -107,7 +170,7 @@ UI.CreateToggle(
 
 UI.CreateToggle(
     Page, 
-    "3. Extreme Boost (Burik Parah)", 
+    "3. Extreme Boost (Burik)", 
     "Plastik semua, no texture! FPS dewa! (Rejoin buat normalin)", 
     false, 
     function(state)
