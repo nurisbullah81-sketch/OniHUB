@@ -234,3 +234,149 @@ task.spawn(function()
         end)
     end
 end)
+
+-- ==========================================
+-- 🔥 FITUR PLAYER SCANNER (X-RAY INVENTORY) 🔥
+-- ==========================================
+
+-- Bikin bagian baru di bawah Server Status
+UI.CreateSection(Page, "PLAYER SCANNER")
+
+-- 1. KOTAK INPUT NAMA TARGET
+local ScanInputFrame = Instance.new("Frame", Page)
+ScanInputFrame.LayoutOrder = #Page:GetChildren()
+ScanInputFrame.Size = UDim2.new(1, 0, 0, 38)
+ScanInputFrame.BackgroundColor3 = Theme.CardBG
+ScanInputFrame.BorderSizePixel = 0
+Instance.new("UICorner", ScanInputFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", ScanInputFrame).Color = Theme.Line
+
+local ScanTextBox = Instance.new("TextBox", ScanInputFrame)
+ScanTextBox.Size = UDim2.new(1, -16, 1, 0)
+ScanTextBox.Position = UDim2.new(0, 8, 0, 0)
+ScanTextBox.BackgroundTransparency = 1
+ScanTextBox.TextColor3 = Theme.Text
+ScanTextBox.PlaceholderText = "Ketik nama/nickname player di sini..."
+ScanTextBox.PlaceholderColor3 = Theme.TextDim
+ScanTextBox.Font = Enum.Font.GothamMedium
+ScanTextBox.TextSize = 11
+ScanTextBox.TextXAlignment = Enum.TextXAlignment.Left
+ScanTextBox.ClearTextOnFocus = false
+
+-- 2. LAYAR MONITOR HASIL SCAN
+local ScanResultFrame = Instance.new("Frame", Page)
+ScanResultFrame.LayoutOrder = #Page:GetChildren()
+ScanResultFrame.Size = UDim2.new(1, 0, 0, 140) -- Cukup buat nampung 6 baris
+ScanResultFrame.BackgroundColor3 = Theme.CardBG
+ScanResultFrame.BorderSizePixel = 0
+Instance.new("UICorner", ScanResultFrame).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", ScanResultFrame).Color = Theme.Line
+
+local ResultLayout = Instance.new("UIListLayout", ScanResultFrame)
+ResultLayout.Padding = UDim.new(0, 4)
+ResultLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+ResultLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+-- Fungsi bantu biar kodenya rapi bikin text
+local function CreateResultLabel(text, color, font)
+    local lbl = Instance.new("TextLabel", ScanResultFrame)
+    lbl.Size = UDim2.new(1, -20, 0, 18)
+    lbl.BackgroundTransparency = 1
+    lbl.TextColor3 = color or Theme.TextDim
+    lbl.Font = font or Enum.Font.GothamMedium
+    lbl.TextSize = 11
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Text = text
+    return lbl
+end
+
+-- Bikin baris-baris datanya
+local LblTarget = CreateResultLabel("🎯 Target: Belum ada", Theme.CatPurple, Enum.Font.GothamBold)
+local LblRace   = CreateResultLabel("🧬 Race: -")
+local LblMelee  = CreateResultLabel("👊 Melee: -")
+local LblFruit  = CreateResultLabel("🍎 Fruit: -")
+local LblSword  = CreateResultLabel("🗡️ Sword: -")
+local LblGun    = CreateResultLabel("🔫 Gun: -")
+
+-- 3. TOMBOL EKSEKUSI SCAN
+local ScanBtn = Instance.new("TextButton", Page)
+ScanBtn.LayoutOrder = #Page:GetChildren()
+ScanBtn.Size = UDim2.new(1, 0, 0, 28)
+ScanBtn.BackgroundColor3 = Theme.SideBG
+ScanBtn.BorderSizePixel = 0
+ScanBtn.Text = "🔍 Scan Player"
+ScanBtn.TextColor3 = Theme.Text
+ScanBtn.Font = Enum.Font.GothamBold
+ScanBtn.TextSize = 11
+ScanBtn.AutoButtonColor = false
+Instance.new("UICorner", ScanBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UIStroke", ScanBtn).Color = Theme.Line
+
+-- 4. MESIN INTELIJENNYA (LOGIKA)
+ScanBtn.MouseButton1Click:Connect(function()
+    ScanBtn.Text = "Membobol Data..."
+    local targetStr = string.lower(ScanTextBox.Text)
+    local foundPlayer = nil
+    
+    -- Fitur Smart Search: Lu ngetik "brax" doang, script bakal nyari "Braxlaw50"
+    if targetStr ~= "" then
+        for _, p in pairs(Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), targetStr) or string.find(string.lower(p.DisplayName), targetStr) then
+                foundPlayer = p
+                break
+            end
+        end
+    end
+    
+    if not foundPlayer then
+        LblTarget.Text = "🎯 Target: Kaga Ketemu Bang!"
+        LblRace.Text = "🧬 Race: -"
+        LblMelee.Text = "👊 Melee: -"
+        LblFruit.Text = "🍎 Fruit: -"
+        LblSword.Text = "🗡️ Sword: -"
+        LblGun.Text = "🔫 Gun: -"
+        task.wait(1)
+        ScanBtn.Text = "🔍 Scan Player"
+        return
+    end
+    
+    -- Siapin wadah kosong
+    local pData = { Race = "Unknown", Melee = "Kopong", Fruit = "Kopong", Sword = "Kopong", Gun = "Kopong" }
+    
+    -- Nyadap Race dari folder Data (Tembus karena dikirim ke Client)
+    if foundPlayer:FindFirstChild("Data") and foundPlayer.Data:FindFirstChild("Race") then
+        pData.Race = foundPlayer.Data.Race.Value
+    end
+    
+    -- Fungsi bongkar isi tas dan tangan pakai ToolTip
+    local function BongkarTas(container)
+        if not container then return end
+        for _, item in pairs(container:GetChildren()) do
+            if item:IsA("Tool") then
+                local tType = item.ToolTip
+                if tType == "Melee" then pData.Melee = item.Name
+                elseif tType == "Blox Fruit" then pData.Fruit = item.Name
+                elseif tType == "Sword" then pData.Sword = item.Name
+                elseif tType == "Gun" then pData.Gun = item.Name
+                end
+            end
+        end
+    end
+    
+    -- Eksekusi pembongkaran
+    BongkarTas(foundPlayer:FindFirstChild("Backpack"))
+    if foundPlayer.Character then
+        BongkarTas(foundPlayer.Character)
+    end
+    
+    -- Tembak ke Layar UI lu
+    LblTarget.Text = "🎯 Target: " .. foundPlayer.Name
+    LblRace.Text = "🧬 Race: " .. tostring(pData.Race)
+    LblMelee.Text = "👊 Melee: " .. tostring(pData.Melee)
+    LblFruit.Text = "🍎 Fruit: " .. tostring(pData.Fruit)
+    LblSword.Text = "🗡️ Sword: " .. tostring(pData.Sword)
+    LblGun.Text = "🔫 Gun: " .. tostring(pData.Gun)
+    
+    task.wait(0.5)
+    ScanBtn.Text = "🔍 Scan Player"
+end)
