@@ -677,90 +677,81 @@ end
 
 -- // 9.2: FUNCTION - CREATE TOGGLE SWITCH
 local function CreateToggle(parent, text, description, stateRef, callback)
-    local frameHeight          = description and 52 or 36
+    local frameHeight = description and 52 or 36
     
-    local ToggleBtn            = Instance.new("TextButton", parent)
-    ToggleBtn.Name             = text .. "_Toggle"
-    ToggleBtn.LayoutOrder      = #parent:GetChildren()
-    ToggleBtn.Size             = UDim2.new(1, 0, 0, frameHeight)
+    local ToggleBtn = Instance.new("TextButton", parent)
+    ToggleBtn.Name = text .. "_Toggle"
+    ToggleBtn.LayoutOrder = #parent:GetChildren()
+    ToggleBtn.Size = UDim2.new(1, 0, 0, frameHeight)
     ToggleBtn.BackgroundColor3 = Theme.CardBG
-    ToggleBtn.BorderSizePixel  = 0
-    ToggleBtn.Text             = ""
-    ToggleBtn.AutoButtonColor  = false
+    ToggleBtn.BorderSizePixel = 0
+    ToggleBtn.Text = ""
+    ToggleBtn.AutoButtonColor = false
 
-    local Corner               = Instance.new("UICorner", ToggleBtn)
-    Corner.CornerRadius        = UDim.new(0, 6)
+    local Corner = Instance.new("UICorner", ToggleBtn)
+    Corner.CornerRadius = UDim.new(0, 6)
 
-    local Stroke               = Instance.new("UIStroke", ToggleBtn)
-    Stroke.Color               = Theme.Line
+    local Stroke = Instance.new("UIStroke", ToggleBtn)
+    Stroke.Color = Theme.Line
 
     -- Main Title
-    local Title                = Instance.new("TextLabel", ToggleBtn)
-    Title.Size                 = UDim2.new(1, -60, 0, 20)
-    Title.Position             = UDim2.new(0, 12, 0, description and 6 or 8)
-    Title.Text                 = text
-    Title.TextColor3           = Theme.Text
-    Title.Font                 = Enum.Font.GothamMedium
-    Title.TextSize             = 12
-    Title.TextXAlignment       = Enum.TextXAlignment.Left
+    local Title = Instance.new("TextLabel", ToggleBtn)
+    Title.Size = UDim2.new(1, -60, 0, 20)
+    Title.Position = UDim2.new(0, 12, 0, description and 6 or 8)
+    Title.Text = text
+    Title.TextColor3 = Theme.Text
+    Title.Font = Enum.Font.GothamMedium
+    Title.TextSize = 12
+    Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.BackgroundTransparency = 1
 
     -- Description (Conditional)
     if description then 
-        local Desc             = Instance.new("TextLabel", ToggleBtn)
-        Desc.Size              = UDim2.new(1, -60, 0, 14)
-        Desc.Position          = UDim2.new(0, 12, 0, 26)
-        Desc.Text              = description
-        Desc.TextColor3        = Theme.TextDim
-        Desc.Font              = Enum.Font.Gotham
-        Desc.TextSize          = 10
-        Desc.TextXAlignment    = Enum.TextXAlignment.Left
+        local Desc = Instance.new("TextLabel", ToggleBtn)
+        Desc.Size = UDim2.new(1, -60, 0, 14)
+        Desc.Position = UDim2.new(0, 12, 0, 26)
+        Desc.Text = description
+        Desc.TextColor3 = Theme.TextDim
+        Desc.Font = Enum.Font.Gotham
+        Desc.TextSize = 10
+        Desc.TextXAlignment = Enum.TextXAlignment.Left
         Desc.BackgroundTransparency = 1 
     end
 
     -- Switch Outer Frame
-    local SwitchBG             = Instance.new("Frame", ToggleBtn)
-    SwitchBG.Size              = UDim2.new(0, 36, 0, 18)
-    SwitchBG.Position          = UDim2.new(1, -48, 0.5, -9)
-    SwitchBG.BackgroundColor3  = stateRef and Theme.Accent or Theme.ToggleOff
-    SwitchBG.BorderSizePixel   = 0
+    local Sw = Instance.new("Frame", ToggleBtn)
+    Sw.Size = UDim2.new(0, 36, 0, 18)
+    Sw.Position = UDim2.new(1, -48, 0.5, -9)
+    Sw.BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
+    Sw.BorderSizePixel = 0
     
-    local SwCorner             = Instance.new("UICorner", SwitchBG)
-    SwCorner.CornerRadius      = UDim.new(1, 0) 
+    local SwCorner = Instance.new("UICorner", Sw)
+    SwCorner.CornerRadius = UDim.new(1, 0) 
 
     -- Switch Inner Dot
-    local Dot                  = Instance.new("Frame", SwitchBG)
-    Dot.Size                   = UDim2.new(0, 14, 0, 14)
-    Dot.Position               = stateRef 
-        and UDim2.new(1, -16, 0.5, -7) 
-        or UDim2.new(0, 2, 0.5, -7)
-    Dot.BackgroundColor3       = Color3.fromRGB(255, 255, 255)
-    Dot.BorderSizePixel        = 0
+    local Dot = Instance.new("Frame", Sw)
+    Dot.Size = UDim2.new(0, 14, 0, 14)
+    Dot.Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Dot.BorderSizePixel = 0
     
-    local DotCorner            = Instance.new("UICorner", Dot)
-    DotCorner.CornerRadius     = UDim.new(1, 0) 
+    local DotCorner = Instance.new("UICorner", Dot)
+    DotCorner.CornerRadius = UDim.new(1, 0) 
 
-    -- // Toggle Click Logic
+    -- // Toggle Click Logic (MURNI DARI BACKUP YANG BEKERJA)
     ToggleBtn.MouseButton1Click:Connect(function() 
         stateRef = not stateRef 
         
-        -- Smooth Background Transition (Safe for all executors)
-        TweenService:Create(SwitchBG, TweenInfo.new(0.2), {
+        TweenService:Create(Sw, TweenInfo.new(0.2), {
             BackgroundColor3 = stateRef and Theme.Accent or Theme.ToggleOff
         }):Play() 
         
-        -- Smooth Dot Movement (Safe for all executors)
-        local targetPos = stateRef 
-            and UDim2.new(1, -16, 0.5, -7) 
-            or UDim2.new(0, 2, 0.5, -7)
-
         TweenService:Create(Dot, TweenInfo.new(0.25), {
-            Position = targetPos
+            Position = stateRef and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
         }):Play() 
         
-        -- Execute Callback & Save
         if callback then 
-            pcall(callback, stateRef) 
+            callback(stateRef) 
         end 
         
         SaveSettings() 
