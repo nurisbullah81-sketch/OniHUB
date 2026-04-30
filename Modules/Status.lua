@@ -236,149 +236,144 @@ task.spawn(function()
 end)
 
 -- [[ ==========================================
---      MODULE: LIVE PLAYER SCANNER (FULL LIST)
+--      MODULE: LIVE PLAYER SCANNER (FAIL-SAFE)
 --    ========================================== ]]
-
 local Players = game:GetService("Players")
 
+-- 1. Siapin Theme dengan Fallback (Biar Kaga Error Nabrak)
+local UI = _G.Cat.UI
+local Theme = UI and UI.Theme or {}
+
+local cCard = Theme.CardBG or Color3.fromRGB(30, 30, 30)
+local cSide = Theme.SideBG or Color3.fromRGB(40, 40, 40)
+local cLine = Theme.Line or Color3.fromRGB(60, 60, 60)
+local cText = Theme.Text or Color3.fromRGB(240, 240, 240)
+local cDim  = Theme.TextDim or Color3.fromRGB(150, 150, 150)
+local cPurp = Theme.CatPurple or Color3.fromRGB(170, 85, 255)
+
+-- 2. Bikin Bagian UI
 UI.CreateSection(Page, "SERVER PLAYER LIST")
 
--- // 1. REFRESH BUTTON
-local RefreshBtn             = Instance.new("TextButton", Page)
-RefreshBtn.LayoutOrder       = #Page:GetChildren()
-RefreshBtn.Size              = UDim2.new(1, 0, 0, 28)
-RefreshBtn.BackgroundColor3  = Theme.SideBG
-RefreshBtn.BorderSizePixel   = 0
-RefreshBtn.Text              = "🔄 Refresh Player Data"
-RefreshBtn.TextColor3        = Theme.CatPurple
-RefreshBtn.Font              = Enum.Font.GothamBold
-RefreshBtn.TextSize          = 11
-RefreshBtn.AutoButtonColor   = false
+local RefreshBtn = Instance.new("TextButton", Page)
+RefreshBtn.LayoutOrder = #Page:GetChildren()
+RefreshBtn.Size = UDim2.new(1, 0, 0, 28)
+RefreshBtn.BackgroundColor3 = cSide
+RefreshBtn.BorderSizePixel = 0
+RefreshBtn.Text = "🔄 Refresh Player Data"
+RefreshBtn.TextColor3 = cPurp
+RefreshBtn.Font = Enum.Font.GothamBold
+RefreshBtn.TextSize = 11
+RefreshBtn.AutoButtonColor = false
 Instance.new("UICorner", RefreshBtn).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", RefreshBtn).Color        = Theme.Line
+Instance.new("UIStroke", RefreshBtn).Color = cLine
 
--- // 2. SCROLLING LIST CONTAINER
-local ListContainer             = Instance.new("Frame", Page)
-ListContainer.LayoutOrder       = #Page:GetChildren()
-ListContainer.Size              = UDim2.new(1, 0, 0, 220) -- Tinggi kotak list
-ListContainer.BackgroundColor3  = Theme.CardBG
-ListContainer.BorderSizePixel   = 0
-ListContainer.ClipsDescendants  = true
+local ListContainer = Instance.new("Frame", Page)
+ListContainer.LayoutOrder = #Page:GetChildren()
+ListContainer.Size = UDim2.new(1, 0, 0, 220)
+ListContainer.BackgroundColor3 = cCard
+ListContainer.BorderSizePixel = 0
+ListContainer.ClipsDescendants = true
 Instance.new("UICorner", ListContainer).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", ListContainer).Color        = Theme.Line
+Instance.new("UIStroke", ListContainer).Color = cLine
 
-local ScrollList                = Instance.new("ScrollingFrame", ListContainer)
-ScrollList.Size                 = UDim2.new(1, -8, 1, -8)
-ScrollList.Position             = UDim2.new(0, 4, 0, 4)
+-- Bikin list yang bisa di-scroll
+local ScrollList = Instance.new("ScrollingFrame", ListContainer)
+ScrollList.Size = UDim2.new(1, -8, 1, -8)
+ScrollList.Position = UDim2.new(0, 4, 0, 4)
 ScrollList.BackgroundTransparency = 1
-ScrollList.BorderSizePixel      = 0
-ScrollList.ScrollBarThickness   = 3
-ScrollList.ScrollBarImageColor3 = Theme.Line
+ScrollList.BorderSizePixel = 0
+ScrollList.ScrollBarThickness = 3
+ScrollList.ScrollBarImageColor3 = cLine
+ScrollList.AutomaticCanvasSize = Enum.AutomaticSize.Y -- FIX MUTLAK BIAR BISA SCROLL
+ScrollList.CanvasSize = UDim2.new(0, 0, 0, 0)
 
-local ListLayout                = Instance.new("UIListLayout", ScrollList)
-ListLayout.Padding              = UDim.new(0, 6)
-ListLayout.SortOrder            = Enum.SortOrder.LayoutOrder
+local ListLayout = Instance.new("UIListLayout", ScrollList)
+ListLayout.Padding = UDim.new(0, 6)
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- // 3. CORE SCANNER LOGIC (ENGINE)
+-- 3. Mesin Intelijen (Aman dari error nil)
 local function GetPlayerEquipment(player)
-    -- Default Kosong
     local eq = { Race = "Unknown", Melee = "None", Fruit = "None", Sword = "None", Gun = "None" }
     
-    -- Sadap Ras
-    if player:FindFirstChild("Data") and player.Data:FindFirstChild("Race") then
-        eq.Race = player.Data.Race.Value
-    end
+    pcall(function()
+        if player:FindFirstChild("Data") and player.Data:FindFirstChild("Race") then
+            eq.Race = player.Data.Race.Value
+        end
+    end)
     
-    -- Sadap Inventory & Tangan
     local function ScanFolder(folder)
         if not folder then return end
-        
         for _, item in ipairs(folder:GetChildren()) do
             if item:IsA("Tool") then
-                -- Ambil tipe barang dari ToolTip bawaan game
-                local tType = item:FindFirstChild("ToolTip") and item.ToolTip.Value or item.ToolTip
+                local tType = ""
+                pcall(function() tType = item.ToolTip end) -- Amanin error tooltip
                 
-                if type(tType) == "string" then
-                    if tType == "Melee" then 
-                        eq.Melee = item.Name
-                    elseif tType == "Blox Fruit" then 
-                        eq.Fruit = item.Name
-                    elseif tType == "Sword" then 
-                        eq.Sword = item.Name
-                    elseif tType == "Gun" then 
-                        eq.Gun = item.Name
-                    end
+                if tType == "Melee" then eq.Melee = item.Name
+                elseif tType == "Blox Fruit" then eq.Fruit = item.Name
+                elseif tType == "Sword" then eq.Sword = item.Name
+                elseif tType == "Gun" then eq.Gun = item.Name
                 end
             end
         end
     end
     
-    ScanFolder(player:FindFirstChild("Backpack"))
-    ScanFolder(player.Character)
+    pcall(function()
+        ScanFolder(player:FindFirstChild("Backpack"))
+        ScanFolder(player.Character)
+    end)
     
     return eq
 end
 
--- // 4. UI POPULATION (NGE-RENDER DATA KE LAYAR)
+-- 4. Mesin Render UI
 local function RefreshList()
     RefreshBtn.Text = "⏳ Scanning Server..."
     
-    -- Bersihkan list lama sebelum nge-scan ulang
+    -- Hapus kartu lama
     for _, child in ipairs(ScrollList:GetChildren()) do
-        if child:IsA("Frame") then 
-            child:Destroy() 
-        end
+        if child:IsA("Frame") then child:Destroy() end
     end
     
-    local players = Players:GetPlayers()
-    
-    -- Looping semua pemain di server
-    for i, target in ipairs(players) do
+    -- Looping semua orang
+    for i, target in ipairs(Players:GetPlayers()) do
         local eq = GetPlayerEquipment(target)
         
-        -- // Bikin Kartu untuk tiap Player
-        local Card             = Instance.new("Frame", ScrollList)
-        Card.LayoutOrder       = i
-        Card.Size              = UDim2.new(1, -8, 0, 56) -- Ukuran pas buat 3 baris teks
-        Card.BackgroundColor3  = Theme.SideBG
-        Card.BorderSizePixel   = 0
+        local Card = Instance.new("Frame", ScrollList)
+        Card.LayoutOrder = i
+        Card.Size = UDim2.new(1, -8, 0, 56)
+        Card.BackgroundColor3 = cSide
+        Card.BorderSizePixel = 0
         Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 4)
         
-        local CardLayout             = Instance.new("UIListLayout", Card)
-        CardLayout.Padding           = UDim.new(0, 3)
-        CardLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-        CardLayout.VerticalAlignment   = Enum.VerticalAlignment.Center
+        local CardLayout = Instance.new("UIListLayout", Card)
+        CardLayout.Padding = UDim.new(0, 3)
+        CardLayout.VerticalAlignment = Enum.VerticalAlignment.Center
         
-        local UIPadding          = Instance.new("UIPadding", Card)
-        UIPadding.PaddingLeft    = UDim.new(0, 8)
+        local UIPad = Instance.new("UIPadding", Card)
+        UIPad.PaddingLeft = UDim.new(0, 8)
         
-        -- // Fungsi pembuat teks biar kode ga kepanjangan
+        -- Helper buat teks
         local function MakeText(txt, font, color)
-            local lbl              = Instance.new("TextLabel", Card)
-            lbl.Size               = UDim2.new(1, -10, 0, 14)
+            local lbl = Instance.new("TextLabel", Card)
+            lbl.Size = UDim2.new(1, -10, 0, 14)
             lbl.BackgroundTransparency = 1
-            lbl.Text               = txt
-            lbl.TextColor3         = color or Theme.Text
-            lbl.Font               = font or Enum.Font.Gotham
-            lbl.TextSize           = 10
-            lbl.TextXAlignment     = Enum.TextXAlignment.Left
+            lbl.Text = txt
+            lbl.TextColor3 = color or cText
+            lbl.Font = font or Enum.Font.Gotham
+            lbl.TextSize = 10
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
         end
         
-        -- // Render Teks Info Player (Pake Unicode Minimalis)
-        MakeText("👤 " .. target.DisplayName .. " (@" .. target.Name .. ")", Enum.Font.GothamBold, Theme.CatPurple)
-        MakeText("⚡ Race: " .. eq.Race .. "   |   🥊 Melee: " .. eq.Melee, Enum.Font.GothamMedium, Theme.Text)
-        MakeText("🍇 Fruit: " .. eq.Fruit .. "  |  ⚔️ Sword: " .. eq.Sword .. "  |  🎯 Gun: " .. eq.Gun, Enum.Font.Gotham, Theme.TextDim)
+        MakeText("👤 " .. target.DisplayName .. " (@" .. target.Name .. ")", Enum.Font.GothamBold, cPurp)
+        MakeText("⚡ Race: " .. tostring(eq.Race) .. "   |   🥊 Melee: " .. tostring(eq.Melee), Enum.Font.GothamMedium, cText)
+        MakeText("🍇 Fruit: " .. tostring(eq.Fruit) .. "  |  ⚔️ Sword: " .. tostring(eq.Sword) .. "  |  🎯 Gun: " .. tostring(eq.Gun), Enum.Font.Gotham, cDim)
     end
-    
-    -- Sesuaikan tinggi scroll otomatis biar bisa digeser
-    ScrollList.CanvasSize = UDim2.new(0, 0, 0, ListLayout.AbsoluteContentSize.Y)
     
     task.wait(0.5)
     RefreshBtn.Text = "🔄 Refresh Player Data"
 end
 
--- // 5. EVENT CONNECTIONS
 RefreshBtn.MouseButton1Click:Connect(RefreshList)
 
--- Otomatis nge-scan 1x pas script pertama kali di-execute
+-- Auto-scan pas baru di-load
 task.spawn(RefreshList)
