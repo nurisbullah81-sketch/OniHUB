@@ -576,109 +576,42 @@ local function CreateTab(name, isFirst)
     -- // 8.2: CONTENT PAGE CONSTRUCTION
     local Page               = Instance.new("ScrollingFrame", ContentArea)
     Page.Name                = name .. "_Page"
-    Page.Size                = UDim2.new(1, 0, 1, 0)
-    Page.BackgroundTransparency = 1
+    Page.Size                = UDim2.new(1, -16, 1, -16)
+    Page.Position            = UDim2.new(0, 8, 0, 8)
+    Page.BackgroundColor3    = Theme.PageBG
+    Page.BackgroundTransparency = 0
+    Page.ScrollBarThickness  = 2
+    Page.ScrollBarImageColor3 = Theme.TextDim
     Page.Visible             = isFirst
-    Page.ScrollBarThickness  = 0
-    Page.CanvasSize          = UDim2.new(0, 0, 0, 0)
     Page.BorderSizePixel     = 0
+    Page.CanvasSize          = UDim2.new(0, 0, 0, 0)
+
+    local PageCorner         = Instance.new("UICorner", Page)
+    PageCorner.CornerRadius  = UDim.new(0, 6)
+
+    local PageStroke         = Instance.new("UIStroke", Page)
+    PageStroke.Color         = Theme.Line
 
     local PageLayout         = Instance.new("UIListLayout", Page)
-    PageLayout.Padding       = UDim.new(0, 8)
+    PageLayout.Padding       = UDim.new(0, 6)
     PageLayout.SortOrder     = Enum.SortOrder.LayoutOrder
 
     local PagePad            = Instance.new("UIPadding", Page)
-    PagePad.PaddingTop       = UDim.new(0, 12)
-    PagePad.PaddingLeft      = UDim.new(0, 12)
-    PagePad.PaddingRight     = UDim.new(0, 12)
+    PagePad.PaddingTop       = UDim.new(0, 10)
+    PagePad.PaddingLeft      = UDim.new(0, 10)
+    PagePad.PaddingRight     = UDim.new(0, 14)
     PagePad.PaddingBottom    = UDim.new(0, 12)
 
-    -- Auto-Canvas Sizer
+    -- Auto-Canvas Sizer (Biar scroll nyatu otomatis)
     PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 24)
     end)
 
-    -- // 8.3: SWITCHING LOGIC (CLICK HANDLER)
+    -- // 8.3: INTERACTIVE TAB SWITCHING LOGIC
     Btn.MouseButton1Click:Connect(function()
         -- Skip if already active
         if Page.Visible then return end
         
-        -- Reset all other tabs and pages
-        for _, tab in pairs(Pages) do
-            tab.Btn.BackgroundColor3  = Theme.TabOff
-            tab.Btn.TextColor3        = Theme.TextDim
-            tab.Btn.TabStroke.Transparency = 0.3
-            tab.Btn.Indicator.Visible = false
-            tab.Page.Visible          = false
-        end
-        
-        -- Activate current tab
-        Btn.BackgroundColor3      = Theme.TabOn
-        Btn.TextColor3            = Theme.Text
-        BtnStroke.Transparency    = 0
-        Indicator.Visible         = true
-        Page.Visible              = true
-    end)
-
-    -- Store for global reference
-    Pages[name] = {
-        Btn  = Btn,
-        Page = Page
-    }
-
-    return Page
-end
-
--- Export to Global UI Toolkit
-_G.Cat.UI.CreateTab = CreateTab
-
--- [[ ==========================================
---      8.4: PAGE AREA CONSTRUCTION
---    ========================================== ]]
-
-    -- // Main Page Container (Scrolling)
-    local Page                  = Instance.new("ScrollingFrame", ContentArea)
-    Page.Name                   = name .. "_Page"
-    Page.Size                   = UDim2.new(1, -16, 1, -16)
-    Page.Position               = UDim2.new(0, 8, 0, 8)
-    Page.BackgroundColor3       = Theme.PageBG
-    Page.BackgroundTransparency = 0
-    Page.ScrollBarThickness     = 2
-    Page.ScrollBarImageColor3   = Theme.TextDim
-    Page.Visible                = isFirst
-    Page.BorderSizePixel        = 0
-
-    -- Decorations
-    local PageCorner            = Instance.new("UICorner", Page)
-    PageCorner.CornerRadius     = UDim.new(0, 6)
-
-    local PageStroke            = Instance.new("UIStroke", Page)
-    PageStroke.Color            = Theme.Line
-
-    -- // Layout & Padding (Vertical Flow)
-    local List                  = Instance.new("UIListLayout", Page)
-    List.Padding                = UDim.new(0, 6)
-    List.SortOrder              = Enum.SortOrder.LayoutOrder
-
-    local Pad                   = Instance.new("UIPadding", Page)
-    Pad.PaddingTop              = UDim.new(0, 10)
-    Pad.PaddingLeft             = UDim.new(0, 10)
-    Pad.PaddingRight            = UDim.new(0, 14)
-    Pad.PaddingBottom           = UDim.new(0, 10)
-    
-    -- // Register Data for Management
-    Pages[name] = {
-        Btn    = Btn, 
-        Page   = Page, 
-        Ind    = Indicator, 
-        Stroke = BtnStroke
-    }
-
--- [[ ==========================================
---      8.5: INTERACTIVE TAB SWITCHING LOGIC
---    ========================================== ]]
-
-    Btn.MouseButton1Click:Connect(function()
         -- Loop through all registered pages to update states
         for tName, data in pairs(Pages) do 
             local isActive = (tName == name)
@@ -688,7 +621,6 @@ _G.Cat.UI.CreateTab = CreateTab
             data.Ind.Visible  = isActive
             
             -- // Smooth Color Transitions (Tweens)
-            -- Transition for Button Background and Text
             TweenService:Create(
                 data.Btn, 
                 TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), 
@@ -709,17 +641,22 @@ _G.Cat.UI.CreateTab = CreateTab
         end
     end)
 
+    -- // Register Data for Management
+    Pages[name] = {
+        Btn    = Btn, 
+        Page   = Page, 
+        Ind    = Indicator, 
+        Stroke = BtnStroke
+    }
+
     return Page
 end
 
--- // Export to Global Toolkit
-_G.Cat.UI.CreateTab = CreateTab
-
 -- [[ ==========================================
---      8. UI COMPONENTS (SECTION, TOGGLE, LABEL)
+--      9. UI COMPONENTS (SECTION, TOGGLE, LABEL)
 --    ========================================== ]]
 
--- // 8.1: FUNCTION - CREATE SECTION HEADER
+-- // 9.1: FUNCTION - CREATE SECTION HEADER
 local function CreateSection(parent, text)
     local SectionFrame         = Instance.new("Frame", parent)
     SectionFrame.Name          = "Section_" .. text
@@ -738,7 +675,7 @@ local function CreateSection(parent, text)
     Label.BackgroundTransparency = 1
 end
 
--- // 8.2: FUNCTION - CREATE TOGGLE SWITCH
+-- // 9.2: FUNCTION - CREATE TOGGLE SWITCH
 local function CreateToggle(parent, text, description, stateRef, callback)
     local frameHeight          = description and 52 or 36
     
@@ -833,7 +770,7 @@ local function CreateToggle(parent, text, description, stateRef, callback)
     table.insert(AllToggles, {Btn = ToggleBtn, Label = Title})
 end
 
--- // 8.3: FUNCTION - CREATE INFORMATION LABEL
+-- // 9.3: FUNCTION - CREATE INFORMATION LABEL
 local function CreateLabel(parent, text, description)
     local frameHeight          = description and 45 or 30
     
@@ -877,7 +814,7 @@ local function CreateLabel(parent, text, description)
 end
 
 -- [[ ==========================================
---      9. SEARCH ENGINE LOGIC
+--      10. SEARCH ENGINE LOGIC
 --    ========================================== ]]
 
 -- // Logic: Dynamic UI Filtering
@@ -896,7 +833,7 @@ SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- ==========================================
--- 10. PRE-INITIALIZE DEFAULT TABS
+-- 11. PRE-INITIALIZE DEFAULT TABS
 -- ==========================================
 -- Creating the core tab structure (Must be done after function declarations)
 
@@ -906,7 +843,7 @@ CreateTab("Devil Fruits", false)
 CreateTab("Misc", false)
 
 -- ==========================================
--- 11. GLOBAL FRAMEWORK EXPORT
+-- 12. GLOBAL FRAMEWORK EXPORT
 -- ==========================================
 -- Registering UI tools to global table for modular access
 
@@ -923,4 +860,4 @@ _G.Cat.UI = {
 }
 
 -- Final initialization message in console
-print("[CatHUB] UI Framework Loaded Successfully.")
+warn("[CatHUB] UI Framework Loaded Successfully.")
