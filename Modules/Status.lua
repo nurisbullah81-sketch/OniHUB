@@ -128,8 +128,8 @@ task.spawn(function()
     while task.wait(1) do
         pcall(function()
             -- // 3.1: Initialize Data Buffers
-            local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-            local dataFolder  = LocalPlayer:FindFirstChild("Data")
+            local leaderstats = Player:FindFirstChild("leaderstats")
+            local dataFolder  = Player:FindFirstChild("Data")
             
             local lvl, lvlName       = 0, "Level" 
             local money, moneyName   = 0, "Money" 
