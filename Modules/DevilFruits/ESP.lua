@@ -267,12 +267,10 @@ local function OnItemSpawned(obj)
 end
 
 -- Pasang X-Ray pas buah masuk
-Workspace.DescendantAdded:Connect(OnItemSpawned)
-
--- Pasang X-Ray pas buah diambil orang / despawn
-Workspace.DescendantRemoving:Connect(function(obj)
-    if Data[obj] then
-        RemoveESP(obj)
+Workspace.ChildAdded:Connect(OnItemSpawned)
+Workspace.ChildRemoved:Connect(function(obj)
+    if Data[obj] then 
+        RemoveESP(obj) 
     end
 end)
 
