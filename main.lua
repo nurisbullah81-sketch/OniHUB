@@ -98,7 +98,7 @@ end
 -- ==========================================
 Load("StyleUI.lua")                     -- 1. Bangun Rumah Kosong
 Load("Core.lua")                        -- 2. Pasang Fondasi & Keamanan
-Load("Status.lua")                      -- 3. Penghuni Status (INI BETUL-BETUL HARUS SESUAI NAMA FILE LU)
+Load("Modules/Status.lua")                      -- 3. Penghuni Status (INI BETUL-BETUL HARUS SESUAI NAMA FILE LU)
 Load("Modules/AutoFarm/AutoFarm.lua")   -- 4. Penghuni Auto Farm
 Load("Modules/DevilFruits/ESP.lua")     -- 5. Penghuni ESP (Scanner)
 Load("Modules/DevilFruits/FruitTP.lua") -- 6. Penghuni TP/Tween
