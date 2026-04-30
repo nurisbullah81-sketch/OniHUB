@@ -121,7 +121,7 @@ local function ReadValue(obj)
 end
 
 -- [[ ==========================================
---      3. BACKGROUND TASK: STATUS TRACKER
+--      3. BACKGROUND TASK: STATUS TRACKER (ULTRA OPTIMIZED)
 --    ========================================== ]]
 
 task.spawn(function()
@@ -131,68 +131,28 @@ task.spawn(function()
             local leaderstats = Player:FindFirstChild("leaderstats")
             local dataFolder  = Player:FindFirstChild("Data")
             
-            local lvl, lvlName       = 0, "Level" 
-            local money, moneyName   = 0, "Money" 
-            local frag, fragName     = 0, "Fragments" 
-            local bounty, bountyName = 0, "Bounty"
-
-            -- // 3.2: Internal Scanner Function
-            local function ScanFolder(folder)
-                if not folder then return end
-                
-                for _, child in ipairs(folder:GetChildren()) do
-                    if child:IsA("ValueBase") then 
-                        local rawName = string.lower(child.Name) 
-                        local clean   = string.gsub(rawName, "%W", "") 
-                        local val     = ReadValue(child)
-                        
-                        -- Match Level/LVL
-                        if string.find(clean, "level") or string.find(clean, "lvl") then 
-                            lvl     = val
-                            lvlName = child.Name
-                        
-                        -- Match Bounty/Honor
-                        elseif string.find(clean, "bounty") or string.find(clean, "honor") then 
-                            bounty     = val
-                            bountyName = child.Name
-                        
-                        -- Match Fragments
-                        elseif string.find(clean, "frag") then 
-                            frag     = val
-                            fragName = child.Name
-                        
-                        -- Match Money/Belly/Cash/$
-                        elseif rawName == "$" 
-                            or string.find(clean, "money") 
-                            or string.find(clean, "belly") 
-                            or string.find(clean, "cash") then 
-                            
-                            money     = val
-                            moneyName = child.Name
-                        
-                        -- Fallback for generic money values
-                        elseif val > 0 and money == 0 then 
-                            money     = val
-                            moneyName = child.Name 
-                        end
-                    end
+            local lvl, money, frag, bounty = 0, 0, 0, 0
+            
+            -- // 3.2: OPTIMIZED SCANNER (NO REGEX, NO STRING MANIPULATION!)
+            -- Langsung tembak nama aslinya, jauh lebih enteng buat CPU!
+            if dataFolder then
+                lvl    = ReadValue(dataFolder:FindFirstChild("Level"))
+                money  = ReadValue(dataFolder:FindFirstChild("Beli"))
+                frag   = ReadValue(dataFolder:FindFirstChild("Fragments"))
+            end
+            
+            if leaderstats then
+                bounty = ReadValue(leaderstats:FindFirstChild("Bounty"))
+                if bounty == 0 then -- Fallback kalau dia lagi pake faction Honor
+                    bounty = ReadValue(leaderstats:FindFirstChild("Honor"))
                 end
             end
-
-            -- Execute Scanning
-            ScanFolder(leaderstats) 
-            ScanFolder(dataFolder)
 
             -- // 3.3: Update Player Labels
             Labels.Level.Text     = string.format("Level: %s", FormatNum(lvl))
             Labels.Fragments.Text = string.format("Fragments: %s", FormatNum(frag))
-            Labels.Bounty.Text    = string.format("%s: %s", bountyName, FormatNum(bounty))
-
-            local displayMoney    = (moneyName == "$" or string.lower(moneyName) == "money") 
-                and "Money" 
-                or moneyName
-            
-            Labels.Money.Text     = string.format("%s: $%s", displayMoney, FormatNum(money))
+            Labels.Bounty.Text    = string.format("Bounty/Honor: %s", FormatNum(bounty))
+            Labels.Money.Text     = string.format("Money: $%s", FormatNum(money))
 
             -- // 3.4: Update Server & Environment Labels
             Labels.Players.Text   = string.format("Players: %d", #Players:GetPlayers())
@@ -206,7 +166,6 @@ task.spawn(function()
             if clockTime >= 18 or clockTime < 6 then
                 -- Night Time Logic
                 Labels.Time.Text = string.format("Time: %s (Night)", timeStr)
-                
                 local isFull = Lighting.Brightness >= 2 
                 Labels.Moon.Text = isFull and "Moon: Full Moon" or "Moon: No Full Moon"
             else 
@@ -221,12 +180,9 @@ task.spawn(function()
             
             if #fruitList > 0 then 
                 local fruitText = table.concat(fruitList, ", ") 
-                
-                -- Truncate long strings to fit UI
                 if string.len(fruitText) > 35 then 
                     fruitText = string.sub(fruitText, 1, 35) .. "..." 
                 end 
-                
                 Labels.Fruits.Text = string.format("Fruits: %s", fruitText) 
             else 
                 Labels.Fruits.Text = "Fruits: None" 
