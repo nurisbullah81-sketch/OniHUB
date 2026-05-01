@@ -46,7 +46,7 @@ UI.CreateToggle(
 )
 
 -- ==========================================
--- 2. LOGIC: SERVER HOPPING ENGINE
+-- 2. LOGIC: SERVER HOPPING ENGINE (ANTI-DEADLOCK)
 -- ==========================================
 local isHopping = false
 
@@ -62,9 +62,8 @@ function _G.Cat.HopServer()
 
     task.spawn(function()
         -- FIX 1: HENTIKAN TWEEN SEBELUM TERBANG
-        -- Agar karakter tidak ditarik kembali ke tanah oleh RunService di FruitTP
         if _G.Cat.State and _G.Cat.State.StopSmartTween then
-            _G.Cat.State.StopSmartTween()
+            pcall(function() _G.Cat.State.StopSmartTween() end)
         end
         task.wait(0.2)
 
@@ -82,133 +81,120 @@ function _G.Cat.HopServer()
         end)
         task.wait(0.3)
 
-        -- MAIN HOP LOOP
+        -- MAIN HOP LOOP (DIBUNGKUS PCALL BIAR KAGA MATI DIAM-DIAM!)
         while Settings.AutoHop do
-            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            local success, err = pcall(function()
+                local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
 
-            -- Buka Browser kalo ketutup
-            if not browser or not browser.Enabled then
-                local btnName = "ServerBrowserButton"
-                local openBtn = Me.PlayerGui:FindFirstChild(btnName, true)
+                -- Buka Browser kalo ketutup
+                if not browser or not browser.Enabled then
+                    local btnName = "ServerBrowserButton"
+                    local openBtn = Me.PlayerGui:FindFirstChild(btnName, true)
 
-                if openBtn then
-                    -- FIX 2: CEK UKURAN TOMBOL
-                    -- Jangan di-klik jika tombol belum selesai dirender (ukuran 0)
-                    if openBtn.AbsoluteSize.X == 0 or openBtn.AbsoluteSize.Y == 0 then
+                    if openBtn then
+                        if openBtn.AbsoluteSize.X == 0 or openBtn.AbsoluteSize.Y == 0 then
+                            task.wait(0.5)
+                            return -- Balik ngulang loop secara aman
+                        end
+
+                        local pos  = openBtn.AbsolutePosition
+                        local size = openBtn.AbsoluteSize
+                        local tx   = pos.X + (size.X / 2)
+                        local ty   = pos.Y + (size.Y / 2) + 58
+
+                        VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                        task.wait(0.05)
+                        VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                    end
+                end
+
+                browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+                if not browser then
+                    task.wait(0.5)
+                    return
+                end
+
+                local listArea = browser:FindFirstChild("Inside", true)
+                local count    = 0
+
+                repeat
+                    task.wait(0.2)
+                    count = count + 1
+                    listArea = browser:FindFirstChild("Inside", true)
+                until (listArea and #listArea:GetChildren() > 5) or count > 15
+
+                if listArea then
+                    local scrollFrame = browser:FindFirstChild("FakeScroll", true)
+                    local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
+
+                    if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
+                        dummyScroll.CanvasPosition = Vector2.new(0, math.random(500, 2500))
                         task.wait(0.5)
-                        continue
                     end
 
-                    local pos  = openBtn.AbsolutePosition
-                    local size = openBtn.AbsoluteSize
-                    local tx   = pos.X + (size.X / 2)
-                    local ty   = pos.Y + (size.Y / 2) + 58
+                    if not scrollFrame then return end
 
-                    -- Klik tombol open
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    task.wait(0.05)
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                end
-            end
+                    local buttons = {}
+                    local sPos    = scrollFrame.AbsolutePosition
+                    local sSize   = scrollFrame.AbsoluteSize
 
-            browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            if not browser then
-                task.wait(0.5)
-                continue
-            end
-
-            -- Tunggu list server loading
-            local listArea = browser:FindFirstChild("Inside", true)
-            local count    = 0
-
-            repeat
-                task.wait(0.2)
-                count    = count + 1
-                listArea = browser:FindFirstChild("Inside", true)
-            until (listArea and #listArea:GetChildren() > 5) or count > 15
-
-            if listArea then
-                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
-                local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
-
-                -- Acak posisi scroll
-                if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
-                    local randY = math.random(500, 2500)
-                    dummyScroll.CanvasPosition = Vector2.new(0, randY)
-                    task.wait(0.5)
-                end
-
-                if not scrollFrame then continue end
-
-                local buttons = {}
-                local sPos    = scrollFrame.AbsolutePosition
-                local sSize   = scrollFrame.AbsoluteSize
-
-                -- Kumpulin tombol join yang keliatan
-                for _, v in pairs(listArea:GetDescendants()) do
-                    local isBtn = v:IsA("TextButton") 
-                        and v.Name == "Join" 
-                        and v.Visible
-
-                    if isBtn then
-                        local vy = v.AbsolutePosition.Y
-                        local yMin = sPos.Y
-                        local yMax = sPos.Y + sSize.Y - 30
-
-                        -- Cek apakah di area visible
-                        if vy > yMin and vy < yMax then
-                            table.insert(buttons, v)
+                    for _, v in pairs(listArea:GetDescendants()) do
+                        if v:IsA("TextButton") and v.Name == "Join" and v.Visible then
+                            local vy = v.AbsolutePosition.Y
+                            if vy > sPos.Y and vy < (sPos.Y + sSize.Y - 30) then
+                                table.insert(buttons, v)
+                            end
                         end
                     end
+
+                    if #buttons == 0 then
+                        if browser then browser.Enabled = false end
+                        task.wait(2)
+                        return
+                    end
+
+                    for _, target in pairs(buttons) do
+                        if not Settings.AutoHop then break end
+
+                        local bp = target.AbsolutePosition
+                        local bs = target.AbsoluteSize
+                        local tx = bp.X + (bs.X / 2)
+                        local ty = bp.Y + (bs.Y / 2) + 58
+
+                        VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                        VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                        task.wait(0.05)
+                        VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                        VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+
+                        task.wait(0.05)
+                        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                        
+                        task.wait(4) -- Jeda API
+                    end
                 end
+            end)
 
-                -- FIX 3: REFRESH JIKA LIST KOSONG
-                -- Jika server kosong, tutup UI agar script mengulang klik "Servers"
-                if #buttons == 0 then
-                    if browser then browser.Enabled = false end
-                    task.wait(2)
-                    continue
-                end
-
-                -- Coba join server
-                for _, target in pairs(buttons) do
-                    if not Settings.AutoHop then break end
-
-                    local bp = target.AbsolutePosition
-                    local bs = target.AbsoluteSize
-                    local tx = bp.X + (bs.X / 2)
-                    local ty = bp.Y + (bs.Y / 2) + 58
-
-                    -- Klik Join & Enter
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                    task.wait(0.05)
-
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-                    task.wait(0.05)
-                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                    
-                    -- FIX 4: JEDA TELEPORTASI
-                    -- Beri waktu 4 detik agar Roblox engine tidak mendeteksi spam klik
-                    task.wait(4)
-                end
+            -- KALAU ADA ERROR, JANGAN MATI! CATAT DAN LANJUTKAN!
+            if not success then
+                warn("[CatHUB] AutoHop UI Error Terdeteksi & Ditahan: ", err)
+                task.wait(2) -- Jeda bentar biar memori kaga stres
             end
+            
             task.wait(0.5)
         end
 
         -- Cleanup
-        local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-        if browser then
-            browser.Enabled = false
-        end
+        pcall(function()
+            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            if browser then browser.Enabled = false end
+        end)
 
         if _G.Cat.ReleaseCharacter then
-            _G.Cat.ReleaseCharacter()
+            pcall(function() _G.Cat.ReleaseCharacter() end)
         end
 
-        isHopping = false
+        isHopping = false -- Kunci dilepas dengan aman
     end)
 end
 
