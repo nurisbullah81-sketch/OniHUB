@@ -83,6 +83,9 @@ local isTweening    = false
 local currentTarget = nil
 local currentTween  = nil
 
+-- Wadah buat nyimpen ingatan physics asli
+local originalCollisions = {} 
+
 -- ==========================================
 -- 3. CONTROL FUNCTIONS
 -- ==========================================
@@ -128,20 +131,15 @@ local function StopTween()
             hum:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
     end
-
-    -- Restore Collision (KRITIS: HRP & Accessory Handle HARUS false agar tidak mentok halusinasi)
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                if part.Name == "HumanoidRootPart" or part.Parent:IsA("Accessory") then
-                    part.CanCollide = false -- Ini rahasianya biar lu bisa lewat pintu
-                else
-                    part.CanCollide = true -- Ini biar lu nggak jatuh tembus lantai pas main normal
-                end
-            end
+    
+    -- Restore Collision murni dari memori ingatan (Kaga nebak-nebak lagi)
+    for part, state in pairs(originalCollisions) do
+        if part and part.Parent then
+            part.CanCollide = state
         end
     end
-end
+    table.clear(originalCollisions) -- Bersihin memori biar kaga nyampah di RAM
+end -- <-- INI DIA BANG, KEMAREN LU KAHAPUS ININYA WKWK
 
 State.StopSmartTween = StopTween
 
@@ -202,13 +200,21 @@ task.spawn(function()
                     -- Sinkronkan Proxy ke pemain
                     ProxyPart.CFrame = hrp.CFrame
 
-                    -- Noclip & Sync Loop (KRITIS: GetDescendants biar aksesoris/sayap juga tembus)
+                    -- Catat semua status asli anggota tubuh sebelum berubah jadi hantu
+                    table.clear(originalCollisions)
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            originalCollisions[part] = part.CanCollide
+                        end
+                    end
+
+                    -- Noclip & Sync Loop (Sekarang jauh lebih enteng)
                     noclipConn = RunService.Stepped:Connect(function()
                         if not isTweening then return end
 
-                        -- Matikan collision karakter sampai ke aksesoris
-                        for _, part in pairs(char:GetDescendants()) do
-                            if part:IsA("BasePart") then
+                        -- Matikan collision jauh lebih enteng karena cuma baca dari memori
+                        for part, _ in pairs(originalCollisions) do
+                            if part.CanCollide then
                                 part.CanCollide = false
                             end
                         end
