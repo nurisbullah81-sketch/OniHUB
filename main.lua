@@ -3,25 +3,30 @@
 --    ========================================== ]]
 
 -- // Environment Initialization
+-- Cari environment global yang aman biar script survive saat server hop
 local _ENV        = (getgenv or getrenv or getfenv)()
 local HttpService = game:GetService("HttpService")
 local Players     = game:GetService("Players")
 
 -- // Prevent Re-execution (Singleton Pattern)
+-- Cek kalo script udah jalan sekali, biar ga dobel eksekusi
 if _ENV.Cat_Executed then 
     return 
 end
 _ENV.Cat_Executed = true
 
 -- // 1. TELEPORT HANDLER (Persistent Execution)
--- Ensures the script re-runs automatically after a Server Hop
+-- Fungsi ini biar script otomatis jalan lagi pas pindah server (Server Hop)
 local executor      = syn or fluxus
 local queueTeleport = queue_on_teleport 
     or (executor and executor.queue_on_teleport)
 
 if type(queueTeleport) == "function" then
-    local scriptURL = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/Main.lua"))()'
+    -- Define URL script utama (dipisah biar ga panjang ke kanan)
+    local scriptURL = 'loadstring(game:HttpGet(' ..
+        '"https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/Main.lua"))()'
     
+    -- Masukin antrian teleport dengan aman (pcall buat handling error)
     pcall(function()
         queueTeleport(scriptURL)
     end)
@@ -36,22 +41,22 @@ _G.Cat = {
     Player   = Players.LocalPlayer,
     Labels   = {},
     Settings = { 
-        -- Visual & ESP
+        -- // Visual & ESP
         FruitESP           = false,
         
-        -- Movement & Teleport
+        -- // Movement & Teleport
         TweenFruit         = false,
         InstantTPFruit     = false,
         AutoHop            = false,
         
-        -- Automation
+        -- // Automation
         AutoStoreFruit     = false,
         AutoAttack         = false,
         AntiAFK            = true, 
         AutoTeam           = false,
         FPSBoost           = false, -- <--- WAJIB ADA INI BANG!
         
-        -- Webhook Alerts
+        -- // Webhook Alerts
         FruitWebhook       = false,
         FruitWebhookURL    = "", 
         FruitWebhookRarity = "Mythical Only"
@@ -59,23 +64,21 @@ _G.Cat = {
 }
 
 -- ==========================================
--- 3. CONFIGURATION LOADER (Read Saved Data)
+-- 3. CONFIGURATION LOADER
 -- ==========================================
 local function LoadConfig()
     local hasFile = isfile and isfile(ConfigFile)
-    
+
     if hasFile then
+        -- Baca file dengan aman (pcall)
         local ok, data = pcall(function()
-            local content = readfile(ConfigFile)
-            return HttpService:JSONDecode(content)
+            return HttpService:JSONDecode(readfile(ConfigFile))
         end)
-        
-        -- Merge saved data into default settings
+
+        -- Gabung data lama ke settings
         if ok and type(data) == "table" then
             for key, value in pairs(data) do
-                local isExistingKey = _G.Cat.Settings[key] ~= nil
-                
-                if isExistingKey then
+                if _G.Cat.Settings[key] ~= nil then
                     _G.Cat.Settings[key] = value
                 end
             end
@@ -83,27 +86,29 @@ local function LoadConfig()
     end
 end
 
--- Execute Load
 LoadConfig()
 
 -- ==========================================
--- 4. SMART AUTO-SAVE ENGINE (ZERO I/O LAG)
+-- 4. SMART AUTO-SAVE ENGINE
 -- ==========================================
--- Cuma nyimpen file ke disk KALAU ada perubahan settingan!
+-- Cuma nulis kalo ada perubahan data
 task.spawn(function()
-    local LastSavedState = HttpService:JSONEncode(_G.Cat.Settings) -- Simpan wujud awal
-    
-    while task.wait(5) do -- Mundurin ke 5 detik biar makin lega
-        local canSave = writefile ~= nil
-        
-        if canSave then
-            pcall(function() 
-                local CurrentState = HttpService:JSONEncode(_G.Cat.Settings)
-                
-                -- CEK MUTLAK: Kalau settingannya MASIH SAMA, JANGAN NULIS FILE!
+    -- Simpen state awal (dipecah biar ga panjang)
+    local LastSavedState = HttpService:JSONEncode(
+        _G.Cat.Settings
+    )
+
+    while task.wait(5) do
+        if writefile then
+            pcall(function()
+                local CurrentState = HttpService:JSONEncode(
+                    _G.Cat.Settings
+                )
+
+                -- Cek perubahan sebelum save
                 if CurrentState ~= LastSavedState then
-                    writefile(ConfigFile, CurrentState) 
-                    LastSavedState = CurrentState -- Update ingatan terakhir
+                    writefile(ConfigFile, CurrentState)
+                    LastSavedState = CurrentState
                 end
             end)
         end
@@ -114,50 +119,55 @@ end)
 --      5. MODULE LOADER FUNCTION
 --    ========================================== ]]
 
--- // Function: Remote Module Loader with Cache-Busting
+-- // Function: Remote Loader with Cache-Busting
 local function Load(file)
-    local baseUrl = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/"
+    -- URL dipecah biar ga panjang ke kanan
+    local baseUrl = "https://raw.githubusercontent.com/" ..
+        "nurisbullah81-sketch/OniHUB/refs/heads/main/"
     local version = tostring(math.random(1000, 9999))
     
-    -- Construct URL with versioning to prevent old cache loading
+    -- Tambah param version biar bypass cache
     local url = string.format("%s%s?v=%s", baseUrl, file, version)
     
-    -- Execute remote load
-    local ok, result = pcall(function() 
-        return loadstring(game:HttpGet(url))() 
+    -- Load script dari URL
+    local ok, result = pcall(function()
+        return loadstring(game:HttpGet(url))()
     end)
     
-    -- Error Reporting
+    -- Warning kalo gagal load
     if not ok then 
-        local errMsg = "[CatHUB] Failed to load module: %s | Error: %s"
-        warn(string.format(errMsg, file, tostring(result))) 
+        warn(string.format(
+            "[CatHUB] Failed: %s | Err: %s", 
+            file, 
+            tostring(result)
+        )) 
     end
     
     return result
 end
 
 -- ==========================================
--- 6. EXECUTION ORDER (INITIALIZATION)
+-- 6. EXECUTION ORDER
 -- ==========================================
 
--- // Phase 1: UI & Core Framework
-Load("StyleUI.lua")                 -- Initialize UI Engine
-Load("Core.lua")                    -- Setup Foundation & Security
+-- // Phase 1: UI & Core
+Load("StyleUI.lua")                  -- UI Engine
+Load("Core.lua")                     -- Foundation
 
--- // Phase 2: Information & Tracking
-Load("Modules/Status.lua")          -- Player & Server Status Labels
-Load("Modules/DevilFruits/ESP.lua") -- Fruit Detection System
+-- // Phase 2: Info & Tracking
+Load("Modules/Status.lua")           -- Status Labels
+Load("Modules/DevilFruits/ESP.lua")  -- Fruit ESP
 
--- // Phase 3: Automation Modules
-Load("Modules/AutoFarm/AutoFarm.lua") -- Main Farming Logic
-Load("Modules/DevilFruits/FruitTP.lua")   -- Movement (Tween/TP)
-Load("Modules/DevilFruits/AutoStore.lua") -- Inventory Management
-Load("Modules/DevilFruits/AutoHop.lua")   -- Server Browser Logic
+-- // Phase 3: Automation
+Load("Modules/AutoFarm/AutoFarm.lua")    -- Auto Farm
+Load("Modules/DevilFruits/FruitTP.lua")  -- Fruit TP
+Load("Modules/DevilFruits/AutoStore.lua")-- Auto Store
+Load("Modules/DevilFruits/AutoHop.lua")  -- Auto Hop
 
--- // Phase 4: Utilities & Protection
-Load("Modules/DevilFruits/Webhook.lua") -- Alerts & Logging
-Load("Modules/Misc/AntiAFK.lua")        -- Idle Protection & Auto Team
+-- // Phase 4: Utilities
+Load("Modules/DevilFruits/Webhook.lua")  -- Webhook
+Load("Modules/Misc/AntiAFK.lua")         -- Anti AFK
 
--- // Phase 5: Miscellaneous & Optimization
-Load("Modules/Misc/FPSBooster.lua")     -- Max Performance (Anti-Lag)
-Load("Modules/Misc/GameSettings.lua")   -- Native Sync Engine
+-- // Phase 5: Misc
+Load("Modules/Misc/FPSBooster.lua")   -- FPS Boost
+Load("Modules/Misc/GameSettings.lua") -- Settings
