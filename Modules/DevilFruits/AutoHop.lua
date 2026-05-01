@@ -46,7 +46,7 @@ UI.CreateToggle(
 )
 
 -- ==========================================
--- 2. LOGIC: SERVER HOPPING ENGINE
+-- 2. LOGIC: SERVER HOPPING ENGINE (API VERSION)
 -- ==========================================
 local isHopping = false
 
@@ -61,7 +61,7 @@ function _G.Cat.HopServer()
     end)
 
     task.spawn(function()
-        -- STEP 1: Sky TP (Safety)
+        -- STEP 1: Sky TP (Safety dari damage pas mau pindah)
         pcall(function()
             if Me.Character then
                 local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
@@ -73,116 +73,44 @@ function _G.Cat.HopServer()
                 end
             end
         end)
-        task.wait(0.3)
+        task.wait(1)
 
-        -- MAIN HOP LOOP
+        -- STEP 2: API HOP ENGINE (Zero UI, 0% Lag, 100% Anti-Stuck)
+        local TeleportService = game:GetService("TeleportService")
+        local api_url = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Desc&limit=100"
+
         while Settings.AutoHop do
-            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            pcall(function()
+                -- Ambil data server langsung dari server utama Roblox
+                local request = game:HttpGet(api_url)
+                local decoded = HttpService:JSONDecode(request)
 
-            -- Buka Browser kalo ketutup
-            if not browser or not browser.Enabled then
-                local btnName = "ServerBrowserButton"
-                local openBtn = Me.PlayerGui:FindFirstChild(btnName, true)
+                if decoded and decoded.data then
+                    local availableServers = {}
 
-                if openBtn then
-                    local pos  = openBtn.AbsolutePosition
-                    local size = openBtn.AbsoluteSize
-                    local tx   = pos.X + (size.X / 2)
-                    local ty   = pos.Y + (size.Y / 2) + 58
-
-                    -- Klik tombol open
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    task.wait(0.05)
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                end
-            end
-
-            browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            if not browser then
-                task.wait(0.5)
-                continue
-            end
-
-            -- Tunggu list server loading
-            local listArea = browser:FindFirstChild("Inside", true)
-            local count    = 0
-
-            repeat
-                task.wait(0.2)
-                count    = count + 1
-                listArea = browser:FindFirstChild("Inside", true)
-            until (listArea and #listArea:GetChildren() > 5) or count > 15
-
-            if listArea then
-                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
-                local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
-
-                -- Acak posisi scroll
-                if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
-                    local randY = math.random(500, 2500)
-                    dummyScroll.CanvasPosition = Vector2.new(0, randY)
-                    task.wait(0.5)
-                end
-
-                if not scrollFrame then continue end
-
-                local buttons = {}
-                local sPos    = scrollFrame.AbsolutePosition
-                local sSize   = scrollFrame.AbsoluteSize
-
-                -- Kumpulin tombol join yang keliatan
-                for _, v in pairs(listArea:GetDescendants()) do
-                    local isBtn = v:IsA("TextButton") 
-                        and v.Name == "Join" 
-                        and v.Visible
-
-                    if isBtn then
-                        local vy = v.AbsolutePosition.Y
-                        local yMin = sPos.Y
-                        local yMax = sPos.Y + sSize.Y - 30
-
-                        -- Cek apakah di area visible
-                        if vy > yMin and vy < yMax then
-                            table.insert(buttons, v)
+                    -- Saring server: Cari yang belum penuh & bukan server saat ini
+                    for _, server in ipairs(decoded.data) do
+                        if type(server) == "table" and server.playing < (server.maxPlayers - 1) and server.id ~= game.JobId then
+                            table.insert(availableServers, server.id)
                         end
                     end
+
+                    -- Kalo ada server cocok, langsung sikat pindah
+                    if #availableServers > 0 then
+                        local targetServer = availableServers[math.random(1, #availableServers)]
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, targetServer, Me)
+                    end
                 end
-
-                -- Coba join server
-                for _, target in pairs(buttons) do
-                    if not Settings.AutoHop then break end
-
-                    local bp = target.AbsolutePosition
-                    local bs = target.AbsoluteSize
-                    local tx = bp.X + (bs.X / 2)
-                    local ty = bp.Y + (bs.Y / 2) + 58
-
-                    -- Klik Join & Enter
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                    task.wait(0.05)
-
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-                    task.wait(0.05)
-                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                    task.wait(0.3)
-                end
-            end
-            task.wait(0.5)
+            end)
+            
+            -- Kasih jeda 3 detik biar API kaga kena limit (Error 429)
+            task.wait(3)
         end
 
-        -- Cleanup
-        local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-        if browser then
-            browser.Enabled = false
+        -- Cleanup (Kalo fitur dimatiin tengah jalan)
+        if _G.Cat.ReleaseCharacter then 
+            _G.Cat.ReleaseCharacter() 
         end
-
-        if _G.Cat.ReleaseCharacter then
-            _G.Cat.ReleaseCharacter()
-        end
-
         isHopping = false
     end)
 end
