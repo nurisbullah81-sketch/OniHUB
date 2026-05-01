@@ -97,7 +97,10 @@ function _G.Cat.HopServer()
 
                     if openBtn then
                         -- Cegah klik meleset pas UI belum ke-render
-                        if openBtn.AbsoluteSize.X == 0 then return end
+                        if openBtn.AbsoluteSize.X == 0 then
+                            task.wait(2) -- Tunggu 2 detik aja sampe animasinya kelar
+                            return -- FIX: Pake return karena ini ada di dalem pcall function!
+                        end
 
                         local pos  = openBtn.AbsolutePosition
                         local size = openBtn.AbsoluteSize
