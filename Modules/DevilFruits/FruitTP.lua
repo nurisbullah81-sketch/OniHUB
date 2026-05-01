@@ -129,11 +129,15 @@ local function StopTween()
         end
     end
 
-    -- Restore Collision
+    -- Restore Collision (KRITIS: HRP & Accessory Handle HARUS false agar tidak mentok halusinasi)
     if char then
         for _, part in pairs(char:GetDescendants()) do
             if part:IsA("BasePart") then
-                part.CanCollide = true
+                if part.Name == "HumanoidRootPart" or part.Parent:IsA("Accessory") then
+                    part.CanCollide = false -- Ini rahasianya biar lu bisa lewat pintu
+                else
+                    part.CanCollide = true -- Ini biar lu nggak jatuh tembus lantai pas main normal
+                end
             end
         end
     end
@@ -198,12 +202,12 @@ task.spawn(function()
                     -- Sinkronkan Proxy ke pemain
                     ProxyPart.CFrame = hrp.CFrame
 
-                    -- Noclip & Sync Loop
+                    -- Noclip & Sync Loop (KRITIS: GetDescendants biar aksesoris/sayap juga tembus)
                     noclipConn = RunService.Stepped:Connect(function()
                         if not isTweening then return end
 
-                        -- Matikan collision karakter
-                        for _, part in pairs(char:GetChildren()) do
+                        -- Matikan collision karakter sampai ke aksesoris
+                        for _, part in pairs(char:GetDescendants()) do
                             if part:IsA("BasePart") then
                                 part.CanCollide = false
                             end
