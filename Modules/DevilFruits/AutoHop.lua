@@ -61,6 +61,13 @@ function _G.Cat.HopServer()
     end)
 
     task.spawn(function()
+        -- FIX 1: HENTIKAN TWEEN SEBELUM TERBANG
+        -- Agar karakter tidak ditarik kembali ke tanah oleh RunService di FruitTP
+        if _G.Cat.State and _G.Cat.State.StopSmartTween then
+            _G.Cat.State.StopSmartTween()
+        end
+        task.wait(0.2)
+
         -- STEP 1: Sky TP (Safety)
         pcall(function()
             if Me.Character then
@@ -85,6 +92,13 @@ function _G.Cat.HopServer()
                 local openBtn = Me.PlayerGui:FindFirstChild(btnName, true)
 
                 if openBtn then
+                    -- FIX 2: CEK UKURAN TOMBOL
+                    -- Jangan di-klik jika tombol belum selesai dirender (ukuran 0)
+                    if openBtn.AbsoluteSize.X == 0 or openBtn.AbsoluteSize.Y == 0 then
+                        task.wait(0.5)
+                        continue
+                    end
+
                     local pos  = openBtn.AbsolutePosition
                     local size = openBtn.AbsoluteSize
                     local tx   = pos.X + (size.X / 2)
@@ -131,10 +145,6 @@ function _G.Cat.HopServer()
                 local sSize   = scrollFrame.AbsoluteSize
 
                 -- Kumpulin tombol join yang keliatan
-                local buttons = {}
-                local sPos    = scrollFrame.AbsolutePosition
-                local sSize   = scrollFrame.AbsoluteSize
-
                 for _, v in pairs(listArea:GetDescendants()) do
                     local isBtn = v:IsA("TextButton") 
                         and v.Name == "Join" 
@@ -152,35 +162,38 @@ function _G.Cat.HopServer()
                     end
                 end
 
-                -- FIX 1 (ANTI BENGONG): Kalo list server kosong/nge-bug, TUTUP UI!
-                -- Biar di putaran loop selanjutnya dia otomatis ngeklik "Servers" lagi buat refresh.
+                -- FIX 3: REFRESH JIKA LIST KOSONG
+                -- Jika server kosong, tutup UI agar script mengulang klik "Servers"
                 if #buttons == 0 then
                     if browser then browser.Enabled = false end
-                    task.wait(1)
-                    continue 
+                    task.wait(2)
+                    continue
                 end
 
-                -- FIX 2 (CEPAT & ANTI ERROR): Jangan di-spam pake 'for loop'!
-                -- Pilih 1 tombol ACAK dari list, klik, lalu tunggu hasilnya.
-                -- Kalo gagal masuk, loop bakal muter lagi nyari tombol lain. 0% Lag!
-                local randomTarget = buttons[math.random(1, #buttons)]
-                local bp = randomTarget.AbsolutePosition
-                local bs = randomTarget.AbsoluteSize
-                local tx = bp.X + (bs.X / 2)
-                local ty = bp.Y + (bs.Y / 2) + 58
+                -- Coba join server
+                for _, target in pairs(buttons) do
+                    if not Settings.AutoHop then break end
 
-                -- Klik Join & Enter
-                VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                task.wait(0.05)
+                    local bp = target.AbsolutePosition
+                    local bs = target.AbsoluteSize
+                    local tx = bp.X + (bs.X / 2)
+                    local ty = bp.Y + (bs.Y / 2) + 58
 
-                VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-                task.wait(0.05)
-                VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                    -- Klik Join & Enter
+                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    task.wait(0.05)
 
-                -- Kasih jeda pas buat 1x proses teleport (Kalo sukses lu pindah, kalo gagal dia ngulang pinter)
-                task.wait(3)
+                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+
+                    task.wait(0.05)
+                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                    
+                    -- FIX 4: JEDA TELEPORTASI
+                    -- Beri waktu 4 detik agar Roblox engine tidak mendeteksi spam klik
+                    task.wait(4)
+                end
             end
             task.wait(0.5)
         end
