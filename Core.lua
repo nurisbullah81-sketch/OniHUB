@@ -2,30 +2,23 @@
 --      MODULE: CORE SYSTEM - STATE HANDLER
 --    ========================================== ]]
 
--- // Initialize Game Loading State
+-- // Game Loading
 if not game:IsLoaded() then 
     game.Loaded:Wait() 
 end
 
 -- // Services
-local GuiService    = game:GetService("GuiService")
-local CoreGui       = game:GetService("CoreGui")
-local VirtualUser   = game:GetService("VirtualUser")
-local Players       = game:GetService("Players")
+local GuiService  = game:GetService("GuiService")
+local CoreGui     = game:GetService("CoreGui")
+local VirtualUser = game:GetService("VirtualUser")
+local Players     = game:GetService("Players")
 
--- // Initial Wait for LocalPlayer
-repeat 
-    task.wait(0.1) 
-until Players.LocalPlayer
-
+-- // Wait LocalPlayer
+repeat task.wait(0.1) until Players.LocalPlayer
 local Me = Players.LocalPlayer
 
--- // Wait for Global CatHub Framework
-repeat 
-    task.wait(0.1) 
-until _G.Cat 
-    and _G.Cat.Settings
-
+-- // Wait Global Framework
+repeat task.wait(0.1) until _G.Cat and _G.Cat.Settings
 local Settings = _G.Cat.Settings
 
 -- ==========================================
@@ -39,34 +32,31 @@ _G.Cat.State = {
 local IsGameReady = false
 
 -- ==========================================
--- 2. LOGIC: GAME READINESS MONITOR
+-- 2. GAME READINESS MONITOR
 -- ==========================================
 
--- // Function: Update the readiness state of the script
+-- // Cek status karakter (Ready/Death)
 local function UpdateGameState()
     local isReady = false
     
     pcall(function()
-        -- STRICT VALIDATION: Team selected, Character exists, HRP present, and Alive
         local char = Me.Character
         local hum  = char and char:FindFirstChild("Humanoid")
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
         
+        -- Validasi: Team, Char, HRP, dan Hidup
         isReady = (
-            Me.Team ~= nil 
-            and char ~= nil 
-            and hrp ~= nil 
-            and hum ~= nil 
-            and hum.Health > 0
+            Me.Team ~= nil and char ~= nil and 
+            hrp ~= nil and hum ~= nil and hum.Health > 0
         )
     end)
     
-    -- Update Global State only on change
+    -- Update state kalo berubah
     if isReady ~= IsGameReady then
         IsGameReady = isReady
         _G.Cat.State.IsGameReady = isReady
         
-        -- Safety: Kill active tweens if game is no longer ready
+        -- Stop tween kalo mati/loading
         if not IsGameReady then 
             _G.Cat.State.StopSmartTween() 
         end
@@ -77,37 +67,33 @@ end
 -- 3. EVENT CONNECTIONS
 -- ==========================================
 
--- Trigger initial check
+-- Trigger Awal
 task.spawn(UpdateGameState)
 
--- Monitor Team Changes
+-- Monitor Team
 Me:GetPropertyChangedSignal("Team"):Connect(UpdateGameState)
 
--- Monitor Character Respawn
+-- Monitor Respawn
 Me.CharacterAdded:Connect(function(char)
-    -- Reset state immediately upon death/respawn
+    -- Reset state
     IsGameReady = false
     _G.Cat.State.IsGameReady = false
     
-    -- Wait for Humanoid components
     local human = char:WaitForChild("Humanoid", 15)
     if human then
-        -- FIX MUTLAK 0% LAG: 
-        -- Panggil Update pas darah habis (mati), BUKAN pas darah berubah!
-        human.Died:Connect(function() 
-            UpdateGameState() 
-        end)
+        -- Update pas mati (efisien)
+        human.Died:Connect(UpdateGameState)
     end
     
-    -- Wait for physics components
-    task.spawn(function() 
-        char:WaitForChild("HumanoidRootPart", 15) 
-        UpdateGameState() 
+    -- Wait Physics
+    task.spawn(function()
+        char:WaitForChild("HumanoidRootPart", 15)
+        UpdateGameState()
     end)
 end)
 
--- Handle Character Removal
-Me.CharacterRemoving:Connect(function() 
+-- Monitor Removal
+Me.CharacterRemoving:Connect(function()
     IsGameReady = false
     _G.Cat.State.IsGameReady = false 
 end)
@@ -116,7 +102,7 @@ end)
 -- 4. PUBLIC API FUNCTIONS
 -- ==========================================
 
--- // Method: Yields the script until the game is fully ready for automation
+-- Tunggu sampai game siap
 function _G.Cat.WaitUntilReady()
     while not _G.Cat.State.IsGameReady do 
         task.wait(0.5) 
@@ -124,17 +110,17 @@ function _G.Cat.WaitUntilReady()
 end
 
 -- [[ ==========================================
---      2. THE GUARDIAN V26 (PROMPT PROTECTION)
+--      2. THE GUARDIAN V26
 --    ========================================== ]]
 
--- // Automatic Error Clearing
-GuiService.ErrorMessageChanged:Connect(function() 
-    pcall(function() 
-        GuiService:ClearError() 
-    end) 
+-- Auto clear error biar ga nge-block screen
+GuiService.ErrorMessageChanged:Connect(function()
+    pcall(function()
+        GuiService:ClearError()
+    end)
 end)
 
--- // Background Task: UI Prompt Protection
+-- Proteksi UI (Tutup prompt paksa)
 task.spawn(function()
     local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
     if not promptGui then return end
@@ -142,22 +128,25 @@ task.spawn(function()
     local overlay = promptGui:WaitForChild("promptOverlay", 5)
     if not overlay then return end
 
-    -- Force visibility to false whenever a prompt appears
-    overlay:GetPropertyChangedSignal("Visible"):Connect(function() 
-        if overlay.Visible then 
-            overlay.Visible = false 
-        end 
+    -- Trigger pas visible
+    overlay:GetPropertyChangedSignal("Visible"):Connect(function()
+        if overlay.Visible then
+            overlay.Visible = false
+        end
     end)
 end)
 
--- // Logic: Integrated Anti-AFK (State Dependent)
+-- Anti AFK (Cuma jalan kalo lagi bot)
 Me.Idled:Connect(function()
-    -- Only active if script is operational and performing automation
+    -- Cek fitur auto yang nyala
     local isAutomating = Settings.TweenFruit 
         or Settings.AutoHop 
         or Settings.InstantTPFruit
 
-    if _G.Cat.State.IsGameReady and isAutomating then
+    -- Pecah kondisi biar ga panjang
+    if _G.Cat.State.IsGameReady 
+       and isAutomating 
+    then
         pcall(function()
             VirtualUser:CaptureController()
             VirtualUser:ClickButton2(Vector2.new(0, 0))
@@ -166,46 +155,47 @@ Me.Idled:Connect(function()
 end)
 
 -- ==========================================
--- 3. UTILITIES: SAFE INVOKE & RELEASE
+-- 3. UTILITIES
 -- ==========================================
 
--- // Function: Safe Remote Invocation with Timeout
+-- Invoke remote pake timeout (biar ga nge-freeze)
 function _G.Cat.SafeInvoke(remote, ...)
     local args      = {...}
     local thread    = coroutine.running()
     local completed = false
-    
-    -- // Execution Thread
-    task.spawn(function() 
-        local ok, res = pcall(function() 
-            return remote:InvokeServer(unpack(args)) 
-        end) 
-        
-        if not completed then 
+
+    -- Thread utama eksekusi
+    task.spawn(function()
+        -- Pecah InvokeServer biar rapi
+        local ok, res = pcall(function()
+            return remote:InvokeServer(unpack(args))
+        end)
+
+        if not completed then
             completed = true
-            task.spawn(thread, ok, res) 
-        end 
+            task.spawn(thread, ok, res)
+        end
     end)
-    
-    -- // Timeout Thread (3 Second Limit)
-    task.delay(3, function() 
-        if not completed then 
+
+    -- Thread timeout (3 detik)
+    task.delay(3, function()
+        if not completed then
             completed = true
-            task.spawn(thread, false, nil) 
-        end 
+            task.spawn(thread, false, nil)
+        end
     end)
-    
+
     return coroutine.yield()
 end
 
--- // Function: Release Character Physics (Unanchor)
+-- Lepas anchor karakter
 function _G.Cat.ReleaseCharacter()
     pcall(function()
         local char = Me.Character
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-        
-        if hrp and hrp.Anchored then 
-            hrp.Anchored = false 
+
+        if hrp and hrp.Anchored then
+            hrp.Anchored = false
         end
     end)
 end
