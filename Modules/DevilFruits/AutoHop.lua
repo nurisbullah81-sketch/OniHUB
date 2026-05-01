@@ -11,7 +11,6 @@ local Players     = game:GetService("Players")
 local Me = Players.LocalPlayer
 
 -- // Wait for Global Framework
--- Pecah kondisi biar keliatat jelas dependency apa aja yang ditunggu
 while not (
     _G.Cat and
     _G.Cat.UI and
@@ -49,6 +48,7 @@ UI.CreateToggle(
 -- 2. LOGIC: SERVER HOPPING ENGINE
 -- ==========================================
 local isHopping = false
+local HOP_TIMEOUT = 15 -- Maksimal 15 detik di langit. Kalau lebih, gagalkan hop biar nggak stuck AFK.
 
 function _G.Cat.HopServer()
     if isHopping then return end
@@ -61,6 +61,8 @@ function _G.Cat.HopServer()
     end)
 
     task.spawn(function()
+        local hopStartTime = tick() -- Catat waktu mulai hop
+        
         -- STEP 1: Sky TP (Safety)
         pcall(function()
             if Me.Character then
@@ -77,6 +79,13 @@ function _G.Cat.HopServer()
 
         -- MAIN HOP LOOP
         while Settings.AutoHop do
+            -- FAILSAFE: Kalau udah 15 detik nggak berhasil hop, putuskan loop!
+            -- Biar karakter nggak ketinggalan di langit sampai AFK kick.
+            if (tick() - hopStartTime) >= HOP_TIMEOUT then
+                warn("[CatHUB] Hop Timeout! VIM kemungkinan gagal klik. Turun ke darat...")
+                break 
+            end
+
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
 
             -- Buka Browser kalo ketutup
@@ -173,7 +182,7 @@ function _G.Cat.HopServer()
             task.wait(0.5)
         end
 
-        -- Cleanup
+        -- Cleanup & Recovery dari Sky Trap
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
         if browser then
             browser.Enabled = false
@@ -182,12 +191,25 @@ function _G.Cat.HopServer()
         if _G.Cat.ReleaseCharacter then
             _G.Cat.ReleaseCharacter()
         end
+        
+        -- Force Unanchor kalau tetap nyangkut di langit
+        pcall(function()
+            if Me.Character then
+                local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
+                if hrp and hrp.Anchored then
+                    hrp.Anchored = false
+                end
+            end
+        end)
 
         isHopping = false
     end)
 end
 
--- [[ LOKASI: PALING BAWAH SENDIRI ]]
+-- ==========================================
+-- 3. MAIN LOOP (Dengan Stuck Failsafe)
+-- ==========================================
+local lastFruitSeenTime = tick() -- Timer untuk cegah Ghost Fruit / Stuck Server
 
 task.spawn(function()
     task.wait(10) -- Jeda awal biar game stabil
@@ -196,7 +218,7 @@ task.spawn(function()
         -- // Safety Check: Skip kalo game belum siap
         if not State.IsGameReady then
             _G.Cat.WaitUntilReady()
-            task.wait(5) -- Jeda lama pas loading
+            task.wait(5)
             continue
         end
 
@@ -214,8 +236,19 @@ task.spawn(function()
                     end
                 end
 
-                -- Logic Hop: Kalo ga ada buah, pindah server
-                if fruitCount == 0 then
+                -- Update waktu terakhir nemu buah
+                if fruitCount > 0 then
+                    lastFruitSeenTime = tick()
+                end
+
+                -- LOGIC HOP:
+                -- 1. Kalo ga ada buah, pindah server
+                -- 2. Kalo Inventory penuh (Flag dari AutoStore), pindah server
+                -- 3. FAILSAFE STUCK: Kalo udah 3 menit (180 detik) nggak nemu buah sejak terakhir kali, maksa hop (Anti Ghost Fruit / Stuck)
+                local timeSinceLastFruit = tick() - lastFruitSeenTime
+                local isStuckInServer = timeSinceLastFruit > 180 
+
+                if fruitCount == 0 or State.InventoryFull or isStuckInServer then
                     if not isHopping then
                         _G.Cat.HopServer()
                     end
