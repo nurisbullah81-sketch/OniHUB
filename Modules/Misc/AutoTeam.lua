@@ -1,10 +1,7 @@
--- [[ ==========================================
---      MODULE: AUTO TEAM MARINES
---    ========================================== ]]
-
 -- // Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players           = game:GetService("Players")
+local VIM               = game:GetService("VirtualInputManager") -- FIX: Masukin VIM buat backup klik
 
 -- // Variables
 local Me = Players.LocalPlayer
@@ -12,9 +9,11 @@ local Me = Players.LocalPlayer
 -- // Framework Initialization
 repeat
     task.wait(0.1)
-until _G.Cat
-    and _G.Cat.UI
-    and _G.Cat.Settings
+-- FIX: Wajib nunggu SafeInvoke ke-load dari Core.lua biar kaga ghoib!
+until _G.Cat 
+    and _G.Cat.UI 
+    and _G.Cat.Settings 
+    and _G.Cat.SafeInvoke
 
 local UI         = _G.Cat.UI
 local Settings   = _G.Cat.Settings
@@ -89,12 +88,19 @@ task.spawn(function()
 
                     task.wait(0.5)
 
-                    -- // STEP 2: UI Fallback (Backup)
+                    -- // STEP 2: UI Fallback (Backup Pake VIM, 100% Works)
                     pcall(function()
-                        targetBtn.MouseButton1Click:Fire()
-                    end)
-                    pcall(function()
-                        targetBtn.Activated:Fire()
+                        local pos = targetBtn.AbsolutePosition
+                        local size = targetBtn.AbsoluteSize
+                        -- Validasi kaga diklik pas UI masih gerak/animasi loading
+                        if size.X > 0 and size.Y > 0 then
+                            local tx = pos.X + (size.X / 2)
+                            local ty = pos.Y + (size.Y / 2) + 58
+                            
+                            VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                            task.wait(0.05)
+                            VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                        end
                     end)
 
                     task.wait(1)
@@ -116,6 +122,10 @@ task.spawn(function()
                         if hum then
                             camera.CameraSubject = hum
                         end
+                        
+                        -- FIX MUTLAK: Kasih jeda 3 detik biar semua UI Blox Fruits kelar loading animasinya.
+                        -- Ini yang bikin lu kaga perlu repot-repot mancing buka Server List manual lagi!
+                        task.wait(3)
                     end
                 end
             end
