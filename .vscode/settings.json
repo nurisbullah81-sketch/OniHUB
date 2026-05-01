@@ -1,3 +1,16 @@
 {
-    "luau-lsp.studioPlugin.enabled": true
+    "luau-lsp.studioPlugin.enabled": true,
+    "Lua.diagnostics.globals": [
+        "game",
+        "workspace",
+        "task",
+        "Instance",
+        "script",
+        "require",
+        "_G",
+        "tick",
+        "math",
+        "Vector2",
+        "Enum"
+    ]
 }
