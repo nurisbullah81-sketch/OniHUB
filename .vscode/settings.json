@@ -6,7 +6,15 @@
         "getgenv",
         "setgenv",
         "request",
-        "pcall"
+        "pcall",
+        "syn",
+        "http",
+        "http_request",
+        "fluxus",
+        "getconnections",
+        "isfile",
+        "queue_on_teleport",
+        "getrenv"
     ],
     "Lua.diagnostics.globals": [
         "game",
@@ -22,6 +30,11 @@
         "readfile",
         "getgenv",
         "setgenv",
-        "request"
+        "request",
+        "syn",
+        "http",
+        "http_request",
+        "fluxus",
+        "getconnections"
     ]
 }
