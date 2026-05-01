@@ -186,7 +186,7 @@ task.spawn(function()
 
         -- // Mode: Smooth Tween
         elseif Settings.TweenFruit then
-            if dist < 5 then
+            if dist < 1 then
                 StopTween()
             else
                 -- Cek apakah target berubah atau tween belum jalan
