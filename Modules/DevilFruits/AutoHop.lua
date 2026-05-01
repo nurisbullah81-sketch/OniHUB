@@ -33,7 +33,6 @@ local ESP      = _G.Cat.ESP
 
 local Page = UI.CreateTab("Devil Fruits", false)
 
--- Toggle: Auto Hop Server
 UI.CreateToggle(
     Page,
     "Auto Hop Server",
@@ -48,7 +47,6 @@ UI.CreateToggle(
 -- 2. LOGIC: SERVER HOPPING ENGINE
 -- ==========================================
 local isHopping = false
-local HOP_TIMEOUT = 15 -- Maksimal 15 detik di langit. Kalau lebih, gagalkan hop biar nggak stuck AFK.
 
 function _G.Cat.HopServer()
     if isHopping then return end
@@ -61,8 +59,6 @@ function _G.Cat.HopServer()
     end)
 
     task.spawn(function()
-        local hopStartTime = tick() -- Catat waktu mulai hop
-        
         -- STEP 1: Sky TP (Safety)
         pcall(function()
             if Me.Character then
@@ -79,13 +75,6 @@ function _G.Cat.HopServer()
 
         -- MAIN HOP LOOP
         while Settings.AutoHop do
-            -- FAILSAFE: Kalau udah 15 detik nggak berhasil hop, putuskan loop!
-            -- Biar karakter nggak ketinggalan di langit sampai AFK kick.
-            if (tick() - hopStartTime) >= HOP_TIMEOUT then
-                warn("[CatHUB] Hop Timeout! VIM kemungkinan gagal klik. Turun ke darat...")
-                break 
-            end
-
             local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
 
             -- Buka Browser kalo ketutup
@@ -99,7 +88,6 @@ function _G.Cat.HopServer()
                     local tx   = pos.X + (size.X / 2)
                     local ty   = pos.Y + (size.Y / 2) + 58
 
-                    -- Klik tombol open
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     task.wait(0.05)
                     VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
@@ -112,7 +100,6 @@ function _G.Cat.HopServer()
                 continue
             end
 
-            -- Tunggu list server loading
             local listArea = browser:FindFirstChild("Inside", true)
             local count    = 0
 
@@ -126,7 +113,6 @@ function _G.Cat.HopServer()
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                 local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
 
-                -- Acak posisi scroll
                 if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                     local randY = math.random(500, 2500)
                     dummyScroll.CanvasPosition = Vector2.new(0, randY)
@@ -139,7 +125,6 @@ function _G.Cat.HopServer()
                 local sPos    = scrollFrame.AbsolutePosition
                 local sSize   = scrollFrame.AbsoluteSize
 
-                -- Kumpulin tombol join yang keliatan
                 for _, v in pairs(listArea:GetDescendants()) do
                     local isBtn = v:IsA("TextButton") 
                         and v.Name == "Join" 
@@ -150,14 +135,12 @@ function _G.Cat.HopServer()
                         local yMin = sPos.Y
                         local yMax = sPos.Y + sSize.Y - 30
 
-                        -- Cek apakah di area visible
                         if vy > yMin and vy < yMax then
                             table.insert(buttons, v)
                         end
                     end
                 end
 
-                -- Coba join server
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end
 
@@ -166,7 +149,6 @@ function _G.Cat.HopServer()
                     local tx = bp.X + (bs.X / 2)
                     local ty = bp.Y + (bs.Y / 2) + 58
 
-                    -- Klik Join & Enter
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
                     task.wait(0.05)
@@ -182,7 +164,7 @@ function _G.Cat.HopServer()
             task.wait(0.5)
         end
 
-        -- Cleanup & Recovery dari Sky Trap
+        -- Cleanup
         local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
         if browser then
             browser.Enabled = false
@@ -191,64 +173,54 @@ function _G.Cat.HopServer()
         if _G.Cat.ReleaseCharacter then
             _G.Cat.ReleaseCharacter()
         end
-        
-        -- Force Unanchor kalau tetap nyangkut di langit
-        pcall(function()
-            if Me.Character then
-                local hrp = Me.Character:FindFirstChild("HumanoidRootPart")
-                if hrp and hrp.Anchored then
-                    hrp.Anchored = false
-                end
-            end
-        end)
 
         isHopping = false
     end)
 end
 
--- ==========================================
--- 3. MAIN LOOP (Dengan Stuck Failsafe)
--- ==========================================
-local lastFruitSeenTime = tick() -- Timer untuk cegah Ghost Fruit / Stuck Server
+-- [[ LOKASI: PALING BAWAH SENDIRI ]]
 
 task.spawn(function()
-    task.wait(10) -- Jeda awal biar game stabil
+    task.wait(10)
 
     while task.wait(2) do
-        -- // Safety Check: Skip kalo game belum siap
         if not State.IsGameReady then
             _G.Cat.WaitUntilReady()
             task.wait(5)
             continue
         end
 
-        -- // Main Logic
         if Settings.AutoHop and State.IsGameReady then
             local success, err = pcall(function()
                 local fruitCount = 0
 
-                -- Scan Data ESP (Cek buah di workspace)
                 if _G.Cat.ESP and _G.Cat.ESP.Data then
                     for fruit, _ in pairs(_G.Cat.ESP.Data) do
-                        if fruit and fruit.Parent == workspace then
-                            fruitCount = fruitCount + 1
+                        if fruit and fruit.Parent then
+                            -- FILTER CERDAS: Abaikan kalau buah dipegang player lain
+                            -- Di Blox Fruits, buah yang diambil jadi Tool di Character.
+                            local isHeldByOther = false
+                            
+                            if fruit:IsA("Tool") then
+                                isHeldByOther = true
+                            else
+                                -- Cek kalau instance buah berada di dalam Character player lain
+                                local char = fruit:FindFirstAncestorOfClass("Model")
+                                if char and Players:GetPlayerFromCharacter(char) then
+                                    isHeldByOther = true
+                                end
+                            end
+
+                            -- Kalau buah nggak dipegang orang, baru itung sebagai buah valid
+                            if not isHeldByOther then
+                                fruitCount = fruitCount + 1
+                            end
                         end
                     end
                 end
 
-                -- Update waktu terakhir nemu buah
-                if fruitCount > 0 then
-                    lastFruitSeenTime = tick()
-                end
-
-                -- LOGIC HOP:
-                -- 1. Kalo ga ada buah, pindah server
-                -- 2. Kalo Inventory penuh (Flag dari AutoStore), pindah server
-                -- 3. FAILSAFE STUCK: Kalo udah 3 menit (180 detik) nggak nemu buah sejak terakhir kali, maksa hop (Anti Ghost Fruit / Stuck)
-                local timeSinceLastFruit = tick() - lastFruitSeenTime
-                local isStuckInServer = timeSinceLastFruit > 180 
-
-                if fruitCount == 0 or State.InventoryFull or isStuckInServer then
+                -- Logic Hop: Kalau ga ada buah valid, pindah server
+                if fruitCount == 0 then
                     if not isHopping then
                         _G.Cat.HopServer()
                     end
@@ -260,8 +232,7 @@ task.spawn(function()
             end
         end
 
-        -- // Cleanup Logic
-        -- Reset kalo fitur dimatiin pas proses hop jalan
+        -- Cleanup Logic
         if isHopping and not Settings.AutoHop then
             isHopping = false
 
