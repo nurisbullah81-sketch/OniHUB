@@ -22,6 +22,11 @@ if type(Settings.AutoStoreFruit) ~= "boolean" then
     Settings.AutoStoreFruit = false
 end
 
+-- Init State Flag untuk komunikasi ke AutoHop
+if type(State.InventoryFull) ~= "boolean" then
+    State.InventoryFull = false
+end
+
 -- ==========================================
 -- 1. UI SETUP
 -- ==========================================
@@ -92,6 +97,7 @@ local function AttemptStore(fruitTool)
 
                     if ok and result == true then
                         storeSuccess = true
+                        State.InventoryFull = false -- RESET: Berhasil simpan, storage aman
                         warn("[CatHUB] Saved: " .. fruitName)
                     else
                         task.wait(0.5)
@@ -99,9 +105,10 @@ local function AttemptStore(fruitTool)
                 end
             end
 
-            -- Blacklist kalo gagal
+            -- Blacklist kalo gagal & KASIH TAU AUTOHOP KALO STORAGE PENUH
             if not storeSuccess then
                 table.insert(StoreBlacklist, fruitTool.Name)
+                State.InventoryFull = true -- FLAG: Inventory penuh, suruh AutoHop pindah server!
             end
         end)
 
@@ -125,6 +132,10 @@ end
 
 -- // CCTV PINTAR (ANTI-MAMPUS PAS RESPAWN)
 Me.CharacterAdded:Connect(function(char)
+    -- Reset flag kalau respawn
+    State.InventoryFull = false
+    table.clear(StoreBlacklist)
+    
     -- 1. Pasang ulang CCTV ke tangan karakter baru
     char.ChildAdded:Connect(CheckTool)
     
