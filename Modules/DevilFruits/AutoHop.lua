@@ -105,7 +105,7 @@ function _G.Cat.HopServer()
                         local pos  = openBtn.AbsolutePosition
                         local size = openBtn.AbsoluteSize
                         local tx   = pos.X + (size.X / 2)
-                        local ty   = pos.Y + (size.Y / 2) + 58
+                        local ty   = pos.Y + (size.Y / 2) + 36
 
                         -- Klik tombol open
                         VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
@@ -161,12 +161,11 @@ function _G.Cat.HopServer()
                         end
                     end
 
-                    -- FIX 2: ANTI DISCO UI & ANTI BENGONG
-                    -- Hop ke-3 biasanya list kosong (kena limit dari Roblox). 
-                    -- BIARKAN UI TETAP TERBUKA, tunggu 3 detik biar API napas dan nge-load sendiri!
+                    -- FIX 2: ANTI DISCO UI & REFRESH AMAN
                     if #buttons == 0 then
-                        task.wait(3) 
-                        return -- Balik ngulang dari atas (scroll lagi) tanpa nutup UI
+                        if browser then browser.Enabled = false end -- Wajib ditutup biar server nge-refresh
+                        task.wait(5) -- Kasih jeda 5 detik biar kaga kedap-kedip kayak lampu disko
+                        return -- Ngulang dari awal buka UI
                     end
 
                     -- FIX 3: ANTI SPAM (Biar kaga error merah di console)
