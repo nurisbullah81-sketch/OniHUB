@@ -131,6 +131,10 @@ function _G.Cat.HopServer()
                 local sSize   = scrollFrame.AbsoluteSize
 
                 -- Kumpulin tombol join yang keliatan
+                local buttons = {}
+                local sPos    = scrollFrame.AbsolutePosition
+                local sSize   = scrollFrame.AbsoluteSize
+
                 for _, v in pairs(listArea:GetDescendants()) do
                     local isBtn = v:IsA("TextButton") 
                         and v.Name == "Join" 
@@ -148,34 +152,35 @@ function _G.Cat.HopServer()
                     end
                 end
 
-                -- FIX: Kalo server kosong/nge-bug, TUTUP UI-nya biar kereload di loop selanjutnya!
+                -- FIX 1 (ANTI BENGONG): Kalo list server kosong/nge-bug, TUTUP UI!
+                -- Biar di putaran loop selanjutnya dia otomatis ngeklik "Servers" lagi buat refresh.
                 if #buttons == 0 then
                     if browser then browser.Enabled = false end
-                    task.wait(2)
-                    continue
+                    task.wait(1)
+                    continue 
                 end
 
-                -- Coba join server
-                for _, target in pairs(buttons) do
-                    if not Settings.AutoHop then break end
+                -- FIX 2 (CEPAT & ANTI ERROR): Jangan di-spam pake 'for loop'!
+                -- Pilih 1 tombol ACAK dari list, klik, lalu tunggu hasilnya.
+                -- Kalo gagal masuk, loop bakal muter lagi nyari tombol lain. 0% Lag!
+                local randomTarget = buttons[math.random(1, #buttons)]
+                local bp = randomTarget.AbsolutePosition
+                local bs = randomTarget.AbsoluteSize
+                local tx = bp.X + (bs.X / 2)
+                local ty = bp.Y + (bs.Y / 2) + 58
 
-                    local bp = target.AbsolutePosition
-                    local bs = target.AbsoluteSize
-                    local tx = bp.X + (bs.X / 2)
-                    local ty = bp.Y + (bs.Y / 2) + 58
+                -- Klik Join & Enter
+                VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                task.wait(0.05)
 
-                    -- Klik Join & Enter
-                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                    VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                    task.wait(3.5)
+                VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                task.wait(0.05)
+                VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
 
-                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
-                    VIM:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-                    task.wait(0.05)
-                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                    task.wait(0.3)
-                end
+                -- Kasih jeda pas buat 1x proses teleport (Kalo sukses lu pindah, kalo gagal dia ngulang pinter)
+                task.wait(3)
             end
             task.wait(0.5)
         end
