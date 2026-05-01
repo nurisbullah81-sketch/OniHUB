@@ -123,14 +123,22 @@ local function CheckTool(item)
     end
 end
 
--- CCTV 1: Tas Backpack
-Me.Backpack.ChildAdded:Connect(CheckTool)
-
--- CCTV 2: Tangan Karakter
+-- // CCTV PINTAR (ANTI-MAMPUS PAS RESPAWN)
 Me.CharacterAdded:Connect(function(char)
+    -- 1. Pasang ulang CCTV ke tangan karakter baru
     char.ChildAdded:Connect(CheckTool)
+    
+    -- 2. Pasang ulang CCTV ke tas baru (KARENA TAS LAMA KEHAPUS PAS MATI!)
+    local newBackpack = Me:WaitForChild("Backpack", 5)
+    if newBackpack then
+        newBackpack.ChildAdded:Connect(CheckTool)
+    end
 end)
 
+-- // Pasang CCTV untuk tas & karakter yang sedang aktif saat script baru di-execute
+if Me.Backpack then
+    Me.Backpack.ChildAdded:Connect(CheckTool)
+end
 if Me.Character then
     Me.Character.ChildAdded:Connect(CheckTool)
 end
