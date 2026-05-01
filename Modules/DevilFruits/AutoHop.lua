@@ -61,15 +61,6 @@ function _G.Cat.HopServer()
     end)
 
     task.spawn(function()
-        -- FIX 1: MATIKAN TWEEN SEBELUM TERBANG!
-        -- Ini alasan lu stay di tanah! Tween dari file sebelah masih nahan badan lu!
-        pcall(function()
-            if _G.Cat.State and type(_G.Cat.State.StopSmartTween) == "function" then
-                _G.Cat.State.StopSmartTween()
-            end
-        end)
-        task.wait(0.2)
-
         -- STEP 1: Sky TP (Safety)
         pcall(function()
             if Me.Character then
@@ -86,91 +77,81 @@ function _G.Cat.HopServer()
 
         -- MAIN HOP LOOP
         while Settings.AutoHop do
-            -- Pcall dipasang biar script kaga mati diem-diem
-            local ok, err = pcall(function()
-                local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
 
-                -- Buka Browser kalo ketutup
-                if not browser or not browser.Enabled then
-                    local btnName = "ServerBrowserButton"
-                    local openBtn = Me.PlayerGui:FindFirstChild(btnName, true)
+            -- Buka Browser kalo ketutup
+            if not browser or not browser.Enabled then
+                local btnName = "ServerBrowserButton"
+                local openBtn = Me.PlayerGui:FindFirstChild(btnName, true)
 
-                    if openBtn then
-                        -- Cegah klik meleset pas UI belum ke-render
-                        if openBtn.AbsoluteSize.X == 0 then
-                            task.wait(2) -- Tunggu 2 detik aja sampe animasinya kelar
-                            return -- FIX: Pake return karena ini ada di dalem pcall function!
+                if openBtn then
+                    local pos  = openBtn.AbsolutePosition
+                    local size = openBtn.AbsoluteSize
+                    local tx   = pos.X + (size.X / 2)
+                    local ty   = pos.Y + (size.Y / 2) + 58
+
+                    -- Klik tombol open
+                    VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
+                    task.wait(0.05)
+                    VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
+                end
+            end
+
+            browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+            if not browser then
+                task.wait(0.5)
+                continue
+            end
+
+            -- Tunggu list server loading
+            local listArea = browser:FindFirstChild("Inside", true)
+            local count    = 0
+
+            repeat
+                task.wait(0.2)
+                count    = count + 1
+                listArea = browser:FindFirstChild("Inside", true)
+            until (listArea and #listArea:GetChildren() > 5) or count > 15
+
+            if listArea then
+                local scrollFrame = browser:FindFirstChild("FakeScroll", true)
+                local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
+
+                -- Acak posisi scroll
+                if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
+                    local randY = math.random(500, 2500)
+                    dummyScroll.CanvasPosition = Vector2.new(0, randY)
+                    task.wait(0.5)
+                end
+
+                if not scrollFrame then continue end
+
+                local buttons = {}
+                local sPos    = scrollFrame.AbsolutePosition
+                local sSize   = scrollFrame.AbsoluteSize
+
+                -- Kumpulin tombol join yang keliatan
+                for _, v in pairs(listArea:GetDescendants()) do
+                    local isBtn = v:IsA("TextButton") 
+                        and v.Name == "Join" 
+                        and v.Visible
+
+                    if isBtn then
+                        local vy = v.AbsolutePosition.Y
+                        local yMin = sPos.Y
+                        local yMax = sPos.Y + sSize.Y - 30
+
+                        -- Cek apakah di area visible
+                        if vy > yMin and vy < yMax then
+                            table.insert(buttons, v)
                         end
-
-                        local pos  = openBtn.AbsolutePosition
-                        local size = openBtn.AbsoluteSize
-                        local tx   = pos.X + (size.X / 2)
-                        local ty   = pos.Y + (size.Y / 2) + 36
-
-                        -- Klik tombol open
-                        VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
-                        task.wait(0.05)
-                        VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
                     end
                 end
 
-                browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-                if not browser then return end
+                -- Coba join server
+                for _, target in pairs(buttons) do
+                    if not Settings.AutoHop then break end
 
-                -- Tunggu list server loading
-                local listArea = browser:FindFirstChild("Inside", true)
-                local count    = 0
-
-                repeat
-                    task.wait(0.2)
-                    count    = count + 1
-                    listArea = browser:FindFirstChild("Inside", true)
-                until (listArea and #listArea:GetChildren() > 5) or count > 15
-
-                if listArea then
-                    local scrollFrame = browser:FindFirstChild("FakeScroll", true)
-                    local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
-
-                    -- Acak posisi scroll biar nge-refresh list
-                    if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
-                        local randY = math.random(500, 2500)
-                        dummyScroll.CanvasPosition = Vector2.new(0, randY)
-                        task.wait(0.5)
-                    end
-
-                    if not scrollFrame then return end
-
-                    local buttons = {}
-                    local sPos    = scrollFrame.AbsolutePosition
-                    local sSize   = scrollFrame.AbsoluteSize
-
-                    -- Kumpulin tombol join yang keliatan
-                    for _, v in pairs(listArea:GetDescendants()) do
-                        local isBtn = v:IsA("TextButton") 
-                            and v.Name == "Join" 
-                            and v.Visible
-
-                        if isBtn then
-                            local vy = v.AbsolutePosition.Y
-                            local yMin = sPos.Y
-                            local yMax = sPos.Y + sSize.Y - 30
-
-                            if vy > yMin and vy < yMax then
-                                table.insert(buttons, v)
-                            end
-                        end
-                    end
-
-                    -- FIX 2: ANTI DISCO UI & REFRESH AMAN
-                    if #buttons == 0 then
-                        if browser then browser.Enabled = false end -- Wajib ditutup biar server nge-refresh
-                        task.wait(5) -- Kasih jeda 5 detik biar kaga kedap-kedip kayak lampu disko
-                        return -- Ngulang dari awal buka UI
-                    end
-
-                    -- FIX 3: ANTI SPAM (Biar kaga error merah di console)
-                    -- Pilih 1 server acak, klik, lalu tunggu hasil teleportnya.
-                    local target = buttons[math.random(1, #buttons)]
                     local bp = target.AbsolutePosition
                     local bs = target.AbsoluteSize
                     local tx = bp.X + (bs.X / 2)
@@ -186,26 +167,20 @@ function _G.Cat.HopServer()
 
                     task.wait(0.05)
                     VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                    
-                    -- Jeda nunggu masuk server (Biar kaga ngeklik lagi)
-                    task.wait(4)
+                    task.wait(0.3)
                 end
-            end)
-
-            if not ok then task.wait(1) end
+            end
             task.wait(0.5)
         end
 
         -- Cleanup
-        pcall(function()
-            local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
-            if browser then
-                browser.Enabled = false
-            end
-        end)
+        local browser = Me.PlayerGui:FindFirstChild("ServerBrowser", true)
+        if browser then
+            browser.Enabled = false
+        end
 
         if _G.Cat.ReleaseCharacter then
-            pcall(function() _G.Cat.ReleaseCharacter() end)
+            _G.Cat.ReleaseCharacter()
         end
 
         isHopping = false
@@ -220,9 +195,7 @@ task.spawn(function()
     while task.wait(2) do
         -- // Safety Check: Skip kalo game belum siap
         if not State.IsGameReady then
-            if type(_G.Cat.WaitUntilReady) == "function" then
-                _G.Cat.WaitUntilReady()
-            end
+            _G.Cat.WaitUntilReady()
             task.wait(5) -- Jeda lama pas loading
             continue
         end
@@ -260,7 +233,7 @@ task.spawn(function()
             isHopping = false
 
             if _G.Cat.ReleaseCharacter then
-                pcall(function() _G.Cat.ReleaseCharacter() end)
+                _G.Cat.ReleaseCharacter()
             end
         end
     end
