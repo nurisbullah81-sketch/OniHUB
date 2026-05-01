@@ -42,8 +42,10 @@ local Labels = _G.Cat.Labels
 local function FormatNum(num)
     local n = tonumber(num) or 0
     local formatted = tostring(n)
-    while true do  
-        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+    local k -- Deklarasikan 'k' di sini biar tidak jadi global
+    
+    while true do
+        formatted, k = string.gsub(formatted, "^(-?%%d+)(%%d%%d%%d)", '%1,%2')
         if (k==0) then
             break
         end
