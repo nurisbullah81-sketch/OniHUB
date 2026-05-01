@@ -1,5 +1,13 @@
 {
     "luau-lsp.studioPlugin.enabled": true,
+    "robloxLsp.diagnostics.globals": [
+        "writefile",
+        "readfile",
+        "getgenv",
+        "setgenv",
+        "request",
+        "pcall"
+    ],
     "Lua.diagnostics.globals": [
         "game",
         "workspace",
@@ -10,7 +18,10 @@
         "_G",
         "tick",
         "math",
-        "Vector2",
-        "Enum"
+        "writefile",
+        "readfile",
+        "getgenv",
+        "setgenv",
+        "request"
     ]
 }
