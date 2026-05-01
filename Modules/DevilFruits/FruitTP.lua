@@ -204,24 +204,34 @@ task.spawn(function()
                     table.clear(originalCollisions)
                     for _, part in pairs(char:GetDescendants()) do
                         if part:IsA("BasePart") then
-                            originalCollisions[part] = part.CanCollide
+                            -- PAKSA HRP DAN HANDLE AKSESORIS TETEP FALSE DI MEMORY
+                            -- Ini rahasia agar pas di-restore, karakter lu nggak mentok halusinasi
+                            if part.Name == "HumanoidRootPart" or part.Parent:IsA("Accessory") then
+                                originalCollisions[part] = false
+                            else
+                                originalCollisions[part] = part.CanCollide
+                            end
                         end
                     end
 
-                    -- Noclip & Sync Loop (Sekarang jauh lebih enteng)
+                    -- Noclip & Sync Loop
                     noclipConn = RunService.Stepped:Connect(function()
                         if not isTweening then return end
 
-                        -- Matikan collision jauh lebih enteng karena cuma baca dari memori
+                        -- Matikan collision dari memori
                         for part, _ in pairs(originalCollisions) do
                             if part.CanCollide then
                                 part.CanCollide = false
                             end
                         end
 
-                        -- Kunci physics & ikuti proxy
+                        -- Kunci physics
                         hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        hrp.CFrame = ProxyPart.CFrame
+                        
+                        -- GANTI HRP CFRAME JADI PIVOTTO!
+                        -- PivotTo memindahin SELURUH badan (tangan & kaki) sekaligus secara instant.
+                        -- Mencegah tangan/kaki ke-extend ke belakang dan nyangkut di tembok/pintu pas mendarat.
+                        char:PivotTo(ProxyPart.CFrame)
                     end)
 
                     -- Jalankan Tween
