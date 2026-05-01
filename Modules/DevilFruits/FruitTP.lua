@@ -60,6 +60,7 @@ UI.CreateToggle(
 -- ==========================================
 -- 2. PROXY SYSTEM SETUP
 -- ==========================================
+-- Part virtual untuk memanipulasi physics tanpa bug
 local ProxyPart = workspace:FindFirstChild("CatHub_Proxy")
 if not ProxyPart then
     ProxyPart = Instance.new("Part")
@@ -72,6 +73,7 @@ if not ProxyPart then
     ProxyPart.Parent       = workspace
 end
 
+-- Isolasi proxy part jauh dari map saat idle
 ProxyPart.CFrame = CFrame.new(0, -1000, 0)
 
 -- // State Variables
@@ -80,6 +82,8 @@ local noclipConn    = nil
 local isTweening    = false
 local currentTarget = nil
 local currentTween  = nil
+
+-- Wadah buat nyimpen ingatan physics asli
 local originalCollisions = {} 
 
 -- ==========================================
@@ -91,28 +95,34 @@ local function StopTween()
     isTweening    = false
     currentTarget = nil
 
+    -- Hentikan tween aktif
     if currentTween then
         currentTween:Cancel()
         currentTween = nil
     end
 
+    -- Putuskan koneksi noclip
     if noclipConn then
         noclipConn:Disconnect()
         noclipConn = nil
     end
 
+    -- Reset Proxy Position (Penjara Virtual)
     if ProxyPart then
         ProxyPart.CFrame = CFrame.new(0, -1000, 0)
     end
 
+    -- Player Physics Reset
     local char = Me.Character
     local hrp  = char and char:FindFirstChild("HumanoidRootPart")
     local hum  = char and char:FindFirstChild("Humanoid")
 
     if hrp then
+        -- Hentikan momentum
         hrp.AssemblyLinearVelocity  = Vector3.new(0, 0, 0)
         hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
 
+        -- Reset anchor state untuk mencegah sliding
         hrp.Anchored = true
         task.wait(0.05)
         hrp.Anchored = false
@@ -122,13 +132,14 @@ local function StopTween()
         end
     end
     
+    -- Restore Collision murni dari memori ingatan (Kaga nebak-nebak lagi)
     for part, state in pairs(originalCollisions) do
         if part and part.Parent then
             part.CanCollide = state
         end
     end
-    table.clear(originalCollisions)
-end
+    table.clear(originalCollisions) -- Bersihin memori biar kaga nyampah di RAM
+end -- <-- INI DIA BANG, KEMAREN LU KAHAPUS ININYA WKWK
 
 State.StopSmartTween = StopTween
 
@@ -139,6 +150,7 @@ task.spawn(function()
     while task.wait(0.2) do
         local isActive = Settings.TweenFruit or Settings.InstantTPFruit
 
+        -- Skip jika tidak aktif atau game belum siap
         if not State.IsGameReady or not isActive then
             StopTween()
             continue
@@ -148,26 +160,11 @@ task.spawn(function()
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then continue end
 
+        -- Cari target buah terdekat
         local fruit = ESP.GetNearestFruit()
         if not fruit then
             StopTween()
             continue
-        end
-
-        -- FILTER CERDAS: Jangan kejar buah yang lagi dipegang player lain!
-        local isHeldByOther = false
-        if fruit:IsA("Tool") then
-            isHeldByOther = true
-        else
-            local ancestorChar = fruit:FindFirstAncestorOfClass("Model")
-            if ancestorChar and Players:GetPlayerFromCharacter(ancestorChar) then
-                isHeldByOther = true
-            end
-        end
-
-        if isHeldByOther then
-            StopTween() -- Berhenti kalau sempat nyasar kejar buah orang
-            continue    -- Lanjut loop, jangan di-tween
         end
 
         local fPos = ESP.Pos(fruit)
@@ -176,19 +173,23 @@ task.spawn(function()
             continue
         end
 
+        -- Kalkulasi jarak dan posisi akhir
         local dist   = (fPos - hrp.Position).Magnitude
         local endPos = fPos + Vector3.new(0, 2, 0)
 
+        -- // Mode: Instant Teleport
         if Settings.InstantTPFruit then
             StopTween()
             if dist > 5 then
                 hrp.CFrame = CFrame.new(endPos)
             end
 
+        -- // Mode: Smooth Tween
         elseif Settings.TweenFruit then
             if dist < 1 then
                 StopTween()
             else
+                -- Cek apakah target berubah atau tween belum jalan
                 local needsStart = currentTarget ~= fruit
                 if needsStart or not isTweening then
                     StopTween()
@@ -196,28 +197,44 @@ task.spawn(function()
                     currentTarget = fruit
                     isTweening    = true
 
+                    -- Sinkronkan Proxy ke pemain
                     ProxyPart.CFrame = hrp.CFrame
 
+                    -- Catat semua status asli anggota tubuh sebelum berubah jadi hantu
                     table.clear(originalCollisions)
                     for _, part in pairs(char:GetDescendants()) do
                         if part:IsA("BasePart") then
-                            originalCollisions[part] = part.CanCollide
+                            -- PAKSA HRP DAN HANDLE AKSESORIS TETEP FALSE DI MEMORY
+                            -- Ini rahasia agar pas di-restore, karakter lu nggak mentok halusinasi
+                            if part.Name == "HumanoidRootPart" or part.Parent:IsA("Accessory") then
+                                originalCollisions[part] = false
+                            else
+                                originalCollisions[part] = part.CanCollide
+                            end
                         end
                     end
 
+                    -- Noclip & Sync Loop
                     noclipConn = RunService.Stepped:Connect(function()
                         if not isTweening then return end
 
+                        -- Matikan collision dari memori
                         for part, _ in pairs(originalCollisions) do
                             if part.CanCollide then
                                 part.CanCollide = false
                             end
                         end
 
+                        -- Kunci physics
                         hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        hrp.CFrame = ProxyPart.CFrame
+                        
+                        -- GANTI HRP CFRAME JADI PIVOTTO!
+                        -- PivotTo memindahin SELURUH badan (tangan & kaki) sekaligus secara instant.
+                        -- Mencegah tangan/kaki ke-extend ke belakang dan nyangkut di tembok/pintu pas mendarat.
+                        char:PivotTo(ProxyPart.CFrame)
                     end)
 
+                    -- Jalankan Tween
                     local timeDur = dist / TWEEN_SPEED
                     local tInfo   = TweenInfo.new(timeDur, Enum.EasingStyle.Linear)
                     local tProps  = { CFrame = CFrame.new(endPos) }
