@@ -37,23 +37,37 @@ local Theme = {
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 -- ==========================================
--- 2. INISIALISASI WINDOW FLUENT
+-- 2. INISIALISASI WINDOW FLUENT (PAKAI PARAMETER YANG BENAR)
 -- ==========================================
--- ⚠️ BACA INI BANG: INI ADALAH OBAT MUTLAK UNTUK BUG SKILL KEBELAKANG!
 local Window = Fluent:CreateWindow({
     Title = "CatHUB | Blox Fruits",
     Size = UDim2.new(0, 500, 0, 350),
     Theme = "Dark",
-    AcrylicBackdrop = false,         -- Wajib false biar kaga berat dan kaga bentrok
-    DisableCharacterViewport = true   -- ⬅️ INI RAHASIANYA. Ini mematikan fitur curi kamera Fluent.
+    AcrylicBackdrop = false -- Hanya ini yang aman di parameter resminya
 })
 
 -- ==========================================
--- 3. SISTEM PROXY CERDAS (BIAR STATUS LUA TIDAK ERROR)
+-- 3. OBAT KAMERA BUG (HANCURKAN VIEWPORT SETELAH UI JADI)
 -- ==========================================
--- System UI biasanya punya fungsi label:SetText("...") 
--- Sedangkan kode lama lu pakai label.Text = "..."
--- Proxy ini menipu kode lama lu agar tetap bisa jalan tanpa lu edit ESP/Status.
+-- Karena Fluent resmi kaga ada tombol matikan Viewport, kita paksa hancurkan
+-- ViewportFrame-nya setelah 3 detik supaya kaga mencuri kamera game lagi.
+task.spawn(function()
+    task.wait(3) -- Tunggu Fluent selesai loading semua UI-nya dulu
+    local coreGui = game:GetService("CoreGui")
+    local gui = coreGui:FindFirstChildWhichIsA("ScreenGui")
+    if gui then
+        for _, obj in ipairs(gui:GetDescendants()) do
+            if obj:IsA("ViewportFrame") then
+                -- HANCURKAN KOTAK 3D YANG MEMBUAT SKILL LU NYANGKUT KE BELAKANG
+                obj:Destroy()
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- 4. SISTEM PROXY CERDAS (BIAR STATUS LUA TIDAK ERROR)
+-- ==========================================
 local LabelProxy = {}
 LabelProxy.__index = function(self, key)
     if key == "Text" then return self._ref.Text end
@@ -67,13 +81,12 @@ local function CreateProxy(label)
 end
 
 -- ==========================================
--- 4. KABEL SAMBUNGAN (MENERJEMAHKAN BAHASA LAMA KE FLUENT)
+-- 5. KABEL SAMBUNGAN (MENERJEMAHKAN BAHASA LAMA KE FLUENT)
 -- ==========================================
 _G.Cat.UI = {
     Theme         = Theme,
     SaveSettings  = SaveSettings,
     
-    -- ESP, FruitTP, Status, dll memanggil ini -> Diteruskan ke Fluent
     CreateTab = function(name, isFirst)
         return Window:createTab(name)
     end,
@@ -87,7 +100,6 @@ _G.Cat.UI = {
             if callback then callback(state) end
             SaveSettings()
         end)
-        -- Kalau ada default settings dari json, dia bakal ke-set otomatis
         if stateRef then 
             toggle:Set(stateRef) 
         end
@@ -96,7 +108,6 @@ _G.Cat.UI = {
     
     CreateLabel = function(parent, text, desc)
         local label = parent:createLabel(text or "")
-        -- Bungkus dengan Proxy supaya .Text = "..." tetap bisa dipakai
         return CreateProxy(label)
     end
 }
