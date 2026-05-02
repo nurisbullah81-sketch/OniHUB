@@ -21,7 +21,7 @@ local Theme = {
 }
 
 -- 1. Load Engine Kavo UI langsung dari web (Aman dari Cloudflare)
-local Kavo = loadstring(game:HttpGet("https://github.com/xHeptc/Kavo-UI-Library/blob/main/source.lua"))()
+local Kavo = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- 2. Bikin Window Kavo (Ubah HeaderColor kalau mau ganti warna tema)
 local Window = Kavo.CreateWindow({
