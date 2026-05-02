@@ -59,16 +59,16 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 -- // Color Palette & Theme
 local Theme = {
     -- Background
-    MainBG = Color3.fromRGB(0, 0, 0),
-    SideBG = Color3.fromRGB(20, 20, 20),
-    TopBG  = Color3.fromRGB(32, 32, 32),
-    PageBG = Color3.fromRGB(48, 48, 48),
+    MainBG = Color3.fromRGB(255, 0, 0),
+    SideBG = Color3.fromRGB(255, 187, 0),
+    TopBG  = Color3.fromRGB(123, 255, 0),
+    PageBG = Color3.fromRGB(0, 255, 170),
 
     -- Navigation
-    TabOn   = Color3.fromRGB(32, 32, 32),
-    TabOff  = Color3.fromRGB(0, 23, 36),
-    CardBG  = Color3.fromRGB(0, 0, 0),
-    CardHov = Color3.fromRGB(24, 24, 24),
+    TabOn   = Color3.fromRGB(0, 119, 255),
+    TabOff  = Color3.fromRGB(0, 68, 255),
+    CardBG  = Color3.fromRGB(89, 0, 255),
+    CardHov = Color3.fromRGB(204, 0, 255),
 
     -- Typography
     Text    = Color3.fromRGB(250, 250, 250),
