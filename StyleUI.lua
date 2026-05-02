@@ -1,116 +1,70 @@
 -- [[ ==========================================
---      CATHUB PREMIUM: FLUENT UI WRAPPER
+--      CATHUB PREMIUM: OBSIDIAN UI (TEMPLATE)
 --    ========================================== ]]
 
-local HttpService = game:GetService("HttpService")
-local ConfigFile  = "CatHUB_Config.json"
-
-_G.Cat = _G.Cat or {}
-_G.Cat.Settings = _G.Cat.Settings or {}
-
--- // Function: Save Settings
-local function SaveSettings()
-    pcall(function()
-        writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
-    end)
-end
-_G.Cat.SaveSettings = SaveSettings
+local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 
 -- ==========================================
--- 1. LOAD FLUENT UI LIBRARY
+-- 1. BIKIN WINDOW UTAMA
 -- ==========================================
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-
--- ==========================================
--- 2. CREATE MAIN WINDOW
--- ==========================================
-local Window = Fluent:CreateWindow({
-    Title       = "CatHUB",
-    SubTitle    = "[Freemium] Blox Fruits",
-    TabWidth    = 160,
-    Size        = UDim2.fromOffset(580, 460),
-    Acrylic     = true, -- 🚨 INI KUNCI EFEK GLASSMORPHISM / BLUR TEMBUS PANDANG 🚨
-    Theme       = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl -- Pencet CTRL Kiri buat hide/show UI
+local Window = Library:CreateWindow({
+    Title = "CatHUB [Freemium]",
+    Center = true, -- Otomatis di tengah layar
+    AutoShow = true,
+    Resizable = true,
+    ShowCustomCursor = false -- Dimatiin biar kaga ganggu aim skill
 })
 
 -- ==========================================
--- 3. WRAPPER ENGINE (PENERJEMAH SCRIPT LAMA LU)
+-- 2. BIKIN TAB MENU
 -- ==========================================
-local Tabs = {}
-
-local function CreateTab(name, isFirst)
-    if not Tabs[name] then
-        Tabs[name] = Window:AddTab({ Title = name, Icon = "" })
-    end
-    if isFirst then
-        Window:SelectTab(1)
-    end
-    return Tabs[name]
-end
-
-local function CreateSection(parentTab, text)
-    parentTab:AddSection(text)
-end
-
-local function CreateToggle(parentTab, text, description, stateRef, callback)
-    local toggle = parentTab:AddToggle("T_"..text, {
-        Title       = text,
-        Description = description or "",
-        Default     = stateRef or false,
-        Callback    = function(state)
-            if callback then callback(state) end
-            SaveSettings()
-        end
-    })
-    return toggle
-end
-
-local function CreateLabel(parentTab, text, description)
-    local paragraph = parentTab:AddParagraph({
-        Title   = text,
-        Content = description or ""
-    })
-
-    -- 🚨 MAGIC TRICK (META-TABLE) 🚨
-    -- Script lama lu update text pake cara: Label.Text = "..."
-    -- Fluent UI update text pake cara: Paragraph:SetTitle("...")
-    -- Biar lu ga usah capek ubah Status.lua, gue bikin jembatan gaib ini:
-    local fakeLabel = {}
-    setmetatable(fakeLabel, {
-        __newindex = function(t, k, v)
-            if k == "Text" then
-                paragraph:SetTitle(v)
-            end
-        end
-    })
-    
-    return fakeLabel
-end
-
--- ==========================================
--- 4. PRE-INITIALIZE DEFAULT TABS
--- ==========================================
-CreateTab("Status", true)
-CreateTab("Auto Farm", false)
-CreateTab("Devil Fruits", false)
-CreateTab("Misc", false)
-
--- ==========================================
--- 5. EXPORT TO GLOBAL FRAMEWORK
--- ==========================================
-_G.Cat.UI = {
-    CreateTab     = CreateTab,
-    CreateSection = CreateSection,
-    CreateToggle  = CreateToggle,
-    CreateLabel   = CreateLabel,
-    Theme         = {}, -- Dikosongin karena Fluent udah punya tema sendiri
-    SaveSettings  = SaveSettings
+local Tabs = {
+    Status      = Window:AddTab('Status'),
+    AutoFarm    = Window:AddTab('Auto Farm'),
+    DevilFruits = Window:AddTab('Devil Fruits'),
+    Misc        = Window:AddTab('Misc')
 }
 
--- Notifikasi kalau berhasil
-Fluent:Notify({
-    Title   = "CatHUB Premium",
-    Content = "UI Framework Loaded Successfully.",
-    Duration = 5
+-- ==========================================
+-- 3. CONTOH ISI KOSONGAN (BISA LU UBAH/HAPUS NANTI)
+-- ==========================================
+
+-- Bikin Kotak (Groupbox) di Tab Status bagian KIRI
+local StatusBox = Tabs.Status:AddLeftGroupbox('Player Status')
+
+-- Nambahin Teks (Label)
+StatusBox:AddLabel('Level: Menunggu...')
+StatusBox:AddLabel('Money: Menunggu...')
+
+-- Bikin Kotak di Tab Auto Farm
+local FarmBox = Tabs.AutoFarm:AddLeftGroupbox('Main Farm')
+
+-- Nambahin Tombol On/Off (Toggle)
+FarmBox:AddToggle('Toggle_AutoFarm', {
+    Text = 'Enable Auto Farm',
+    Default = false,
+    Tooltip = 'Nyalakan untuk auto pukul NPC',
+    Callback = function(Value)
+        print("Auto Farm nyala?: ", Value)
+        -- Logic auto farm lu masukin sini nanti
+    end
 })
+
+-- ==========================================
+-- 4. SETTING WATERMARK & THEME BAWAAN OBSIDIAN
+-- ==========================================
+Library:SetWatermark('CatHUB Premium | v1.0')
+
+-- Fitur Dewa: Otomatis bikin menu Setting Warna & Save Data di Tab Misc
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+
+ThemeManager:SetFolder('CatHUB')
+SaveManager:SetFolder('CatHUB/main')
+
+SaveManager:BuildConfigSection(Tabs.Misc)
+ThemeManager:BuildThemeSection(Tabs.Misc)
