@@ -1,5 +1,5 @@
 -- [[ ==========================================
---      MODULE: DEVIL FRUIT ESP (ULTIMATE FIX)
+--      MODULE: DEVIL FRUIT ESP (ANTI-GHOST & ANTI-WELD)
 --    ========================================== ]]
 
 local Workspace   = game:GetService("Workspace")
@@ -8,7 +8,6 @@ local RunService  = game:GetService("RunService")
 
 local Me = Players.LocalPlayer
 
--- // Framework Initialization
 repeat
     task.wait(0.1)
 until _G.Cat and _G.Cat.UI and _G.Cat.Settings and _G.Cat.State
@@ -53,60 +52,48 @@ local function GetPosition(fruit)
     return ok and pos or nil
 end
 
--- // FIX MUTLAK: ANTI GHOST FRUIT & NPC
+-- // FILTER BRUTAL: ANTI NPC, ANTI TAS, ANTI LAS (WELD)
 local function IsFruit(obj)
     if not obj then return false end
-    
-    -- Wajib berwujud Tool (buah yang jatuh) atau Model
     if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
-
-    -- Coret keras kalo punya nyawa (NPC)
-    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
-        return false 
-    end
 
     local lowerName = string.lower(obj.Name)
 
-    -- Blacklist nama abang-abang NPC
+    -- 1. Blacklist Nama NPC
     local isNPC = string.find(lowerName, "dealer") 
                or string.find(lowerName, "gacha") 
                or string.find(lowerName, "cousin")
-               or string.find(lowerName, "remover")
                or string.find(lowerName, "merchant")
                or string.find(lowerName, "npc")
     if isNPC then return false end
 
-    -- Wajib ada kata "fruit" di namanya
+    -- 2. Wajib nama Fruit
     if string.find(lowerName, "fruit") == nil then return false end
 
-    -- ==========================================
-    -- FILTER PAMUNGKAS (ANTI GHOST FRUIT)
-    -- Objek WAJIB punya part fisik, kalo kaga ada buang!
-    -- ==========================================
-    local hasPhysics = false
-    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
-        hasPhysics = true
-    elseif obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)) then
-        hasPhysics = true
+    -- 3. HARAM ada di dalem Tas (Backpack) atau Karakter (Model ber-Humanoid)
+    if obj:FindFirstAncestorOfClass("Backpack") then return false end
+    local ancestorModel = obj:FindFirstAncestorOfClass("Model")
+    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then return false end
+
+    -- 4. ANTI-WELD (Pendeteksi Buah Palsu yang dilas ke tangan orang)
+    -- Kita cek semua part di dalem buah ini, ada kaga yang dilas ke luar?
+    local isWeldedToPlayer = false
+    for _, desc in ipairs(obj:GetDescendants()) do
+        if desc:IsA("Weld") or desc:IsA("WeldConstraint") or desc:IsA("Motor6D") then
+            local p0 = desc.Part0
+            local p1 = desc.Part1
+            -- Kalau dilas ke part yang BUKAN bagian dari buah ini = Fake Fruit!
+            if p0 and not p0:IsDescendantOf(obj) then isWeldedToPlayer = true break end
+            if p1 and not p1:IsDescendantOf(obj) then isWeldedToPlayer = true break end
+        end
     end
+    if isWeldedToPlayer then return false end
 
-    return hasPhysics
-end
+    -- 5. Wajib punya fisik (Anti Ghost/Folder)
+    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then return true end
+    if obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)) then return true end
 
--- // FIX 2: DETEKSI BUAH DI PEGANG ORANG
-local function IsHeldByPlayer(obj)
-    if not (obj and obj.Parent) then return true end 
-    
-    local ok, isHeld = pcall(function()
-        local parent = obj.Parent
-        -- Kalau di dalem tas (Backpack) atau di dalem karakter orang (Model)
-        if parent:IsA("Backpack") then return true end
-        if parent:IsA("Model") and Players:GetPlayerFromCharacter(parent) then return true end
-        return false
-    end)
-    
-    if not ok then return true end
-    return isHeld
+    return false
 end
 
 -- ==========================================
@@ -166,9 +153,7 @@ end
 _G.Cat.ESP = {
     Data = Data,
     Pos  = GetPosition,
-    IsHeldByPlayer = IsHeldByPlayer, -- Kita export ini biar Status & AutoHop bisa pake
 
-    -- FIX 3: MESIN TP CUMA NYARI BUAH DI TANAH
     GetNearestFruit = function()
         local closest = nil
         local minDist = math.huge
@@ -178,23 +163,20 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
+            -- Karena yang masuk tabel Data udah 100% murni, kaga usah difilter lagi di sini!
             if fruit and fruit:IsDescendantOf(Workspace) then
-                -- SARINGAN MUTLAK: Kalo dipegang orang, lewatin! Jangan di-TP-in!
-                if not IsHeldByPlayer(fruit) then
-                    local p = GetPosition(fruit)
-                    if p then
-                        local d = (p - hrp.Position).Magnitude
-                        if d < minDist then
-                            closest = fruit
-                            minDist = d
-                        end
+                local p = GetPosition(fruit)
+                if p then
+                    local d = (p - hrp.Position).Magnitude
+                    if d < minDist then
+                        closest = fruit
+                        minDist = d
                     end
                 end
             else
                 RemoveESP(fruit)
             end
         end
-
         return closest
     end
 }
@@ -220,14 +202,6 @@ task.spawn(function()
             local fruitPos = GetPosition(fruit)
             if fruitPos then
                 local dist = math.floor((fruitPos - myPos).Magnitude)
-                
-                -- Ganti warna kalau dipegang orang biar lu gampang bedainnya
-                if IsHeldByPlayer(fruit) then
-                    entry.txt.TextColor3 = Color3.fromRGB(255, 100, 100) -- Merah (Punya Orang)
-                else
-                    entry.txt.TextColor3 = Color3.fromRGB(255, 255, 255) -- Putih (Nganggur)
-                end
-
                 local lastDist = Mem[fruit] or -1
                 if math.abs(dist - lastDist) > 3 then
                     Mem[fruit] = dist
