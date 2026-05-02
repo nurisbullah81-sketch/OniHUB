@@ -1,8 +1,7 @@
 -- [[ ==========================================
---      MODULE: DEVIL FRUIT ESP (DEBUG VERSION)
+--      MODULE: DEVIL FRUIT ESP (ULTIMATE FIX)
 --    ========================================== ]]
 
--- // Services
 local Workspace   = game:GetService("Workspace")
 local Players     = game:GetService("Players")
 local RunService  = game:GetService("RunService")
@@ -24,7 +23,6 @@ local State    = _G.Cat.State
 local Page = UI.CreateTab("Devil Fruits", false)
 UI.CreateSection(Page, "FRUIT FINDER")
 
--- Toggle: Visual Indicator
 UI.CreateToggle(
     Page,
     "Fruit ESP",
@@ -38,47 +36,60 @@ UI.CreateToggle(
 -- ==========================================
 -- 2. INTERNAL UTILITIES
 -- ==========================================
--- Cache untuk menyimpan objek ESP dan data jarak
 local Data = {}
 local Mem  = {}
 
--- Fungsi: Ambil posisi dunia (World Position) dari objek buah
 local function GetPosition(fruit)
     if not fruit then return nil end
-
     local ok, pos = pcall(function()
         if fruit:IsA("Tool") then
             local handle = fruit:FindFirstChild("Handle")
             return handle and handle.Position
         elseif fruit:IsA("Model") then
-            -- Prioritaskan PrimaryPart atau cari BasePart terdekat
             local target = fruit.PrimaryPart or fruit:FindFirstChildWhichIsA("BasePart", true)
             return target and target.Position
         end
     end)
-
     return ok and pos or nil
 end
 
--- FIX: Kenali buah asli (Berdasarkan nama biar buah alami di tanah kebaca)
+-- // FIX 1: ANTI NPC GACHA & DEALER
 local function IsFruit(obj)
     if not obj then return false end
     if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
 
-    -- Deteksi berdasarkan nama objek (Standar Blox Fruits)
+    -- Kalau objeknya punya Humanoid, itu NPC/Pemain, BUKAN BUAH!
+    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+        return false 
+    end
+
+    -- Standar nama buah Blox Fruits
     return string.find(string.lower(obj.Name), "fruit") ~= nil
+end
+
+-- // FIX 2: DETEKSI BUAH DI PEGANG ORANG
+local function IsHeldByPlayer(obj)
+    if not (obj and obj.Parent) then return true end 
+    
+    local ok, isHeld = pcall(function()
+        local parent = obj.Parent
+        -- Kalau di dalem tas (Backpack) atau di dalem karakter orang (Model)
+        if parent:IsA("Backpack") then return true end
+        if parent:IsA("Model") and Players:GetPlayerFromCharacter(parent) then return true end
+        return false
+    end)
+    
+    if not ok then return true end
+    return isHeld
 end
 
 -- ==========================================
 -- 3. ESP MANAGEMENT ENGINE
 -- ==========================================
-
--- Membuat BillboardGui dan menempelkannya ke target
 local function AddESP(fruit)
     if not fruit or Data[fruit] then return end
 
     pcall(function()
-        -- FIX: Cari part fisik buat ditempelin teks biar kaga GHOIB
         local targetPart = nil
         if fruit:IsA("Tool") then
             targetPart = fruit:FindFirstChild("Handle")
@@ -93,11 +104,10 @@ local function AddESP(fruit)
         bb.Size         = UDim2.new(0, 150, 0, 20)
         bb.AlwaysOnTop  = true
         bb.StudsOffset  = Vector3.new(0, 3, 0)
-        bb.Adornee      = targetPart -- KUNCI BIAR MUNCUL!
+        bb.Adornee      = targetPart 
         bb.Parent       = targetPart
         bb.Enabled      = false
 
-        -- Konfigurasi Visual Text
         local txt = Instance.new("TextLabel", bb)
         txt.Size                  = UDim2.new(1, 0, 1, 0)
         txt.Text                  = string.format("%s []", fruit.Name)
@@ -109,19 +119,15 @@ local function AddESP(fruit)
         txt.TextStrokeTransparency = 0.3
         txt.TextStrokeColor3      = Color3.fromRGB(0, 0, 0)
 
-        -- Register ke Cache
         Data[fruit] = { bb = bb, txt = txt }
         Mem[fruit] = -1
     end)
 end
 
--- Membersihkan objek ESP dari memori dan tampilan
 local function RemoveESP(fruit)
     if Data[fruit] then
         pcall(function()
-            if Data[fruit].bb then
-                Data[fruit].bb:Destroy()
-            end
+            if Data[fruit].bb then Data[fruit].bb:Destroy() end
         end)
         Data[fruit] = nil
         Mem[fruit] = nil
@@ -131,12 +137,12 @@ end
 -- ==========================================
 -- 4. EXPORTED API
 -- ==========================================
--- API publik untuk modul lain (AutoFarm/Teleport)
 _G.Cat.ESP = {
     Data = Data,
     Pos  = GetPosition,
+    IsHeldByPlayer = IsHeldByPlayer, -- Kita export ini biar Status & AutoHop bisa pake
 
-    -- Fungsi: Cari buah terdekat dari pemain
+    -- FIX 3: MESIN TP CUMA NYARI BUAH DI TANAH
     GetNearestFruit = function()
         local closest = nil
         local minDist = math.huge
@@ -146,20 +152,19 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
-            -- FIX: Ganti fruit.Parent == Workspace jadi IsDescendantOf 
-            -- Biar kaga kehapus pas buahnya masuk ke tangan (Character) orang
             if fruit and fruit:IsDescendantOf(Workspace) then
-                local p = GetPosition(fruit)
-
-                if p then
-                    local d = (p - hrp.Position).Magnitude
-                    if d < minDist then
-                        closest = fruit
-                        minDist = d
+                -- SARINGAN MUTLAK: Kalo dipegang orang, lewatin! Jangan di-TP-in!
+                if not IsHeldByPlayer(fruit) then
+                    local p = GetPosition(fruit)
+                    if p then
+                        local d = (p - hrp.Position).Magnitude
+                        if d < minDist then
+                            closest = fruit
+                            minDist = d
+                        end
                     end
                 end
             else
-                -- Auto-cleanup jika objek beneran hilang dari game
                 RemoveESP(fruit)
             end
         end
@@ -169,9 +174,8 @@ _G.Cat.ESP = {
 }
 
 -- ==========================================
--- 5. REAL-TIME RENDERER
+-- 5. REAL-TIME RENDERER (VISUAL ESP)
 -- ==========================================
--- Loop terpisah untuk update jarak (Optimasi: Rate limited)
 task.spawn(function()
     while task.wait(0.1) do
         if not Settings.FruitESP then continue end
@@ -179,11 +183,9 @@ task.spawn(function()
         local char = Me.Character
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then continue end
-
         local myPos = hrp.Position
 
         for fruit, entry in pairs(Data) do
-            -- FIX: Validasi menggunakan IsDescendantOf
             if not fruit or not fruit:IsDescendantOf(Workspace) then
                 RemoveESP(fruit)
                 continue
@@ -192,14 +194,19 @@ task.spawn(function()
             local fruitPos = GetPosition(fruit)
             if fruitPos then
                 local dist = math.floor((fruitPos - myPos).Magnitude)
+                
+                -- Ganti warna kalau dipegang orang biar lu gampang bedainnya
+                if IsHeldByPlayer(fruit) then
+                    entry.txt.TextColor3 = Color3.fromRGB(255, 100, 100) -- Merah (Punya Orang)
+                else
+                    entry.txt.TextColor3 = Color3.fromRGB(255, 255, 255) -- Putih (Nganggur)
+                end
 
-                -- Update text hanya jika jarak berubah signifikan
                 local lastDist = Mem[fruit] or -1
                 if math.abs(dist - lastDist) > 3 then
                     Mem[fruit] = dist
                     entry.txt.Text = string.format("%s [%dm]", fruit.Name, dist)
                 end
-
                 entry.bb.Enabled = true
             else
                 entry.bb.Enabled = false
@@ -209,34 +216,18 @@ task.spawn(function()
 end)
 
 -- ==========================================
--- 6. WORKSPACE MONITORING
+-- 6. WORKSPACE MONITORING & SCAN
 -- ==========================================
--- FIX: Gunakan DescendantAdded biar buah yang spawn dalem folder tetep kebaca
 Workspace.DescendantAdded:Connect(function(obj)
-    local isValidType = obj:IsA("Model") or obj:IsA("Tool")
-    if not isValidType then return end
-
-    -- Jeda rendering biar objek ke-load penuh
     task.delay(0.5, function()
-        if IsFruit(obj) and not Data[obj] then
-            AddESP(obj)
-        end
+        if IsFruit(obj) and not Data[obj] then AddESP(obj) end
     end)
 end)
 
--- Deteksi objek hilang dari Workspace
 Workspace.DescendantRemoving:Connect(function(obj)
-    if Data[obj] then
-        RemoveESP(obj)
-    end
+    if Data[obj] then RemoveESP(obj) end
 end)
 
--- ==========================================
--- 7. INITIAL SCAN
--- ==========================================
--- Scan seluruh workspace saat script dimuat
 for _, obj in ipairs(Workspace:GetDescendants()) do
-    if IsFruit(obj) and not Data[obj] then
-        AddESP(obj)
-    end
+    if IsFruit(obj) and not Data[obj] then AddESP(obj) end
 end
