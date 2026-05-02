@@ -59,10 +59,10 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 -- //! Pengaturan Warna UI
 local Theme = {
     -- Background
-    MainBG = Color3.fromRGB(19, 19, 19), -- !background tengah kanan
-    SideBG = Color3.fromRGB(24, 24, 24),
-    TopBG  = Color3.fromRGB(17, 17, 17),
-    PageBG = Color3.fromRGB(5, 0, 14),
+    MainBG = Color3.fromRGB(24, 24, 24), -- !background tengah kanan
+    SideBG = Color3.fromRGB(19, 19, 19),
+    TopBG  = Color3.fromRGB(19, 19, 19),
+    PageBG = Color3.fromRGB(17, 17, 17), -- ! Main Card kanan
 
     -- Navigation
     TabOn   = Color3.fromRGB(255, 0, 0),
