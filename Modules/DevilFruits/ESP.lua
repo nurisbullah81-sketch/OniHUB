@@ -52,48 +52,48 @@ local function GetPosition(fruit)
     return ok and pos or nil
 end
 
--- // FILTER BRUTAL: ANTI NPC, ANTI TAS, ANTI LAS (WELD)
+-- // FIX MUTLAK: ANTI GHOST FRUIT, ANTI DUMMY, & ANTI NPC
 local function IsFruit(obj)
     if not obj then return false end
+    
+    -- Wajib berwujud Tool (buah yang jatuh) atau Model
     if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
+
+    -- Coret keras kalo punya nyawa (NPC)
+    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+        return false 
+    end
+
+    -- ==========================================
+    -- 🚨 PEMBUNUH DUMMY (DARI BUKTI DEX LU) 🚨
+    -- Buah asli namanya "XXX Fruit" (misal: Flame Fruit). 
+    -- Kalau namanya cuma "Fruit" doang, itu PASTI dummy developer!
+    if obj.Name == "Fruit" then return false end
+    -- ==========================================
 
     local lowerName = string.lower(obj.Name)
 
-    -- 1. Blacklist Nama NPC
+    -- Blacklist nama abang-abang NPC
     local isNPC = string.find(lowerName, "dealer") 
                or string.find(lowerName, "gacha") 
                or string.find(lowerName, "cousin")
+               or string.find(lowerName, "remover")
                or string.find(lowerName, "merchant")
                or string.find(lowerName, "npc")
     if isNPC then return false end
 
-    -- 2. Wajib nama Fruit
+    -- Wajib ada kata "fruit" di namanya
     if string.find(lowerName, "fruit") == nil then return false end
 
-    -- 3. HARAM ada di dalem Tas (Backpack) atau Karakter (Model ber-Humanoid)
-    if obj:FindFirstAncestorOfClass("Backpack") then return false end
-    local ancestorModel = obj:FindFirstAncestorOfClass("Model")
-    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then return false end
-
-    -- 4. ANTI-WELD (Pendeteksi Buah Palsu yang dilas ke tangan orang)
-    -- Kita cek semua part di dalem buah ini, ada kaga yang dilas ke luar?
-    local isWeldedToPlayer = false
-    for _, desc in ipairs(obj:GetDescendants()) do
-        if desc:IsA("Weld") or desc:IsA("WeldConstraint") or desc:IsA("Motor6D") then
-            local p0 = desc.Part0
-            local p1 = desc.Part1
-            -- Kalau dilas ke part yang BUKAN bagian dari buah ini = Fake Fruit!
-            if p0 and not p0:IsDescendantOf(obj) then isWeldedToPlayer = true break end
-            if p1 and not p1:IsDescendantOf(obj) then isWeldedToPlayer = true break end
-        end
+    -- Wajib punya part fisik
+    local hasPhysics = false
+    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
+        hasPhysics = true
+    elseif obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)) then
+        hasPhysics = true
     end
-    if isWeldedToPlayer then return false end
 
-    -- 5. Wajib punya fisik (Anti Ghost/Folder)
-    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then return true end
-    if obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)) then return true end
-
-    return false
+    return hasPhysics
 end
 
 -- ==========================================
