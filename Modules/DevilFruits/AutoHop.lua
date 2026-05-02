@@ -208,8 +208,12 @@ task.spawn(function()
                 -- Scan Data ESP (Cek buah di workspace)
                 if _G.Cat.ESP and _G.Cat.ESP.Data then
                     for fruit, _ in pairs(_G.Cat.ESP.Data) do
-                        if fruit and fruit.Parent == workspace then
-                            fruitCount = fruitCount + 1
+                        if fruit and fruit.Parent then
+                            -- Pastikan buah kaga dipegang orang sebelum batalin Hop
+                            local isHeld = _G.Cat.ESP.IsHeldByPlayer and _G.Cat.ESP.IsHeldByPlayer(fruit)
+                            if not isHeld then
+                                fruitCount = fruitCount + 1
+                            end
                         end
                     end
                 end
