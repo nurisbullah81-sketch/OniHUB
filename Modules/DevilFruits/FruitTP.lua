@@ -201,12 +201,11 @@ task.spawn(function()
                 hrp.CFrame = CFrame.new(endPos)
             end
 
-        -- // Mode: Smooth Tween
+                -- // Mode: Smooth Tween
         elseif Settings.TweenFruit then
             if dist < 1 then
                 StopTween()
             else
-                -- Cek apakah target berubah atau tween belum jalan
                 local needsStart = currentTarget ~= fruit
                 if needsStart or not isTweening then
                     StopTween()
@@ -214,7 +213,6 @@ task.spawn(function()
                     currentTarget = fruit
                     isTweening    = true
 
-                    -- Sinkronkan Proxy ke pemain
                     ProxyPart.CFrame = hrp.CFrame
 
                     -- Catat semua status asli anggota tubuh sebelum berubah jadi hantu
@@ -229,23 +227,13 @@ task.spawn(function()
                         end
                     end
 
-                    -- Noclip & Sync Loop
+                    -- Noclip & Sync Loop (BERSIH, TANPA NGUTAK-ATIK FISIKA BUAH LAGI)
                     noclipConn = RunService.Stepped:Connect(function()
                         if not isTweening then return end
 
-                        -- Matikan collision tubuh kita
                         for part, _ in pairs(originalCollisions) do
                             if part.CanCollide then
                                 part.CanCollide = false
-                            end
-                        end
-
-                        -- 🚨 RAHASIA PREMIUM: MATIKAN FISIKA BUAH TARGET
-                        -- Touched-nya tetap nyala, tapi tendangannya ilang 100%
-                        if currentTarget then
-                            local targetPart = currentTarget:FindFirstChildWhichIsA("BasePart", true)
-                            if targetPart and targetPart.CanCollide then
-                                targetPart.CanCollide = false
                             end
                         end
 
@@ -256,6 +244,9 @@ task.spawn(function()
                     -- Jalankan Tween
                     local timeDur = dist / TWEEN_SPEED
                     local tInfo   = TweenInfo.new(timeDur, Enum.EasingStyle.Linear)
+                    
+                    -- 🚨 SWEET SPOT ORIGINAL: +2 STUD DI ATAS BUAH 🚨
+                    local endPos = fPos + Vector3.new(0, 2, 0)
                     local tProps  = { CFrame = CFrame.new(endPos) }
 
                     currentTween = TweenService:Create(ProxyPart, tInfo, tProps)
