@@ -1,5 +1,5 @@
 -- [[ ==========================================
---      MODULE: DEVIL FRUIT ESP (ANTI-GHOST & ANTI-WELD)
+--      MODULE: DEVIL FRUIT ESP (ULTIMATE NO-GHOST)
 --    ========================================== ]]
 
 local Workspace   = game:GetService("Workspace")
@@ -38,55 +38,43 @@ UI.CreateToggle(
 local Data = {}
 local Mem  = {}
 
+-- FIX 1: Cari koordinat dari part APAPUN (kaga usah nyari nama "Handle")
 local function GetPosition(fruit)
     if not fruit then return nil end
     local ok, pos = pcall(function()
-        if fruit:IsA("Tool") then
-            local handle = fruit:FindFirstChild("Handle")
-            return handle and handle.Position
-        elseif fruit:IsA("Model") then
-            local target = fruit.PrimaryPart or fruit:FindFirstChildWhichIsA("BasePart", true)
-            return target and target.Position
-        end
+        -- Cari BasePart apapun di dalem tool/model itu
+        local target = fruit:FindFirstChildWhichIsA("BasePart", true)
+        return target and target.Position
     end)
     return ok and pos or nil
 end
 
--- // ==========================================
--- // FUNGSI ESP BUAH (ANTI-GHOST + BISA BACA BUAH JATUH/SPAWN)
--- // ==========================================
+-- // FIX 2: FILTER DEWA (BACA SEMUA BUAH ASLI, TENDANG SEMUA HANTU)
 local function IsFruit(obj)
     if not obj then return false end
     
-    -- 1. BISA TOOL (Dalem inventory) ATAU MODEL (Jatuh/Spawn di map)
+    -- 1. Wujud wajib Tool atau Model
     if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
 
-    -- 2. TENDANG NPC: Kalo punya Humanoid = bukan buah
-    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then 
-        return false 
-    end
+    -- 2. Tendang NPC
+    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then return false end
 
-    -- 3. TENDANG DUMMY/GHOST: Nama kaga boleh cuma "Fruit" doang (Hasil interogasi Dex)
+    -- 3. Tendang Dummy Hantu
     if obj.Name == "Fruit" then return false end
 
-    -- 4. VALIDASI NAMA STANDAR
+    -- 4. Validasi Nama
     local lowerName = string.lower(obj.Name)
     if not string.find(lowerName, "fruit") then return false end
 
-    -- 5. ANTI BUAH DI PEGANG ORANG (Kalo nyari di Workspace, jangan ambil punya orang)
+    -- 5. Anti Punya Orang (Backpack / Humanoid)
     if obj:FindFirstAncestorOfClass("Backpack") then return false end
     local ancestorModel = obj:FindFirstAncestorOfClass("Model")
-    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then 
-        return false 
-    end
+    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then return false end
 
-    -- 6. WAJIB PUNYA FISIK (Anti objek ghoib/folder kosong)
-    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then 
+    -- 6. SYARAT FISIK BEBAS (Ini yang bikin Spring Fruit lu tembus sekarang!)
+    -- Pokoknya ada BasePart di dalemnya, berarti sah!
+    if obj:FindFirstChildWhichIsA("BasePart", true) then 
         return true 
-    end
-    if obj:IsA("Model") then
-        local hasPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)
-        if hasPart then return true end
     end
 
     return false
@@ -99,13 +87,8 @@ local function AddESP(fruit)
     if not fruit or Data[fruit] then return end
 
     pcall(function()
-        local targetPart = nil
-        if fruit:IsA("Tool") then
-            targetPart = fruit:FindFirstChild("Handle")
-        elseif fruit:IsA("Model") then
-            targetPart = fruit.PrimaryPart or fruit:FindFirstChildWhichIsA("BasePart", true)
-        end
-
+        -- FIX 3: Nempelin UI ke part APAPUN yang ada fisiknya
+        local targetPart = fruit:FindFirstChildWhichIsA("BasePart", true)
         if not targetPart then return end
 
         local bb = Instance.new("BillboardGui")
@@ -159,16 +142,7 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
-            -- FIX: Cek ulang apakah Parent-nya itu Karakter (Humanoid) atau Backpack
-            local isHeld = false
-            if fruit.Parent then
-                if fruit.Parent:IsA("Backpack") or fruit.Parent:FindFirstChild("Humanoid") then
-                    isHeld = true
-                end
-            end
-
-            -- Kalo masih di Workspace dan KAGA dipegang siapapun
-            if fruit and fruit:IsDescendantOf(Workspace) and not isHeld then
+            if fruit and fruit:IsDescendantOf(Workspace) then
                 local p = GetPosition(fruit)
                 if p then
                     local d = (p - hrp.Position).Magnitude
@@ -178,7 +152,6 @@ _G.Cat.ESP = {
                     end
                 end
             else
-                -- Kalo udah masuk tangan/tas, HANGUSKAN DARI ESP!
                 RemoveESP(fruit)
             end
         end
@@ -199,13 +172,7 @@ task.spawn(function()
         local myPos = hrp.Position
 
         for fruit, entry in pairs(Data) do
-            -- FIX: Pengecekan ketat biar kaga dobel di tangan
-            local isHeld = false
-            if fruit.Parent and (fruit.Parent:IsA("Backpack") or fruit.Parent:FindFirstChild("Humanoid")) then
-                isHeld = true
-            end
-
-            if not fruit or not fruit:IsDescendantOf(Workspace) or isHeld then
+            if not fruit or not fruit:IsDescendantOf(Workspace) then
                 RemoveESP(fruit)
                 continue
             end
