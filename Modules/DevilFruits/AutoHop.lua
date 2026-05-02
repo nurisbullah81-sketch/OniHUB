@@ -205,20 +205,18 @@ task.spawn(function()
             local success, err = pcall(function()
                 local fruitCount = 0
 
-                -- Scan Data ESP (Cek buah di workspace)
+                -- Scan Data ESP (Cek buah yang REALTIME ADA DI LANTAI)
                 if _G.Cat.ESP and _G.Cat.ESP.Data then
                     for fruit, _ in pairs(_G.Cat.ESP.Data) do
-                        if fruit and fruit.Parent then
-                            -- Pastikan buah kaga dipegang orang sebelum batalin Hop
-                            local isHeld = _G.Cat.ESP.IsHeldByPlayer and _G.Cat.ESP.IsHeldByPlayer(fruit)
-                            if not isHeld then
-                                fruitCount = fruitCount + 1
-                            end
+                        -- Hanya hitung yang Parent-nya BENERAN workspace (bukan di tangan/npc)
+                        -- DAN yang masih punya Handle (bukan mayat)
+                        if fruit and fruit.Parent == workspace and fruit:FindFirstChild("Handle") then
+                            fruitCount = fruitCount + 1
                         end
                     end
                 end
 
-                -- Logic Hop: Kalo ga ada buah, pindah server
+                -- Logic Hop: Kalo ga ada buah valid di lantai, pindah server
                 if fruitCount == 0 then
                     if not isHopping then
                         _G.Cat.HopServer()
