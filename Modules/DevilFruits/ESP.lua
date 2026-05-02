@@ -1,5 +1,5 @@
 -- [[ ==========================================
---      MODULE: DEVIL FRUIT ESP
+--      MODULE: DEVIL FRUIT ESP (DEBUG VERSION)
 --    ========================================== ]]
 
 -- // Services
@@ -44,36 +44,29 @@ local Mem  = {}
 
 -- Fungsi: Ambil posisi dunia (World Position) dari objek buah
 local function GetPosition(fruit)
-    if not (fruit and fruit.Parent) then return nil end
+    if not fruit then return nil end
 
     local ok, pos = pcall(function()
         if fruit:IsA("Tool") then
             local handle = fruit:FindFirstChild("Handle")
             return handle and handle.Position
         elseif fruit:IsA("Model") then
-            -- Prioritaskan PrimaryPart
-            if fruit.PrimaryPart then
-                return fruit.PrimaryPart.Position
-            end
-
-            -- Fallback ke BasePart lain
-            local alt = fruit:FindFirstChild("HumanoidRootPart")
-                or fruit:FindFirstChildWhichIsA("BasePart")
-
-            return alt and alt.Position
+            -- Prioritaskan PrimaryPart atau cari BasePart terdekat
+            local target = fruit.PrimaryPart or fruit:FindFirstChildWhichIsA("BasePart", true)
+            return target and target.Position
         end
     end)
 
     return ok and pos or nil
 end
 
--- Fungsi: Validasi apakah objek adalah Buah
+-- FIX: Kenali buah asli (Berdasarkan nama biar buah alami di tanah kebaca)
 local function IsFruit(obj)
-    if not (obj and obj.Parent) then return false end
+    if not obj then return false end
     if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
 
-    -- Deteksi berdasarkan atribut atau child "Fruit"
-    return obj:FindFirstChild("Fruit") ~= nil
+    -- Deteksi berdasarkan nama objek (Standar Blox Fruits)
+    return string.find(string.lower(obj.Name), "fruit") ~= nil
 end
 
 -- ==========================================
@@ -82,14 +75,26 @@ end
 
 -- Membuat BillboardGui dan menempelkannya ke target
 local function AddESP(fruit)
-    if not (fruit and fruit.Parent) or Data[fruit] then return end
+    if not fruit or Data[fruit] then return end
 
     pcall(function()
-        local bb = Instance.new("BillboardGui", fruit)
+        -- FIX: Cari part fisik buat ditempelin teks biar kaga GHOIB
+        local targetPart = nil
+        if fruit:IsA("Tool") then
+            targetPart = fruit:FindFirstChild("Handle")
+        elseif fruit:IsA("Model") then
+            targetPart = fruit.PrimaryPart or fruit:FindFirstChildWhichIsA("BasePart", true)
+        end
+
+        if not targetPart then return end
+
+        local bb = Instance.new("BillboardGui")
         bb.Name         = "CatESP"
         bb.Size         = UDim2.new(0, 150, 0, 20)
         bb.AlwaysOnTop  = true
         bb.StudsOffset  = Vector3.new(0, 3, 0)
+        bb.Adornee      = targetPart -- KUNCI BIAR MUNCUL!
+        bb.Parent       = targetPart
         bb.Enabled      = false
 
         -- Konfigurasi Visual Text
@@ -141,8 +146,9 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
-            -- Validasi objek masih ada di Workspace
-            if fruit and fruit.Parent == Workspace then
+            -- FIX: Ganti fruit.Parent == Workspace jadi IsDescendantOf 
+            -- Biar kaga kehapus pas buahnya masuk ke tangan (Character) orang
+            if fruit and fruit:IsDescendantOf(Workspace) then
                 local p = GetPosition(fruit)
 
                 if p then
@@ -153,7 +159,7 @@ _G.Cat.ESP = {
                     end
                 end
             else
-                -- Auto-cleanup jika objek hilang
+                -- Auto-cleanup jika objek beneran hilang dari game
                 RemoveESP(fruit)
             end
         end
@@ -177,8 +183,8 @@ task.spawn(function()
         local myPos = hrp.Position
 
         for fruit, entry in pairs(Data) do
-            -- Validasi objek
-            if not fruit or not fruit.Parent then
+            -- FIX: Validasi menggunakan IsDescendantOf
+            if not fruit or not fruit:IsDescendantOf(Workspace) then
                 RemoveESP(fruit)
                 continue
             end
@@ -205,8 +211,8 @@ end)
 -- ==========================================
 -- 6. WORKSPACE MONITORING
 -- ==========================================
--- Deteksi objek baru masuk ke Workspace
-Workspace.ChildAdded:Connect(function(obj)
+-- FIX: Gunakan DescendantAdded biar buah yang spawn dalem folder tetep kebaca
+Workspace.DescendantAdded:Connect(function(obj)
     local isValidType = obj:IsA("Model") or obj:IsA("Tool")
     if not isValidType then return end
 
@@ -219,7 +225,7 @@ Workspace.ChildAdded:Connect(function(obj)
 end)
 
 -- Deteksi objek hilang dari Workspace
-Workspace.ChildRemoved:Connect(function(obj)
+Workspace.DescendantRemoving:Connect(function(obj)
     if Data[obj] then
         RemoveESP(obj)
     end
