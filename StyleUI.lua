@@ -1,42 +1,46 @@
 -- [[ ==========================================
---      CATHUB PREMIUM: FLUENT UI (THE REAL FIX)
+--      CATHUB PREMIUM: FLUENT UI (FINAL ABSOLUTE FIX)
 --    ========================================== ]]
 
 local HttpService = game:GetService("HttpService")
-local RunService  = game:GetService("RunService")
-local Players     = game:GetService("Players")
 local ConfigFile  = "CatHUB_Config.json"
 
 _G.Cat = _G.Cat or {}
-_G.Cat.Player = Players.LocalPlayer
-_G.Cat.Labels = _G.Cat.Labels or {}
-if not _G.Cat.Settings then _G.Cat.Settings = {} end
+_G.Cat.Settings = _G.Cat.Settings or {}
 
+-- // Function: Save Settings
 local function SaveSettings()
-    pcall(function() writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings)) end)
+    pcall(function()
+        writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
+    end)
 end
 _G.Cat.SaveSettings = SaveSettings
 
--- Dummy Theme (Wajib ada buat X-Ray manual di Status.lua biar warnanya kaga putih)
-_G.Cat.Theme = {
-    CardBG = Color3.fromRGB(30, 30, 30), SideBG = Color3.fromRGB(40, 40, 40), Line = Color3.fromRGB(60, 60, 60),
-    Text = Color3.fromRGB(240, 240, 240), TextDim = Color3.fromRGB(150, 150, 150), CatPurple = Color3.fromRGB(170, 85, 255)
-}
-
 -- ==========================================
--- 1. LOAD FLUENT (RETRY SYSTEM)
+-- 1. LOAD FLUENT DENGAN SISTEM PAKSAAN (ANTI GAGAL)
 -- ==========================================
 local Fluent = nil
+local maxRetry = 5
 local retry = 0
-while not Fluent and retry < 5 do
-    pcall(function()
+
+while not Fluent and retry < maxRetry do
+    local success, err = pcall(function()
         Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
     end)
-    if not Fluent then retry = retry + 1; task.wait(1) end
+    
+    if not success or not Fluent then
+        retry = retry + 1
+        task.wait(1)
+    end
 end
 
+-- ==========================================
+-- 2. PENENTUAN NASIB UI
+-- ==========================================
 local Window = nil
+
 if Fluent then
+    -- NASIB 1: Berhasil download, UI Mewah nyala
     Window = Fluent:CreateWindow({
         Title       = "CatHUB",
         SubTitle    = "[Freemium] Blox Fruits",
@@ -48,61 +52,70 @@ if Fluent then
     })
 
     -- ==========================================
-    -- 2. OBAT POSISI NYANGKUK (CARA CERDAS)
+    -- 3. OBAT SUPER BRUTAL (POSISI TENGAH & KAMERA)
     -- ==========================================
     task.spawn(function()
-        task.wait(1) -- Wajib tunggu Fluent selesai bikin semua framenya
-        -- Cara aman mencari Frame utama Fluent: Cocokkan persis ukurannya dengan yang kita set (580x460)
-        for _, gui in ipairs(game:GetService("CoreGui"):GetChildren()) do
-            if gui:IsA("ScreenGui") then
-                for _, obj in ipairs(gui:GetChildren()) do
-                    if obj:IsA("Frame") and math.abs(obj.Size.X.Offset - 580) < 5 and math.abs(obj.Size.Y.Offset - 460) < 5 then
-                        -- Paksa AnchorPoint ke tengah dan posisikan tepat di tengah layar
-                        obj.AnchorPoint = Vector2.new(0.5, 0.5)
-                        obj.Position = UDim2.new(0.5, 0, 0.5, 0)
-                        break
-                    end
+        task.wait(3) -- Tunggu Fluent selesai loading
+        local coreGui = game:GetService("CoreGui")
+        local gui = coreGui:FindFirstChildWhichIsA("ScreenGui")
+        if gui then
+            -- 3A: PENCULIKAN UI DARI POJOK -> TARUH LANGSUNG KE TENGAH LAYAR
+            for _, obj in ipairs(gui:GetDescendants()) do
+                if obj:IsA("Frame") and math.abs(obj.Size.X.Offset - 580) < 30 and math.abs(obj.Size.Y.Offset - 460) < 30 then
+                    -- Ambil alih paksa dari parent-nya yang nyangkut di pojok
+                    obj.Parent = coreGui
+                    
+                    -- Sekarang posisinya pasti bener-bener di tengah layar
+                    obj.AnchorPoint = Vector2.new(0.5, 0.5)
+                    obj.Position = UDim2.new(0.5, 0, 0.5, 0) 
+                    break
+                end
+            end
+            
+            -- 3B: HANCURKAN SISA-SISA VIEWPORT PENCURI KAMERA
+            for _, obj in ipairs(coreGui:GetDescendants()) do
+                if obj:IsA("ViewportFrame") then
+                    obj:Destroy()
                 end
             end
         end
     end)
 
-    -- ==========================================
-    -- 3. OBAT SKILL NYANGKUK (AKAR MASALAH)
-    -- ==========================================
-    -- Fluent mengubah CameraType jadi Scriptable. Kita KUNCI setiap frame di prioritas tertinggi.
-    RunService:BindToRenderStep("CatHUB_CameraFix", Enum.RenderPriority.Camera.Value + 1, function()
-        -- Hanya aktifkan kunci kalo game udah siap (kaga di menu loading)
-        if not _G.Cat.State or not _G.Cat.State.IsGameReady then return end
-        
-        local cam = workspace.CurrentCamera
-        local char = Players.LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                -- Paksa kamera tetap di mode Custom (Mode normal yang ngikuti karakter)
-                if cam.CameraType ~= Enum.CameraType.Custom then
-                    cam.CameraType = Enum.CameraType.Custom
-                end
-                -- Pastikan fokus kamera tetap ke Humanoid lu, bukan ke Viewport UI
-                if cam.CameraSubject ~= hum then
+    -- 3C: BODYGUARD KAMERA (MENYERANGKAN SETIAP FRAME BILA ADA YANG NYURIK FOKUS)
+    game:GetService("RunService").RenderStepped:Connect(function()
+        -- Pastikan game udah siap dimainkan
+        if _Gat and _Gat.State and _Gat.State.IsGameReady then
+            local cam = workspace.CurrentCamera
+            local char = _Gat.Player.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                -- Kalau kamera tidak fokus ke humanoid kita, paksa balik!
+                if hum and cam.CameraSubject ~= hum then
                     cam.CameraSubject = hum
                 end
             end
         end
     end)
+
 else
-    warn("[CatHUB] Fluent UI gagal load. Mode tanpa UI aktif.")
+    -- NASIB 2: Gagal download, Gunakan mode tanpa UI sementara
+    warn("[CatHUB] Fluent UI gagal load saat Hop. Menggunakan mode tanpa UI sementara...")
 end
 
 -- ==========================================
--- 4. WRAPPER ENGINE (KABEL SAMBUNGAN)
+-- 4. WRAPPER ENGINE (DENGAN PELINDUNG ERROR)
 -- ==========================================
 local Tabs = {}
+
 local function CreateTab(name, isFirst)
     if not Window then return {} end
-    if not Tabs[name] then Tabs[name] = Window:AddTab({ Title = name, Icon = "" }) end
-    if isFirst then pcall(function() Window:SelectTab(1) end) end
+    
+    if not Tabs[name] then
+        Tabs[name] = Window:AddTab({ Title = name, Icon = "" })
+    end
+    if isFirst then
+        pcall(function() Window:SelectTab(1) end)
+    end
     return Tabs[name]
 end
 
@@ -113,35 +126,67 @@ end
 
 local function CreateToggle(parentTab, text, description, stateRef, callback)
     if not Window then return end
-    parentTab:AddToggle("T_"..text, {
-        Title = text, Description = description or "", Default = stateRef or false,
-        Callback = function(state) if callback then callback(state) end; SaveSettings() end
+    
+    local toggle = parentTab:AddToggle("T_"..text, {
+        Title       = text,
+        Description = description or "",
+        Default     = stateRef or false,
+        Callback    = function(state)
+            if callback then callback(state) end
+            SaveSettings()
+        end
     })
+    return toggle
 end
 
 local function CreateLabel(parentTab, text, description)
-    if not Window then return { Text = text or "" } end
-    local p = parentTab:AddParagraph({ Title = text, Content = description or "" })
-    -- Trik Metatable biar Status.lua tetap bisa pakai syntax .Text = "..."
+    if not Window then 
+        return { Text = text or "" } 
+    end
+
+    local paragraph = parentTab:AddParagraph({
+        Title   = text,
+        Content = description or ""
+    })
+
     local fakeLabel = {}
-    setmetatable(fakeLabel, { __newindex = function(t, k, v) if k == "Text" then p:SetTitle(v) end end })
+    setmetatable(fakeLabel, {
+        __newindex = function(t, k, v)
+            if k == "Text" then
+                paragraph:SetTitle(v)
+            end
+        end
+    })
+    
     return fakeLabel
 end
 
 -- ==========================================
--- 5. INIT & EXPORT
+-- 5. PRE-INITIALIZE DEFAULT TABS
 -- ==========================================
 CreateTab("Status", true)
 CreateTab("Auto Farm", false)
 CreateTab("Devil Fruits", false)
 CreateTab("Misc", false)
 
+-- ==========================================
+-- 6. EXPORT GLOBAL (AMAN BAIK UI NYALA ATAU GAGAL)
+-- ==========================================
 _G.Cat.UI = {
-    CreateTab = CreateTab, CreateSection = CreateSection,
-    CreateToggle = CreateToggle, CreateLabel = CreateLabel,
-    Theme = _G.Cat.Theme, SaveSettings = SaveSettings
+    CreateTab     = CreateTab,
+    CreateSection = CreateSection,
+    CreateToggle  = CreateToggle,
+    CreateLabel   = CreateLabel,
+    Theme         = {},
+    SaveSettings  = SaveSettings
 }
 
 if Fluent then
-    pcall(function() Fluent:Notify({ Title = "CatHUB", Content = "UI & Camera Patch Loaded.", Duration = 3 }) end)
+    pcall(function()
+        Fluent:Notify({
+            Title   = "CatHUB Premium",
+            Content = "UI & Camera Fix Applied.",
+            Duration = 3
+        })
+    end)
 end
