@@ -49,50 +49,38 @@ local function GetPosition(fruit)
     return ok and pos or nil
 end
 
--- // ==========================================
--- // FUNGSI ESP BUAH (BERDASARKAN DATA DEX MURNI)
--- // ==========================================
 local function IsFruit(obj)
-    if not obj then return false end
-    
-    -- 1. Wujud wajib Tool atau Model
-    if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
-
-    -- ==========================================
-    -- 🚨 PEMBUNUH NPC JALUR KTP (DARI FOTO DEX LU) 🚨
-    -- ==========================================
-    -- Semua NPC di Blox Fruits masuk folder "NPCs". Kalo objek ini ada di dalem situ, TENDANG!
-    local npcsFolder = Workspace:FindFirstChild("NPCs")
-    if npcsFolder and obj:IsDescendantOf(npcsFolder) then 
+    -- Mengizinkan Tool untuk buah yang dibuang pemain, dan Model untuk buah alami yang spawn di map
+    if not (obj:IsA("Tool") or obj:IsA("Model")) then 
         return false 
     end
-    -- ==========================================
 
-    -- 2. Validasi Nama: Wajib mengandung kata "fruit"
+    -- Memblokir objek dummy/pajangan map yang bernama persis "Fruit"
+    if obj.Name == "Fruit" then 
+        return false 
+    end
+
+    -- Memblokir NPC (semua Model yang memiliki Humanoid)
+    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then 
+        return false 
+    end
+
+    -- Memastikan nama objek memiliki kata "fruit"
     local lowerName = string.lower(obj.Name)
-    if not string.find(lowerName, "fruit") then return false end
+    if not string.find(lowerName, "fruit") then 
+        return false 
+    end
 
-    -- 3. Jaga-jaga (Backup Blacklist Nama): Kalo developer Blox Fruits naro NPC di luar folder
-    local isNPC = string.find(lowerName, "dealer") 
-               or string.find(lowerName, "gacha") 
-               or string.find(lowerName, "cousin")
-               or string.find(lowerName, "remover")
-               or string.find(lowerName, "merchant")
-               or string.find(lowerName, "npc")
-    if isNPC then return false end
-
-    -- 4. Tendang Dummy Hantu
-    if obj.Name == "Fruit" then return false end
-
-    -- 5. Tendang NPC tipe lama (yang masih pake Humanoid)
-    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then return false end
-
-    -- 6. Anti Punya Orang (Backpack / Humanoid)
-    if obj:FindFirstAncestorOfClass("Backpack") then return false end
+    -- Mencegah ESP mendeteksi buah yang ada di dalam tas atau sedang dipegang pemain lain
+    if obj:FindFirstAncestorOfClass("Backpack") then 
+        return false 
+    end
     local ancestorModel = obj:FindFirstAncestorOfClass("Model")
-    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then return false end
+    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then 
+        return false 
+    end
 
-    -- 7. SYARAT FISIK BEBAS
+    -- Memastikan objek memiliki bentuk fisik nyata
     if obj:FindFirstChildWhichIsA("BasePart", true) then 
         return true 
     end
