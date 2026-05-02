@@ -1,115 +1,129 @@
 -- [[ ==========================================
---      CATHUB UI: FLUENT UI (BUG-FREE EDITION)
+--      CATHUB PREMIUM: FLUENT UI WRAPPER
 --    ========================================== ]]
 
 local HttpService = game:GetService("HttpService")
-local Players     = game:GetService("Players")
+local ConfigFile  = "CatHUB_Config.json"
 
--- Setup Global Framework
-_G.Cat        = _G.Cat or {}
-_G.Cat.Player = Players.LocalPlayer
-_G.Cat.Labels = _G.Cat.Labels or {}
+_G.Cat = _G.Cat or {}
+_G.Cat.Settings = _G.Cat.Settings or {}
 
-if not _G.Cat.Settings then 
-    _G.Cat.Settings = {} 
-end
-
+-- // Function: Save Settings
 local function SaveSettings()
     pcall(function()
-        writefile("CatHUB_Config.json", HttpService:JSONEncode(_G.Cat.Settings))
+        writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
     end)
 end
 _G.Cat.SaveSettings = SaveSettings
 
--- Dummy Theme (Wajib ada buat X-Ray manual di Status.lua biar warnanya kaga putih item)
-local Theme = {
-    CardBG    = Color3.fromRGB(30, 30, 30), 
-    SideBG    = Color3.fromRGB(40, 40, 40), 
-    Line      = Color3.fromRGB(60, 60, 60),
-    Text      = Color3.fromRGB(240, 240, 240), 
-    TextDim   = Color3.fromRGB(150, 150, 150), 
-    CatPurple = Color3.fromRGB(170, 85, 255)
-}
-
 -- ==========================================
--- 1. LOAD ENGINE FLUENT DARI WEB
+-- 1. LOAD FLUENT UI LIBRARY
 -- ==========================================
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 
 -- ==========================================
--- 2. INISIALISASI WINDOW FLUENT (PAKAI PARAMETER YANG BENAR)
+-- 2. CREATE MAIN WINDOW
 -- ==========================================
 local Window = Fluent:CreateWindow({
-    Title = "CatHUB | Blox Fruits",
-    Size = UDim2.new(0, 500, 0, 350),
-    Theme = "Dark",
-    AcrylicBackdrop = false -- Hanya ini yang aman di parameter resminya
+    Title       = "CatHUB",
+    SubTitle    = "[Freemium] Blox Fruits",
+    TabWidth    = 160,
+    Size        = UDim2.fromOffset(580, 460),
+    Acrylic     = true, -- Biarkan true biar efek kacanya tetap ada
+    Theme       = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
 -- ==========================================
--- 3. OBAT KAMERA BUG (HANCURKAN VIEWPORT SETELAH UI JADI)
+-- 3. OBAT BUG SKILL KE BELAKANG (MENGHANCURKAN VIEWPORT PENCURI KAMERA)
 -- ==========================================
--- Karena Fluent resmi kaga ada tombol matikan Viewport, kita paksa hancurkan
--- ViewportFrame-nya setelah 3 detik supaya kaga mencuri kamera game lagi.
 task.spawn(function()
-    task.wait(3) -- Tunggu Fluent selesai loading semua UI-nya dulu
+    task.wait(3) -- Wajib tunggu 3 detik biar Fluent selesai bikin UI 3D-nya dulu
     local coreGui = game:GetService("CoreGui")
     local gui = coreGui:FindFirstChildWhichIsA("ScreenGui")
     if gui then
         for _, obj in ipairs(gui:GetDescendants()) do
             if obj:IsA("ViewportFrame") then
-                -- HANCURKAN KOTAK 3D YANG MEMBUAT SKILL LU NYANGKUT KE BELAKANG
-                obj:Destroy()
+                obj:Destroy() -- Hancurkan si pencuri kamera
             end
         end
     end
 end)
 
 -- ==========================================
--- 4. SISTEM PROXY CERDAS (BIAR STATUS LUA TIDAK ERROR)
+-- 4. WRAPPER ENGINE (PENERJEMAH SCRIPT LAMA LU)
 -- ==========================================
-local LabelProxy = {}
-LabelProxy.__index = function(self, key)
-    if key == "Text" then return self._ref.Text end
-end
-LabelProxy.__newindex = function(self, key, value)
-    if key == "Text" then self._ref:Set(tostring(value)) end
+local Tabs = {}
+
+local function CreateTab(name, isFirst)
+    if not Tabs[name] then
+        Tabs[name] = Window:AddTab({ Title = name, Icon = "" })
+    end
+    if isFirst then
+        Window:SelectTab(1)
+    end
+    return Tabs[name]
 end
 
-local function CreateProxy(label) 
-    return setmetatable({_ref = label}, LabelProxy) 
+local function CreateSection(parentTab, text)
+    parentTab:AddSection(text)
 end
 
--- ==========================================
--- 5. KABEL SAMBUNGAN (MENERJEMAHKAN BAHASA LAMA KE FLUENT)
--- ==========================================
-_G.Cat.UI = {
-    Theme         = Theme,
-    SaveSettings  = SaveSettings,
-    
-    CreateTab = function(name, isFirst)
-        return Window:createTab(name)
-    end,
-    
-    CreateSection = function(parent, text)
-        return parent:createSection(text)
-    end,
-    
-    CreateToggle = function(parent, text, desc, stateRef, callback)
-        local toggle = parent:createToggle(text, {}, function(state)
+local function CreateToggle(parentTab, text, description, stateRef, callback)
+    local toggle = parentTab:AddToggle("T_"..text, {
+        Title       = text,
+        Description = description or "",
+        Default     = stateRef or false,
+        Callback    = function(state)
             if callback then callback(state) end
             SaveSettings()
-        end)
-        if stateRef then 
-            toggle:Set(stateRef) 
         end
-        return toggle
-    end,
+    })
+    return toggle
+end
+
+local function CreateLabel(parentTab, text, description)
+    local paragraph = parentTab:AddParagraph({
+        Title   = text,
+        Content = description or ""
+    })
+
+    -- Magic Trick Meta-table biar Status.lua tetap bisa pakai .Text = "..."
+    local fakeLabel = {}
+    setmetatable(fakeLabel, {
+        __newindex = function(t, k, v)
+            if k == "Text" then
+                paragraph:SetTitle(v)
+            end
+        end
+    })
     
-    CreateLabel = function(parent, text, desc)
-        local label = parent:createLabel(text or "")
-        return CreateProxy(label)
-    end
+    return fakeLabel
+end
+
+-- ==========================================
+-- 5. PRE-INITIALIZE DEFAULT TABS
+-- ==========================================
+CreateTab("Status", true)
+CreateTab("Auto Farm", false)
+CreateTab("Devil Fruits", false)
+CreateTab("Misc", false)
+
+-- ==========================================
+-- 6. EXPORT TO GLOBAL FRAMEWORK
+-- ==========================================
+_G.Cat.UI = {
+    CreateTab     = CreateTab,
+    CreateSection = CreateSection,
+    CreateToggle  = CreateToggle,
+    CreateLabel   = CreateLabel,
+    Theme         = {},
+    SaveSettings  = SaveSettings
 }
 
-warn("[CatHUB] Fluent UI Loaded Successfully. Camera Bug Fixed.")
+-- Notifikasi kalau berhasil
+Fluent:Notify({
+    Title   = "CatHUB Premium",
+    Content = "UI Framework Loaded Successfully.",
+    Duration = 5
+})
