@@ -50,42 +50,30 @@ local function GetPosition(fruit)
 end
 
 local function IsFruit(obj)
-    -- Mengizinkan Tool untuk buah yang dibuang pemain, dan Model untuk buah alami yang spawn di map
-    if not (obj:IsA("Tool") or obj:IsA("Model")) then 
+    -- TAMENG 1: HANYA YANG BENER-BENER TOOL
+    -- Ini bakal langsung nolak Model Gacha, Model NPC, Model Kosong "Fruits"
+    if not obj:IsA("Tool") then 
         return false 
     end
 
-    -- Memblokir objek dummy/pajangan map yang bernama persis "Fruit"
-    if obj.Name == "Fruit" then 
+    -- TAMENG 2: WAJIB PUNYA FISIK HANDLE
+    -- Tool valid di Roblox WAJIB punya Handle. Kalau kaga ada, berarti mayat.
+    if not obj:FindFirstChild("Handle") then 
         return false 
     end
 
-    -- Memblokir NPC (semua Model yang memiliki Humanoid)
-    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then 
-        return false 
-    end
-
-    -- Memastikan nama objek memiliki kata "fruit"
+    -- TAMENG 3: PASTIKAN NAMANYA BUAH
     local lowerName = string.lower(obj.Name)
     if not string.find(lowerName, "fruit") then 
         return false 
     end
 
-    -- Mencegah ESP mendeteksi buah yang ada di dalam tas atau sedang dipegang pemain lain
+    -- TAMENG 4: JANGAN DETEKSI BUAH YANG UDAH MASUK TAS (BACKPACK)
     if obj:FindFirstAncestorOfClass("Backpack") then 
         return false 
     end
-    local ancestorModel = obj:FindFirstAncestorOfClass("Model")
-    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then 
-        return false 
-    end
 
-    -- Memastikan objek memiliki bentuk fisik nyata
-    if obj:FindFirstChildWhichIsA("BasePart", true) then 
-        return true 
-    end
-
-    return false
+    return true
 end
 
 -- ==========================================
@@ -141,7 +129,7 @@ _G.Cat.ESP = {
     Data = Data,
     Pos  = GetPosition,
 
-    GetNearestFruit = function()
+        GetNearestFruit = function()
         local closest = nil
         local minDist = math.huge
         local char    = Me.Character
@@ -150,17 +138,25 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
-            if fruit and fruit:IsDescendantOf(Workspace) then
-                local p = GetPosition(fruit)
-                if p then
-                    local d = (p - hrp.Position).Magnitude
-                    if d < minDist then
-                        closest = fruit
-                        minDist = d
-                    end
-                end
-            else
+            -- SISTEM DETOX MAYAT: Kalau ternyata Handle-nya ilang, hapus paksa dari memori!
+            if not fruit or not fruit.Parent or not fruit:FindFirstChild("Handle") then
                 RemoveESP(fruit)
+                continue
+            end
+
+            -- FILTER GROUND ONLY: Hanya ambil buah yang Parent-nya LANGSUNG Workspace.
+            -- Ini yang bikin lu kaga nge-Tween ke NPC atau buah yang lagi dipegang orang.
+            if fruit.Parent ~= Workspace then
+                continue
+            end
+
+            local p = GetPosition(fruit)
+            if p then
+                local d = (p - hrp.Position).Magnitude
+                if d < minDist then
+                    closest = fruit
+                    minDist = d
+                end
             end
         end
         return closest
@@ -180,7 +176,8 @@ task.spawn(function()
         local myPos = hrp.Position
 
         for fruit, entry in pairs(Data) do
-            if not fruit or not fruit:IsDescendantOf(Workspace) then
+            -- DETOX REALTIME: Kalau mayat, bersihkan dari UI juga
+            if not fruit or not fruit.Parent or not fruit:FindFirstChild("Handle") then
                 RemoveESP(fruit)
                 continue
             end
