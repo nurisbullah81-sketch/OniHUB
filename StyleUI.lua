@@ -1,5 +1,5 @@
 -- [[ ==========================================
---      CATHUB PREMIUM: FLUENT UI (ANTI-HOP CRASH)
+--      CATHUB PREMIUM: FLUENT UI (FINAL FIX)
 --    ========================================== ]]
 
 local HttpService = game:GetService("HttpService")
@@ -20,7 +20,7 @@ _G.Cat.SaveSettings = SaveSettings
 -- 1. LOAD FLUENT DENGAN SISTEM PAKSAAN (ANTI GAGAL)
 -- ==========================================
 local Fluent = nil
-local maxRetry = 5 -- Coba download maksimal 5 kali
+local maxRetry = 5
 local retry = 0
 
 while not Fluent and retry < maxRetry do
@@ -30,7 +30,7 @@ while not Fluent and retry < maxRetry do
     
     if not success or not Fluent then
         retry = retry + 1
-        task.wait(1) -- Tunggu 1 detik, coba lagi
+        task.wait(1)
     end
 end
 
@@ -51,12 +51,25 @@ if Fluent then
         MinimizeKey = Enum.KeyCode.LeftControl
     })
 
-    -- Obat Bug Skill ke belakang
+    -- ==========================================
+    -- 3. OBAT BUG SKILL KE BELAKANG & POSISI NYANGKUT
+    -- ==========================================
     task.spawn(function()
-        task.wait(3)
+        task.wait(2) 
         local coreGui = game:GetService("CoreGui")
         local gui = coreGui:FindFirstChildWhichIsA("ScreenGui")
         if gui then
+            -- 3A: PAKSA UI KELUAR DARI POJOK KE TENGAH LAYAR
+            for _, obj in ipairs(gui:GetDescendants()) do
+                if obj:IsA("Frame") and math.abs(obj.Size.X.Offset - 580) < 10 and math.abs(obj.Size.Y.Offset - 460) < 10 then
+                    obj.AnchorPoint = Vector2.new(0.5, 0.5)
+                    obj.Position = UDim2.new(0.5, -290, 0.5, -230)
+                    obj.ClipsDescendants = false 
+                    break
+                end
+            end
+            
+            -- 3B: HANCURKAN VIEWPORT PENCURI KAMERA
             for _, obj in ipairs(gui:GetDescendants()) do
                 if obj:IsA("ViewportFrame") then
                     obj:Destroy()
@@ -65,18 +78,16 @@ if Fluent then
         end
     end)
 else
-    -- NASIB 2: Gagal download karena lag Hop, Gunakan UI Dummy
-    -- Tujuannya: MEMBIARKAN ESP DAN AUTO HOP TETAP JALAN WALAUPUN TANPA LAYAR UI
+    -- NASIB 2: Gagal download, Gunakan mode tanpa UI sementara
     warn("[CatHUB] Fluent UI gagal load saat Hop. Menggunakan mode tanpa UI sementara...")
 end
 
 -- ==========================================
--- 3. WRAPPER ENGINE (DENGAN PELINDUNG ERROR)
+-- 4. WRAPPER ENGINE (DENGAN PELINDUNG ERROR)
 -- ==========================================
 local Tabs = {}
 
 local function CreateTab(name, isFirst)
-    -- Cegah error kalau UI memang gagal load
     if not Window then return {} end
     
     if not Tabs[name] then
@@ -110,7 +121,6 @@ end
 
 local function CreateLabel(parentTab, text, description)
     if not Window then 
-        -- Kembalikan objek palsu yang bisa ditulis .Text supaya Status.lua kaga error
         return { Text = text or "" } 
     end
 
@@ -132,7 +142,7 @@ local function CreateLabel(parentTab, text, description)
 end
 
 -- ==========================================
--- 4. PRE-INITIALIZE DEFAULT TABS
+-- 5. PRE-INITIALIZE DEFAULT TABS
 -- ==========================================
 CreateTab("Status", true)
 CreateTab("Auto Farm", false)
@@ -140,7 +150,7 @@ CreateTab("Devil Fruits", false)
 CreateTab("Misc", false)
 
 -- ==========================================
--- 5. EXPORT GLOBAL (AMAN BAIK UI NYALA ATAU GAGAL)
+-- 6. EXPORT GLOBAL (AMAN BAIK UI NYALA ATAU GAGAL)
 -- ==========================================
 _G.Cat.UI = {
     CreateTab     = CreateTab,
@@ -155,7 +165,7 @@ if Fluent then
     pcall(function()
         Fluent:Notify({
             Title   = "CatHUB Premium",
-            Content = "UI & Anti-Camera Bug Loaded.",
+            Content = "UI, Anti-Camera Bug & Position Loaded.",
             Duration = 3
         })
     end)
