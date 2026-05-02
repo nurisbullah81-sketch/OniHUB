@@ -194,25 +194,19 @@ task.spawn(function()
             local success, err = pcall(function()
                 local fruitCount = 0
 
+                -- Scan Data ESP PINTER (Anti Ketipu Pemain Lain)
                 if _G.Cat.ESP and _G.Cat.ESP.Data then
                     for fruit, _ in pairs(_G.Cat.ESP.Data) do
                         if fruit and fruit.Parent then
-                            -- FILTER CERDAS: Abaikan kalau buah dipegang player lain
-                            -- Di Blox Fruits, buah yang diambil jadi Tool di Character.
-                            local isHeldByOther = false
+                            -- 1. Cek apakah buah lagi dipegang orang (Ada Humanoid di sekitarnya)
+                            local ownerChar = fruit:FindFirstAncestorWhichIsA("Model")
+                            local isHeld = ownerChar and ownerChar:FindFirstChild("Humanoid") ~= nil
                             
-                            if fruit:IsA("Tool") then
-                                isHeldByOther = true
-                            else
-                                -- Cek kalau instance buah berada di dalam Character player lain
-                                local char = fruit:FindFirstAncestorOfClass("Model")
-                                if char and Players:GetPlayerFromCharacter(char) then
-                                    isHeldByOther = true
-                                end
-                            end
+                            -- 2. Cek apakah buah ada di dalem tas orang
+                            local isInBag = fruit:FindFirstAncestorWhichIsA("Backpack") ~= nil
 
-                            -- Kalau buah nggak dipegang orang, baru itung sebagai buah valid
-                            if not isHeldByOther then
+                            -- FILTER MUTLAK: Hitung HANYA JIKA buah bener-bener jatuh di tanah bebas!
+                            if fruit:IsDescendantOf(workspace) and not isHeld and not isInBag then
                                 fruitCount = fruitCount + 1
                             end
                         end
