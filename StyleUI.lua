@@ -1,12 +1,15 @@
+-- PASANG REM: Nunggu karakter lu beneran masuk server dulu!
+local Players = game:GetService("Players")
+repeat task.wait() until Players.LocalPlayer
+
 -- [[ ==========================================
 --      ONIHUB: STYLE UI (MACLIB FRAMEWORK)
 --      100% HAK MILIK SENDIRI - ANTI NEBENG
 --    ========================================== ]]
 
--- Path udah gue samain persis sama gaya loadstring lu!
 local MyRepo = "https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/"
 
--- Bikin Safe Loader biar ketauan errornya kalo gagal narik
+-- Bikin Safe Loader
 local success, response = pcall(function()
     return game:HttpGet(MyRepo .. "Maclib.lua")
 end)
@@ -26,7 +29,7 @@ local Window = Maclib:Window({
     Size = UDim2.fromOffset(600, 400),
     DragStyle = 1, 
     DisabledWindowControls = {},
-    ShowUserInfo = true, 
+    ShowUserInfo = true, -- SEKARANG INI UDAH AMAN KARENA KARAKTER UDAH NUNGGU DULU
     Keybind = Enum.KeyCode.RightControl, 
     AcrylicBlur = true, 
 })
@@ -60,7 +63,6 @@ local ToggleFarm = FarmLeft:Toggle({
     Default = false,
     Callback = function(State)
         print("Auto Farm nyala?: ", State)
-        -- Nanti logic script auto farm lu nyambung ke sini
     end
 })
 
@@ -86,7 +88,6 @@ _G.Oni.UI = {
         DevilFruits = TabFruits,
         Misc     = TabMisc
     },
-    -- Daftarin Label & Toggle biar bisa di-update dari Status.lua
     Labels = {
         Level = LabelLevel,
         Beli  = LabelBeli
@@ -96,5 +97,4 @@ _G.Oni.UI = {
     }
 }
 
--- Pilih Tab Status otomatis pas pertama buka
 TabStatus:Select()
