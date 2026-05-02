@@ -60,7 +60,7 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local Theme = {
     -- Background
     MainBG = Color3.fromRGB(0, 0, 0),
-    SideBG = Color3.fromRGB(24, 24, 24),
+    SideBG = Color3.fromRGB(255, 0, 0),
     TopBG  = Color3.fromRGB(123, 255, 0),
     PageBG = Color3.fromRGB(0, 255, 170),
 
