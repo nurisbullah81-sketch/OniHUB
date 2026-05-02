@@ -1,82 +1,72 @@
--- [[ ==========================================
---      CATHUB UI: MODERN LINORIA LIBRARY
---    ========================================== ]]
-
+-- [[ CATHUB PREMIUM: KAVO UI INTEGRATION ]]
 local HttpService = game:GetService("HttpService")
-local Players     = game:GetService("Players")
+local Players = game:GetService("Players")
 
-_G.Cat        = _G.Cat or {}
+_G.Cat = _G.Cat or {}
 _G.Cat.Player = Players.LocalPlayer
 _G.Cat.Labels = _G.Cat.Labels or {}
 if not _G.Cat.Settings then _G.Cat.Settings = {} end
 
-local ConfigFile = "CatHUB_Config.json"
 local function SaveSettings()
-    pcall(function() writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings)) end)
+    pcall(function()
+        writefile("CatHUB_Config.json", HttpService:JSONEncode(_G.Cat.Settings))
+    end)
 end
 _G.Cat.SaveSettings = SaveSettings
 
--- 1. Download UI Modern Linoria langsung dari GitHub (Tanpa perlu simpan ribuan baris)
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/vortexminer/linoria-lib/main/source.lua"))()
+-- Theme dummy (Wajib ada buat X-Ray manual di Status.lua)
+local Theme = {
+    CardBG = Color3.fromRGB(30, 30, 30), SideBG = Color3.fromRGB(40, 40, 40), Line = Color3.fromRGB(60, 60, 60),
+    Text = Color3.fromRGB(240, 240, 240), TextDim = Color3.fromRGB(150, 150, 150), CatPurple = Color3.fromRGB(170, 85, 255)
+}
 
-local Window = Library:CreateWindow({
+-- 1. Load Engine Kavo UI langsung dari web (Aman dari Cloudflare)
+local Kavo = loadstring(game:HttpGet("https://github.com/xHeptc/Kavo-UI-Library/blob/main/source.lua"))()
+
+-- 2. Bikin Window Kavo (Ubah HeaderColor kalau mau ganti warna tema)
+local Window = Kavo.CreateWindow({
     Title = "CatHUB | Blox Fruits",
-    Center = true,
-    AutoShow = true,
-    TabWidth = 130,
-    Size = UDim2.new(0, 500, 0, 350),
-    AcrylicBackdrop = true, -- Efek kaca modern
-    Theme = "Dark"
+    HeaderColor = Color3.fromRGB(100, 149, 237), -- Biru Premium
+    Color = Color3.fromRGB(25, 25, 25),
+    HideKey = Enum.KeyCode.RightControl
 })
 
--- 2. Sistem Proxy Cerdas (Menipu Status.lua biar tetap pakai .Text = "...")
+-- 3. Proxy System Cerdas (Menipu Status.lua supaya .Text = "..." tetap jalan)
 local LabelProxy = {}
 LabelProxy.__index = function(self, key)
-    if key == "Text" then return self._ref.Value end
+    if key == "Text" then return self._ref.Text end
 end
 LabelProxy.__newindex = function(self, key, value)
-    if key == "Text" then self._ref:SetText(tostring(value)) end
+    if key == "Text" then self._ref:Set(tostring(value)) end
 end
 local function CreateProxy(label) return setmetatable({_ref = label}, LabelProxy) end
 
--- 3. Dummy Theme (Khusus buat X-Ray manual di Status.lua)
-local Theme = {
-    CardBG = Color3.fromRGB(30, 30, 30),
-    SideBG = Color3.fromRGB(40, 40, 40),
-    Line   = Color3.fromRGB(60, 60, 60),
-    Text   = Color3.fromRGB(240, 240, 240),
-    TextDim = Color3.fromRGB(150, 150, 150),
-    CatPurple = Color3.fromRGB(170, 85, 255)
-}
-
--- 4. KABEL SAMBUNGAN (Menerjemahkan perintah lama ke mesin baru Linoria)
+-- 4. KABEL SAMBUNGAN (Menerjemahkan bahasa CatHUB ke Kavo)
 _G.Cat.UI = {
     Theme = Theme,
     SaveSettings = SaveSettings,
     
     CreateTab = function(name, isFirst)
-        return Window:AddTab(name)
+        return Window:createTab(name)
     end,
     
     CreateSection = function(parent, text)
-        return parent:AddSection(text)
+        return parent:createSection(text)
     end,
     
     CreateToggle = function(parent, text, desc, stateRef, callback)
-        return parent:AddToggle(text, {
-            Default = stateRef or false,
-            Tooltip = desc or ""
-        }, function(state)
+        local toggle = parent:createToggle(text, {}, function(state)
             if callback then callback(state) end
             SaveSettings()
         end)
+        if stateRef then toggle:Set(stateRef) end
+        return toggle
     end,
     
     CreateLabel = function(parent, text, desc)
-        -- Linoria mengembalikan objek unik, jadi kita bungkus dengan Proxy
-        local label = parent:AddLabel(text or "")
-        return CreateProxy(label) 
+        local label = parent:createLabel(text or "")
+        return CreateProxy(label)
     end
 }
 
-warn("[CatHUB] Modern Linoria UI Integrated.")
+warn("[CatHUB] Premium Kavo UI Successfully Loaded.")
