@@ -25,7 +25,7 @@ _G.Cat.Theme = {
 -- ==========================================
 -- 1. LOAD FLUENT DARI GITHUB LU SENDIRI
 -- ==========================================
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81/OniHUB/main/Fluent.lua"))()
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/main/Fluent.lua"))()
 
 if not Fluent then
     warn("[CatHUB] Gagal load Fluent dari GitHub!")
