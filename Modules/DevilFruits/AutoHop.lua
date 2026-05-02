@@ -202,16 +202,15 @@ task.spawn(function()
 
         -- // Main Logic
         if Settings.AutoHop and State.IsGameReady then
-                        local success, err = pcall(function()
+            local success, err = pcall(function()
                 local fruitCount = 0
 
                 if _G.Cat.ESP and _G.Cat.ESP.Data then
                     for fruit, _ in pairs(_G.Cat.ESP.Data) do
                         pcall(function()
-                            -- Hanya hitung yang punya Handle, ada di Workspace (langsung/wrapper), dan KAGA dipegang orang
-                            if fruit and fruit:FindFirstChild("Handle") and fruit:IsDescendantOf(workspace) then
+                            -- Cari BasePart APAPUN, bukan Handle
+                            if fruit and fruit:FindFirstChildWhichIsA("BasePart", true) and fruit:IsDescendantOf(workspace) then
                                 local ancestor = fruit:FindFirstAncestorOfClass("Model")
-                                -- Tolak kalau ancestor-nya punya Humanoid (berarti lagi dipegang pemain)
                                 if not (ancestor and ancestor:FindFirstChildOfClass("Humanoid")) then
                                     fruitCount = fruitCount + 1
                                 end
