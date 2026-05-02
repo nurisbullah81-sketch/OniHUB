@@ -50,29 +50,19 @@ local function GetPosition(fruit)
 end
 
 local function IsFruit(obj)
-    -- TAMENG 1: HANYA YANG BENER-BENER TOOL
-    -- Ini bakal langsung nolak Model Gacha, Model NPC, Model Kosong "Fruits"
-    if not obj:IsA("Tool") then 
-        return false 
-    end
-
-    -- TAMENG 2: WAJIB PUNYA FISIK HANDLE
-    -- Tool valid di Roblox WAJIB punya Handle. Kalau kaga ada, berarti mayat.
-    if not obj:FindFirstChild("Handle") then 
-        return false 
-    end
-
-    -- TAMENG 3: PASTIKAN NAMANYA BUAH
+    -- Hanya terima Tool (Tolak Model NPC/Gacha)
+    if not obj:IsA("Tool") then return false end
+    
+    -- Harus punya fisik Handle
+    if not obj:FindFirstChild("Handle") then return false end
+    
+    -- Harus ada kata "fruit" di namanya
     local lowerName = string.lower(obj.Name)
-    if not string.find(lowerName, "fruit") then 
-        return false 
-    end
-
-    -- TAMENG 4: JANGAN DETEKSI BUAH YANG UDAH MASUK TAS (BACKPACK)
-    if obj:FindFirstAncestorOfClass("Backpack") then 
-        return false 
-    end
-
+    if not string.find(lowerName, "fruit") then return false end
+    
+    -- Jangan deteksi kalau masuk Backpack
+    if obj:FindFirstAncestorOfClass("Backpack") then return false end
+    
     return true
 end
 
@@ -129,7 +119,7 @@ _G.Cat.ESP = {
     Data = Data,
     Pos  = GetPosition,
 
-        GetNearestFruit = function()
+            GetNearestFruit = function()
         local closest = nil
         local minDist = math.huge
         local char    = Me.Character
@@ -138,16 +128,20 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
-            -- SISTEM DETOX MAYAT: Kalau ternyata Handle-nya ilang, hapus paksa dari memori!
+            -- DETOX MAYAT: Kalau Handle-nya ilang, hapus paksa dari memori!
             if not fruit or not fruit.Parent or not fruit:FindFirstChild("Handle") then
                 RemoveESP(fruit)
                 continue
             end
 
-            -- FILTER GROUND ONLY: Hanya ambil buah yang Parent-nya LANGSUNG Workspace.
-            -- Ini yang bikin lu kaga nge-Tween ke NPC atau buah yang lagi dipegang orang.
-            if fruit.Parent ~= Workspace then
-                continue
+            -- FILTER GROUND ONLY: 
+            -- 1. Harus masih di Workspace (Bisa langsung, atau di dalam Model Wrapper Gacha)
+            -- 2. TAPI TOLAK kalau dia lagi dipegang pemain (Model yang punya Humanoid)
+            if not fruit:IsDescendantOf(workspace) then continue end
+            
+            local ancestorModel = fruit:FindFirstAncestorOfClass("Model")
+            if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then
+                continue -- Ini buah yang lagi dipegang orang, skip
             end
 
             local p = GetPosition(fruit)
@@ -201,9 +195,30 @@ end)
 -- ==========================================
 -- 6. WORKSPACE MONITORING & SCAN
 -- ==========================================
+
+-- Fast Reject: Langsung tolak kalau objek bukan Tool biar kaga makan resource
 Workspace.DescendantAdded:Connect(function(obj)
+    if not obj:IsA("Tool") then return end
+    
     task.delay(0.5, function()
-        if IsFruit(obj) and not Data[obj] then AddESP(obj) end
+        pcall(function()
+            -- Cek lagi apakah dia masih valid setelah 0.5 detik
+            if not obj:IsA("Tool") or not obj.Parent then return end
+            
+            -- Sihir Anti-Gacha Lag: Tunggu Handle muncul maksimal 2 detik.
+            -- Ini yang bikin buah drop Gacha yang lambat loading bisa kebaca!
+            local handle = obj:WaitForChild("Handle", 2)
+            if not handle then return end 
+            
+            local lowerName = string.lower(obj.Name)
+            if not string.find(lowerName, "fruit") then return end
+            
+            if obj:FindFirstAncestorOfClass("Backpack") then return end
+            
+            if not Data[obj] then
+                AddESP(obj)
+            end
+        end)
     end)
 end)
 
@@ -211,39 +226,7 @@ Workspace.DescendantRemoving:Connect(function(obj)
     if Data[obj] then RemoveESP(obj) end
 end)
 
+-- Scan awal pas script baru jalan
 for _, obj in ipairs(Workspace:GetDescendants()) do
     if IsFruit(obj) and not Data[obj] then AddESP(obj) end
 end
-
--- ==========================================
--- 7. SAFETY SCANNER (DROP WRAPPER FIX)
--- ==========================================
--- Ngecek setiap 3 detik kalau ada buah yang terjebak di dalam Model hasil drop sistem/pemain
-task.spawn(function()
-    while task.wait(3) do
-        pcall(function()
-            -- Cek semua anak langsung di Workspace
-            for _, potentialWrapper in ipairs(Workspace:GetChildren()) do
-                -- Skip kalau bukan Model, atau kalau itu ProxyPart milik kita, atau kalau dia udah ada di Data
-                if potentialWrapper:IsA("Model") and potentialWrapper.Name ~= "CatHub_Proxy" and not Data[potentialWrapper] then
-                    -- Kalau Model ini punya anak yang bernama mengandung "Fruit" dan itu Tool
-                    for _, child in ipairs(potentialWrapper:GetChildren()) do
-                        if child:IsA("Tool") and not Data[child] then
-                            -- Paksa masuk ke filter utama
-                            if IsFruit(child) then
-                                AddESP(child)
-                            end
-                        end
-                    end
-                end
-                
-                -- Fallback langsung: Kalau ada Tool yang ke-drop langsung ke Workspace tanpa Model
-                if potentialWrapper:IsA("Tool") and not Data[potentialWrapper] then
-                    if IsFruit(potentialWrapper) then
-                        AddESP(potentialWrapper)
-                    end
-                end
-            end
-        end)
-    end
-end)
