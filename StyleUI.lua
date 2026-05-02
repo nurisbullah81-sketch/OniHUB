@@ -62,7 +62,7 @@ local Theme = {
     MainBG = Color3.fromRGB(24, 24, 24), -- !background tengah kanan
     SideBG = Color3.fromRGB(19, 19, 19),
     TopBG  = Color3.fromRGB(19, 19, 19),
-    PageBG = Color3.fromRGB(17, 17, 17), -- ! Main Card kanan
+    PageBG = Color3.fromRGB(41, 41, 41), -- ! Main Card kanan
 
     -- Navigation
     TabOn   = Color3.fromRGB(255, 0, 0),
