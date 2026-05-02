@@ -143,8 +143,14 @@ task.spawn(function()
             -- Fruit Count Sync
             if _G.Cat.ESP and _G.Cat.ESP.Data then
                 local count = 0
-                for _, _ in pairs(_G.Cat.ESP.Data) do
-                    count = count + 1
+                for fruit, _ in pairs(_G.Cat.ESP.Data) do
+                    -- HANYA NGITUNG BUAH YANG NGANGGUR DI TANAH
+                    if fruit and fruit.Parent then
+                        local isHeld = _G.Cat.ESP.IsHeldByPlayer and _G.Cat.ESP.IsHeldByPlayer(fruit)
+                        if not isHeld then
+                            count = count + 1
+                        end
+                    end
                 end
                 Labels.Fruits.Text = "Spawned Fruits: " .. tostring(count)
             else
