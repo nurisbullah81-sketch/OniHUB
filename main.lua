@@ -14,7 +14,7 @@ end
 _G.Cat.SaveSettings = SaveSettings
 
 -- 1. Load Fluent dari web
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81-sketch/OniHUB/refs/heads/main/StyleUI.lua"))()
 
 -- 2. Buat Window (TANPA Acrylic = TANPA BUG KAMERA)
 local Window = Fluent:CreateWindow({
