@@ -214,3 +214,36 @@ end)
 for _, obj in ipairs(Workspace:GetDescendants()) do
     if IsFruit(obj) and not Data[obj] then AddESP(obj) end
 end
+
+-- ==========================================
+-- 7. SAFETY SCANNER (DROP WRAPPER FIX)
+-- ==========================================
+-- Ngecek setiap 3 detik kalau ada buah yang terjebak di dalam Model hasil drop sistem/pemain
+task.spawn(function()
+    while task.wait(3) do
+        pcall(function()
+            -- Cek semua anak langsung di Workspace
+            for _, potentialWrapper in ipairs(Workspace:GetChildren()) do
+                -- Skip kalau bukan Model, atau kalau itu ProxyPart milik kita, atau kalau dia udah ada di Data
+                if potentialWrapper:IsA("Model") and potentialWrapper.Name ~= "CatHub_Proxy" and not Data[potentialWrapper] then
+                    -- Kalau Model ini punya anak yang bernama mengandung "Fruit" dan itu Tool
+                    for _, child in ipairs(potentialWrapper:GetChildren()) do
+                        if child:IsA("Tool") and not Data[child] then
+                            -- Paksa masuk ke filter utama
+                            if IsFruit(child) then
+                                AddESP(child)
+                            end
+                        end
+                    end
+                end
+                
+                -- Fallback langsung: Kalau ada Tool yang ke-drop langsung ke Workspace tanpa Model
+                if potentialWrapper:IsA("Tool") and not Data[potentialWrapper] then
+                    if IsFruit(potentialWrapper) then
+                        AddESP(potentialWrapper)
+                    end
+                end
+            end
+        end)
+    end
+end)
