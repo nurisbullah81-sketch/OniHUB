@@ -162,15 +162,6 @@ task.spawn(function()
         local hum  = char and char:FindFirstChild("Humanoid")
         if not hrp or not hum then continue end
 
-        -- 🚨 PERBAIKAN SENSOR (BIANG KEROK GLITCH LU) 🚨
-        -- Kita cuma nunggu napak bumi KALAU LAGI KAGA TWEEN!
-        -- Kalo udah terbang mah biarin aja dia di udara, JANGAN DI-STOP!
-        if not isTweening then
-            if math.abs(hrp.AssemblyLinearVelocity.Y) > 5 or hum.FloorMaterial == Enum.Material.Air then
-                continue -- Jangan mulai terbang kalo belom bener-bener napak pas spawn
-            end
-        end
-
         -- Cari target buah terdekat
         local fruit = ESP.GetNearestFruit()
         if not fruit then
