@@ -140,14 +140,11 @@ task.spawn(function()
                 Labels.Moon.Text = "Moon: -"
             end
 
-                        -- Fruit Count Sync
+            -- Fruit Count Sync
             if _G.Cat.ESP and _G.Cat.ESP.Data then
                 local count = 0
-                for fruit, _ in pairs(_G.Cat.ESP.Data) do
-                    -- FILTER CERDAS: Hanya itung buah yang VALID dan nggak dipegang player lain
-                    if fruit and fruit.Parent and _G.Cat.ESP.IsHeldByPlayer and not _G.Cat.ESP.IsHeldByPlayer(fruit) then
-                        count = count + 1
-                    end
+                for _, _ in pairs(_G.Cat.ESP.Data) do
+                    count = count + 1
                 end
                 Labels.Fruits.Text = "Spawned Fruits: " .. tostring(count)
             else
@@ -478,4 +475,4 @@ RefreshBtn.MouseButton1Click:Connect(RefreshList)
 task.spawn(function()
     task.wait(1)
     RefreshList()
-end)
+end) 
