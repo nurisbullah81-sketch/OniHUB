@@ -53,40 +53,43 @@ local function GetPosition(fruit)
 end
 
 -- // ==========================================
--- // FUNGSI ESP BUAH (METODE THUNDERZ / REDZ HUB)
+-- // FUNGSI ESP BUAH (ANTI-GHOST + BISA BACA BUAH JATUH/SPAWN)
 -- // ==========================================
 local function IsFruit(obj)
-    -- 1. BUAH ASLI ITU WAJIB BERWUJUD "TOOL"
-    -- Ini otomatis nendang semua NPC, Hantu Workspace, dan Pajangan Map!
-    if not obj:IsA("Tool") then 
+    if not obj then return false end
+    
+    -- 1. BISA TOOL (Dalem inventory) ATAU MODEL (Jatuh/Spawn di map)
+    if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
+
+    -- 2. TENDANG NPC: Kalo punya Humanoid = bukan buah
+    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then 
         return false 
     end
 
-    -- 2. WAJIB PUNYA FISIK (Handle)
-    -- Buah asli pasti punya Handle buat dipegang.
-    if not obj:FindFirstChild("Handle") then 
-        return false 
-    end
+    -- 3. TENDANG DUMMY/GHOST: Nama kaga boleh cuma "Fruit" doang (Hasil interogasi Dex)
+    if obj.Name == "Fruit" then return false end
 
-    -- 3. VALIDASI NAMA STANDAR
-    -- Namanya wajib mengandung kata "fruit" (Biar pedang/senjata kaga keikut)
-    if not string.find(string.lower(obj.Name), "fruit") then 
-        return false 
-    end
+    -- 4. VALIDASI NAMA STANDAR
+    local lowerName = string.lower(obj.Name)
+    if not string.find(lowerName, "fruit") then return false end
 
-    -- 4. ANTI BUAH DI PEGANG ORANG (Kaga usah pake looping rumit)
-    -- Kalo Tool-nya ada di dalem Backpack tas orang, TENDANG!
-    if obj:FindFirstAncestorOfClass("Backpack") then 
-        return false 
-    end
-    -- Kalo Tool-nya nempel di Karakter (Model ber-Humanoid) orang, TENDANG!
+    -- 5. ANTI BUAH DI PEGANG ORANG (Kalo nyari di Workspace, jangan ambil punya orang)
+    if obj:FindFirstAncestorOfClass("Backpack") then return false end
     local ancestorModel = obj:FindFirstAncestorOfClass("Model")
     if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then 
         return false 
     end
 
-    -- Kalo lolos semua ini, itu udah 1000000% BUAH ASLI NGANGGUR DI TANAH!
-    return true
+    -- 6. WAJIB PUNYA FISIK (Anti objek ghoib/folder kosong)
+    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then 
+        return true 
+    end
+    if obj:IsA("Model") then
+        local hasPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)
+        if hasPart then return true end
+    end
+
+    return false
 end
 
 -- ==========================================
