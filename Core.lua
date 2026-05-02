@@ -32,10 +32,8 @@ _G.Cat.State = {
 local IsGameReady = false
 
 -- ==========================================
--- 2. GAME READINESS MONITOR
+-- 2. GAME READINESS MONITOR (THE THUNDERZ FIX)
 -- ==========================================
-
--- // Cek status karakter (Ready/Death)
 local function UpdateGameState()
     local isReady = false
     
@@ -44,20 +42,19 @@ local function UpdateGameState()
         local hum  = char and char:FindFirstChild("Humanoid")
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
         
-        -- Validasi Dasar: Team, Char, HRP, dan Hidup
+        -- Validasi: Team, Char, HRP, dan Hidup
         local baseReady = (
             Me.Team ~= nil and char ~= nil and 
             hrp ~= nil and hum ~= nil and hum.Health > 0
         )
-
+        
         if baseReady then
-            -- 🚨 SENSOR THUNDERZ: CEK UI CHOOSE TEAM 🚨
-            -- Jangan biarin script jalan kalo layar pemilihan tim masih nongol!
+            -- 🚨 SENSOR THUNDERZ: CEK UI CHOOSE TEAM
             local gui = Me:FindFirstChild("PlayerGui")
             local mainGui = gui and gui:FindFirstChild("Main")
             local chooseTeam = mainGui and mainGui:FindFirstChild("ChooseTeam")
 
-            -- Kalo UI ChooseTeam masih ada dan masih kelihatan (Visible), berarti belom siap!
+            -- Kalo UI ChooseTeam masih ada, tahan mesinnya!
             if chooseTeam and chooseTeam.Visible then
                 isReady = false
             else
@@ -73,7 +70,9 @@ local function UpdateGameState()
         
         -- Stop tween kalo mati/loading/masih di menu team
         if not IsGameReady then 
-            _G.Cat.State.StopSmartTween() 
+            if _G.Cat.State.StopSmartTween then
+                _G.Cat.State.StopSmartTween() 
+            end
         end
     end
 end
@@ -81,8 +80,7 @@ end
 -- ==========================================
 -- 3. EVENT CONNECTIONS
 -- ==========================================
-
--- Trigger Awal
+-- Trigger Awal (Posisinya WAJIB di sini, di bawah fungsi)
 task.spawn(UpdateGameState)
 
 -- Monitor Team
@@ -90,17 +88,14 @@ Me:GetPropertyChangedSignal("Team"):Connect(UpdateGameState)
 
 -- Monitor Respawn
 Me.CharacterAdded:Connect(function(char)
-    -- Reset state
     IsGameReady = false
     _G.Cat.State.IsGameReady = false
     
     local human = char:WaitForChild("Humanoid", 15)
     if human then
-        -- Update pas mati (efisien)
         human.Died:Connect(UpdateGameState)
     end
     
-    -- Wait Physics
     task.spawn(function()
         char:WaitForChild("HumanoidRootPart", 15)
         UpdateGameState()
@@ -116,8 +111,6 @@ end)
 -- ==========================================
 -- 4. PUBLIC API FUNCTIONS
 -- ==========================================
-
--- Tunggu sampai game siap
 function _G.Cat.WaitUntilReady()
     while not _G.Cat.State.IsGameReady do 
         task.wait(0.5) 
@@ -127,15 +120,10 @@ end
 -- [[ ==========================================
 --      2. THE GUARDIAN V26
 --    ========================================== ]]
-
--- Auto clear error biar ga nge-block screen
 GuiService.ErrorMessageChanged:Connect(function()
-    pcall(function()
-        GuiService:ClearError()
-    end)
+    pcall(function() GuiService:ClearError() end)
 end)
 
--- Proteksi UI (Tutup prompt paksa)
 task.spawn(function()
     local promptGui = CoreGui:WaitForChild("RobloxPromptGui", 5)
     if not promptGui then return end
@@ -143,7 +131,6 @@ task.spawn(function()
     local overlay = promptGui:WaitForChild("promptOverlay", 5)
     if not overlay then return end
 
-    -- Trigger pas visible
     overlay:GetPropertyChangedSignal("Visible"):Connect(function()
         if overlay.Visible then
             overlay.Visible = false
@@ -151,17 +138,9 @@ task.spawn(function()
     end)
 end)
 
--- Anti AFK (Cuma jalan kalo lagi bot)
 Me.Idled:Connect(function()
-    -- Cek fitur auto yang nyala
-    local isAutomating = Settings.TweenFruit 
-        or Settings.AutoHop 
-        or Settings.InstantTPFruit
-
-    -- Pecah kondisi biar ga panjang
-    if _G.Cat.State.IsGameReady 
-       and isAutomating 
-    then
+    local isAutomating = Settings.TweenFruit or Settings.AutoHop or Settings.InstantTPFruit
+    if _G.Cat.State.IsGameReady and isAutomating then
         pcall(function()
             VirtualUser:CaptureController()
             VirtualUser:ClickButton2(Vector2.new(0, 0))
@@ -172,16 +151,12 @@ end)
 -- ==========================================
 -- 3. UTILITIES
 -- ==========================================
-
--- Invoke remote pake timeout (biar ga nge-freeze)
 function _G.Cat.SafeInvoke(remote, ...)
     local args      = {...}
     local thread    = coroutine.running()
     local completed = false
 
-    -- Thread utama eksekusi
     task.spawn(function()
-        -- Pecah InvokeServer biar rapi
         local ok, res = pcall(function()
             return remote:InvokeServer(unpack(args))
         end)
@@ -192,7 +167,6 @@ function _G.Cat.SafeInvoke(remote, ...)
         end
     end)
 
-    -- Thread timeout (3 detik)
     task.delay(3, function()
         if not completed then
             completed = true
@@ -203,7 +177,6 @@ function _G.Cat.SafeInvoke(remote, ...)
     return coroutine.yield()
 end
 
--- Lepas anchor karakter
 function _G.Cat.ReleaseCharacter()
     pcall(function()
         local char = Me.Character
