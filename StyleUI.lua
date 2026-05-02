@@ -67,7 +67,7 @@ local Theme = {
     -- Navigation
     TabOn   = Color3.fromRGB(255, 0, 0),
     TabOff  = Color3.fromRGB(0, 68, 255),
-    CardBG  = Color3.fromRGB(24, 24, 24),
+    CardBG  = Color3.fromRGB(21, 255, 0),
     CardHov = Color3.fromRGB(204, 0, 255),
 
     -- Typography
