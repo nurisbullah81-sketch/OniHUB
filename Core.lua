@@ -36,7 +36,7 @@ local IsGameReady = false
 -- ==========================================
 
 -- // Cek status karakter (Ready/Death)
-llocal function UpdateGameState()
+local function UpdateGameState()
     local isReady = false
     
     pcall(function()
