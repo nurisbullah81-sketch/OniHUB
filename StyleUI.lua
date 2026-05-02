@@ -65,7 +65,7 @@ local Theme = {
     PageBG = Color3.fromRGB(8, 8, 8),    -- !Main Card kanan
 
     -- Navigation
-    TabOn   = Color3.fromRGB(255, 0, 0),
+    TabOn   = Color3.fromRGB(105, 105, 105),
     TabOff  = Color3.fromRGB(0, 68, 255),
     CardBG  = Color3.fromRGB(21, 255, 0),
     CardHov = Color3.fromRGB(204, 0, 255),
