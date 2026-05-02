@@ -42,7 +42,11 @@ local Mem  = {}
 local function GetPosition(fruit)
     if not fruit then return nil end
     local ok, pos = pcall(function()
-        -- Cari BasePart apapun di dalem tool/model itu
+        -- Fokus ke Handle dulu (karena itu titik sentuh standar Roblox)
+        local handle = fruit:FindFirstChild("Handle")
+        if handle then return handle.Position end
+        
+        -- Fallback: Kalau gak ada Handle, ambil BasePart pertama yang ada
         local target = fruit:FindFirstChildWhichIsA("BasePart", true)
         return target and target.Position
     end)
