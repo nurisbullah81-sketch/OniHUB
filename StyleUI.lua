@@ -1,5 +1,5 @@
 -- [[ ==========================================
---      CATHUB PREMIUM: FLUENT UI (FINAL FIX)
+--      CATHUB PREMIUM: FLUENT UI (FINAL ABSOLUTE FIX)
 --    ========================================== ]]
 
 local HttpService = game:GetService("HttpService")
@@ -52,31 +52,51 @@ if Fluent then
     })
 
     -- ==========================================
-    -- 3. OBAT BUG SKILL KE BELAKANG & POSISI NYANGKUT
+    -- 3. OBAT SUPER BRUTAL (POSISI TENGAH & KAMERA)
     -- ==========================================
     task.spawn(function()
-        task.wait(2) 
+        task.wait(3) -- Tunggu Fluent selesai loading
         local coreGui = game:GetService("CoreGui")
         local gui = coreGui:FindFirstChildWhichIsA("ScreenGui")
         if gui then
-            -- 3A: PAKSA UI KELUAR DARI POJOK KE TENGAH LAYAR
+            -- 3A: PENCULIKAN UI DARI POJOK -> TARUH LANGSUNG KE TENGAH LAYAR
             for _, obj in ipairs(gui:GetDescendants()) do
-                if obj:IsA("Frame") and math.abs(obj.Size.X.Offset - 580) < 10 and math.abs(obj.Size.Y.Offset - 460) < 10 then
+                if obj:IsA("Frame") and math.abs(obj.Size.X.Offset - 580) < 30 and math.abs(obj.Size.Y.Offset - 460) < 30 then
+                    -- Ambil alih paksa dari parent-nya yang nyangkut di pojok
+                    obj.Parent = coreGui
+                    
+                    -- Sekarang posisinya pasti bener-bener di tengah layar
                     obj.AnchorPoint = Vector2.new(0.5, 0.5)
-                    obj.Position = UDim2.new(0.5, -290, 0.5, -230)
-                    obj.ClipsDescendants = false 
+                    obj.Position = UDim2.new(0.5, 0, 0.5, 0) 
                     break
                 end
             end
             
-            -- 3B: HANCURKAN VIEWPORT PENCURI KAMERA
-            for _, obj in ipairs(gui:GetDescendants()) do
+            -- 3B: HANCURKAN SISA-SISA VIEWPORT PENCURI KAMERA
+            for _, obj in ipairs(coreGui:GetDescendants()) do
                 if obj:IsA("ViewportFrame") then
                     obj:Destroy()
                 end
             end
         end
     end)
+
+    -- 3C: BODYGUARD KAMERA (MENYERANGKAN SETIAP FRAME BILA ADA YANG NYURIK FOKUS)
+    game:GetService("RunService").RenderStepped:Connect(function()
+        -- Pastikan game udah siap dimainkan
+        if _Gat and _Gat.State and _Gat.State.IsGameReady then
+            local cam = workspace.CurrentCamera
+            local char = _Gat.Player.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                -- Kalau kamera tidak fokus ke humanoid kita, paksa balik!
+                if hum and cam.CameraSubject ~= hum then
+                    cam.CameraSubject = hum
+                end
+            end
+        end
+    end)
+
 else
     -- NASIB 2: Gagal download, Gunakan mode tanpa UI sementara
     warn("[CatHUB] Fluent UI gagal load saat Hop. Menggunakan mode tanpa UI sementara...")
@@ -165,7 +185,7 @@ if Fluent then
     pcall(function()
         Fluent:Notify({
             Title   = "CatHUB Premium",
-            Content = "UI, Anti-Camera Bug & Position Loaded.",
+            Content = "UI & Camera Fix Applied.",
             Duration = 3
         })
     end)
