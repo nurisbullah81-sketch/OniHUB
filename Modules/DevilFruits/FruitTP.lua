@@ -162,13 +162,13 @@ task.spawn(function()
         local hum  = char and char:FindFirstChild("Humanoid")
         if not hrp or not hum then continue end
 
-        -- 🚨 THE THUNDERZ FIX: SENSOR NAPAK BUMI 🚨
-        -- Kalo kecepatan vertikal (Y) terlalu tinggi (lagi jatuh bebas),
-        -- ATAU kaki lu masih napak di udara (Air) pasca respawn/pilih team.
-        -- JANGAN BERANI-BERANI TWEEN! Diem nunggu normal!
-        if math.abs(hrp.AssemblyLinearVelocity.Y) > 5 or hum.FloorMaterial == Enum.Material.Air then
-            StopTween()
-            continue -- Lewatin loop ini, tunggu kaki bener-bener stabil di tanah
+        -- 🚨 PERBAIKAN SENSOR (BIANG KEROK GLITCH LU) 🚨
+        -- Kita cuma nunggu napak bumi KALAU LAGI KAGA TWEEN!
+        -- Kalo udah terbang mah biarin aja dia di udara, JANGAN DI-STOP!
+        if not isTweening then
+            if math.abs(hrp.AssemblyLinearVelocity.Y) > 5 or hum.FloorMaterial == Enum.Material.Air then
+                continue -- Jangan mulai terbang kalo belom bener-bener napak pas spawn
+            end
         end
 
         -- Cari target buah terdekat
