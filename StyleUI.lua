@@ -62,13 +62,13 @@ local Theme = {
     MainBG = Color3.fromRGB(0, 0, 0),
     SideBG = Color3.fromRGB(0, 0, 0),
     TopBG  = Color3.fromRGB(0, 0, 0),
-    PageBG = Color3.fromRGB(43, 43, 43),
+    PageBG = Color3.fromRGB(24, 24, 24),
 
     -- Navigation
-    TabOn   = Color3.fromRGB(66, 66, 66),
-    TabOff  = Color3.fromRGB(56, 56, 56),
-    CardBG  = Color3.fromRGB(37, 37, 37),
-    CardHov = Color3.fromRGB(88, 88, 88),
+    TabOn   = Color3.fromRGB(32, 32, 32),
+    TabOff  = Color3.fromRGB(53, 53, 53),
+    CardBG  = Color3.fromRGB(0, 0, 0),
+    CardHov = Color3.fromRGB(34, 34, 34),
 
     -- Typography
     Text    = Color3.fromRGB(250, 250, 250),
@@ -76,11 +76,11 @@ local Theme = {
 
     -- Accents
     ToggleOn  = Color3.fromRGB(132, 0, 255),
-    ToggleOff = Color3.fromRGB(94, 94, 94),
+    ToggleOff = Color3.fromRGB(68, 68, 68),
     CatPurple = Color3.fromRGB(160, 100, 255),
     Gold      = Color3.fromRGB(255, 187, 0),
     Accent    = Color3.fromRGB(132, 0, 255),
-    Line      = Color3.fromRGB(69, 69, 82)
+    Line      = Color3.fromRGB(31, 31, 34)
 }
 
 -- Export Theme
