@@ -193,6 +193,11 @@ task.spawn(function()
         if Settings.InstantTPFruit then
             StopTween()
             if dist > 5 then
+                -- Matikan fisika buah dulu sebelum nyeruduk
+                pcall(function()
+                    local p = fruit:FindFirstChildWhichIsA("BasePart", true)
+                    if p then p.CanCollide = false end
+                end)
                 hrp.CFrame = CFrame.new(endPos)
             end
 
