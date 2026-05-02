@@ -196,7 +196,7 @@ task.spawn(function()
 
         -- Kalkulasi jarak dan posisi akhir
         local dist   = (fPos - hrp.Position).Magnitude
-        local endPos = fPos + Vector3.new(0, 2, 0)
+        local endPos = fPos -- Langsung seruduk badan buahnya, jangan melayang 2 stud
 
         -- // Mode: Instant Teleport
         if Settings.InstantTPFruit then
