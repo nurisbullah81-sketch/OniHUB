@@ -60,15 +60,15 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 local Theme = {
     -- Background
     MainBG = Color3.fromRGB(0, 0, 0),
-    SideBG = Color3.fromRGB(0, 0, 0),
-    TopBG  = Color3.fromRGB(0, 0, 0),
-    PageBG = Color3.fromRGB(24, 24, 24),
+    SideBG = Color3.fromRGB(20, 20, 20),
+    TopBG  = Color3.fromRGB(32, 32, 32),
+    PageBG = Color3.fromRGB(48, 48, 48),
 
     -- Navigation
     TabOn   = Color3.fromRGB(32, 32, 32),
-    TabOff  = Color3.fromRGB(53, 53, 53),
+    TabOff  = Color3.fromRGB(0, 23, 36),
     CardBG  = Color3.fromRGB(0, 0, 0),
-    CardHov = Color3.fromRGB(34, 34, 34),
+    CardHov = Color3.fromRGB(24, 24, 24),
 
     -- Typography
     Text    = Color3.fromRGB(250, 250, 250),
@@ -76,7 +76,7 @@ local Theme = {
 
     -- Accents
     ToggleOn  = Color3.fromRGB(132, 0, 255),
-    ToggleOff = Color3.fromRGB(68, 68, 68),
+    ToggleOff = Color3.fromRGB(37, 37, 37),
     CatPurple = Color3.fromRGB(160, 100, 255),
     Gold      = Color3.fromRGB(255, 187, 0),
     Accent    = Color3.fromRGB(132, 0, 255),
