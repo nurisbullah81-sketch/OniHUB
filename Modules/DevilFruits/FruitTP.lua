@@ -132,14 +132,15 @@ local function StopTween()
         end
     end
     
-    -- Restore Collision murni dari memori ingatan (Kaga nebak-nebak lagi)
+    -- 🚨 FIX: Restore Collision dengan Pengaman Memori 🚨
+    -- Mencegah error kalau karakter lu udah ke-destroy duluan pas lu mati
     for part, state in pairs(originalCollisions) do
-        if part and part.Parent then
-            part.CanCollide = state
+        if part and part.Parent and part:IsDescendantOf(workspace) then
+            pcall(function() part.CanCollide = state end)
         end
     end
-    table.clear(originalCollisions) -- Bersihin memori biar kaga nyampah di RAM
-end -- <-- INI DIA BANG, KEMAREN LU KAHAPUS ININYA WKWK
+    table.clear(originalCollisions)
+end
 
 State.StopSmartTween = StopTween
 
@@ -158,11 +159,31 @@ task.spawn(function()
 
         local char = Me.Character
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
-        if not hrp then continue end
+        local hum  = char and char:FindFirstChild("Humanoid")
+        if not hrp or not hum then continue end
+
+        -- 🚨 THE THUNDERZ FIX: SENSOR NAPAK BUMI 🚨
+        -- Kalo kecepatan vertikal (Y) terlalu tinggi (lagi jatuh bebas),
+        -- ATAU kaki lu masih napak di udara (Air) pasca respawn/pilih team.
+        -- JANGAN BERANI-BERANI TWEEN! Diem nunggu normal!
+        if math.abs(hrp.AssemblyLinearVelocity.Y) > 5 or hum.FloorMaterial == Enum.Material.Air then
+            StopTween()
+            continue -- Lewatin loop ini, tunggu kaki bener-bener stabil di tanah
+        end
 
         -- Cari target buah terdekat
         local fruit = ESP.GetNearestFruit()
         if not fruit then
+            StopTween()
+            continue
+        end
+
+        -- 🚨 FIX ANJING NGEJAR EKOR 🚨
+        -- Kalo buahnya udah masuk ke tangan lu, tangan orang lain (Character), atau ke dalem tas (Backpack),
+        -- JANGAN DI-TWEEN! Biar lu kaga nge-freeze ngejar tangan sendiri!
+        local inBackpack = fruit:FindFirstAncestorOfClass("Backpack")
+        local inChar = fruit:FindFirstAncestorOfClass("Model")
+        if inBackpack or (inChar and inChar:FindFirstChildOfClass("Humanoid")) then
             StopTween()
             continue
         end
@@ -204,8 +225,6 @@ task.spawn(function()
                     table.clear(originalCollisions)
                     for _, part in pairs(char:GetDescendants()) do
                         if part:IsA("BasePart") then
-                            -- PAKSA HRP DAN HANDLE AKSESORIS TETEP FALSE DI MEMORY
-                            -- Ini rahasia agar pas di-restore, karakter lu nggak mentok halusinasi
                             if part.Name == "HumanoidRootPart" or part.Parent:IsA("Accessory") then
                                 originalCollisions[part] = false
                             else
@@ -227,10 +246,6 @@ task.spawn(function()
 
                         -- Kunci physics
                         hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        
-                        -- GANTI HRP CFRAME JADI PIVOTTO!
-                        -- PivotTo memindahin SELURUH badan (tangan & kaki) sekaligus secara instant.
-                        -- Mencegah tangan/kaki ke-extend ke belakang dan nyangkut di tembok/pintu pas mendarat.
                         char:PivotTo(ProxyPart.CFrame)
                     end)
 
