@@ -36,7 +36,7 @@ local IsGameReady = false
 -- ==========================================
 
 -- // Cek status karakter (Ready/Death)
-local function UpdateGameState()
+llocal function UpdateGameState()
     local isReady = false
     
     pcall(function()
@@ -44,11 +44,26 @@ local function UpdateGameState()
         local hum  = char and char:FindFirstChild("Humanoid")
         local hrp  = char and char:FindFirstChild("HumanoidRootPart")
         
-        -- Validasi: Team, Char, HRP, dan Hidup
-        isReady = (
+        -- Validasi Dasar: Team, Char, HRP, dan Hidup
+        local baseReady = (
             Me.Team ~= nil and char ~= nil and 
             hrp ~= nil and hum ~= nil and hum.Health > 0
         )
+
+        if baseReady then
+            -- 🚨 SENSOR THUNDERZ: CEK UI CHOOSE TEAM 🚨
+            -- Jangan biarin script jalan kalo layar pemilihan tim masih nongol!
+            local gui = Me:FindFirstChild("PlayerGui")
+            local mainGui = gui and gui:FindFirstChild("Main")
+            local chooseTeam = mainGui and mainGui:FindFirstChild("ChooseTeam")
+
+            -- Kalo UI ChooseTeam masih ada dan masih kelihatan (Visible), berarti belom siap!
+            if chooseTeam and chooseTeam.Visible then
+                isReady = false
+            else
+                isReady = true
+            end
+        end
     end)
     
     -- Update state kalo berubah
@@ -56,7 +71,7 @@ local function UpdateGameState()
         IsGameReady = isReady
         _G.Cat.State.IsGameReady = isReady
         
-        -- Stop tween kalo mati/loading
+        -- Stop tween kalo mati/loading/masih di menu team
         if not IsGameReady then 
             _G.Cat.State.StopSmartTween() 
         end
