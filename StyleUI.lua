@@ -59,28 +59,28 @@ Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 -- // Color Palette & Theme
 local Theme = {
     -- Background
-    MainBG = Color3.fromRGB(10, 10, 10),
-    SideBG = Color3.fromRGB(14, 14, 16),
-    TopBG  = Color3.fromRGB(10, 10, 10),
-    PageBG = Color3.fromRGB(17, 18, 22),
+    MainBG = Color3.fromRGB(0, 0, 0),
+    SideBG = Color3.fromRGB(0, 0, 0),
+    TopBG  = Color3.fromRGB(0, 0, 0),
+    PageBG = Color3.fromRGB(43, 43, 43),
 
     -- Navigation
-    TabOn   = Color3.fromRGB(38, 38, 42),
-    TabOff  = Color3.fromRGB(25, 25, 30),
-    CardBG  = Color3.fromRGB(28, 28, 32),
-    CardHov = Color3.fromRGB(36, 36, 42),
+    TabOn   = Color3.fromRGB(66, 66, 66),
+    TabOff  = Color3.fromRGB(56, 56, 56),
+    CardBG  = Color3.fromRGB(37, 37, 37),
+    CardHov = Color3.fromRGB(88, 88, 88),
 
     -- Typography
     Text    = Color3.fromRGB(250, 250, 250),
     TextDim = Color3.fromRGB(140, 140, 145),
 
     -- Accents
-    ToggleOn  = Color3.fromRGB(138, 43, 226),
-    ToggleOff = Color3.fromRGB(75, 75, 80),
+    ToggleOn  = Color3.fromRGB(132, 0, 255),
+    ToggleOff = Color3.fromRGB(94, 94, 94),
     CatPurple = Color3.fromRGB(160, 100, 255),
-    Gold      = Color3.fromRGB(255, 200, 50),
-    Accent    = Color3.fromRGB(138, 43, 226),
-    Line      = Color3.fromRGB(40, 40, 45)
+    Gold      = Color3.fromRGB(255, 187, 0),
+    Accent    = Color3.fromRGB(132, 0, 255),
+    Line      = Color3.fromRGB(69, 69, 82)
 }
 
 -- Export Theme
