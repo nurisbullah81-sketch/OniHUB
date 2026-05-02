@@ -52,43 +52,40 @@ local function GetPosition(fruit)
     return ok and pos or nil
 end
 
--- // FUNGSI FILTER MUTLAK (HASIL INTEROGASI DEX)
+-- // ==========================================
+-- // FUNGSI ESP BUAH (METODE THUNDERZ / REDZ HUB)
+-- // ==========================================
 local function IsFruit(obj)
-    if not (obj and obj.Parent) then return false end
-    if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
-
-    -- 1. BASMI GHOST FRUIT: Kalo namanya cuma "Fruit" doang, langsung TENDANG!
-    if obj.Name == "Fruit" then return false end
-
-    -- 2. BASMI NPC: Kalo punya nyawa (Humanoid), TENDANG!
-    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+    -- 1. BUAH ASLI ITU WAJIB BERWUJUD "TOOL"
+    -- Ini otomatis nendang semua NPC, Hantu Workspace, dan Pajangan Map!
+    if not obj:IsA("Tool") then 
         return false 
     end
 
-    local lowerName = string.lower(obj.Name)
-
-    -- 3. Wajib ada kata "fruit"
-    if not string.find(lowerName, "fruit") then return false end
-
-    -- 4. BASMI TUKANG JUALAN: Blacklist nama abang-abang NPC
-    local isNPC = string.find(lowerName, "dealer") 
-               or string.find(lowerName, "gacha") 
-               or string.find(lowerName, "cousin")
-               or string.find(lowerName, "remover")
-               or string.find(lowerName, "merchant")
-               or string.find(lowerName, "npc")
-    if isNPC then return false end
-
-    -- 5. BASMI OBJEK GHOIB: Wajib punya part fisik (Sesuai bukti console lu)
-    if obj:IsA("Tool") and not obj:FindFirstChild("Handle") then 
+    -- 2. WAJIB PUNYA FISIK (Handle)
+    -- Buah asli pasti punya Handle buat dipegang.
+    if not obj:FindFirstChild("Handle") then 
         return false 
     end
-    if obj:IsA("Model") then
-        local hasPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)
-        if not hasPart then return false end
+
+    -- 3. VALIDASI NAMA STANDAR
+    -- Namanya wajib mengandung kata "fruit" (Biar pedang/senjata kaga keikut)
+    if not string.find(string.lower(obj.Name), "fruit") then 
+        return false 
     end
 
-    -- Kalo lolos semua ujian di atas, berarti dia BUAH ASLI!
+    -- 4. ANTI BUAH DI PEGANG ORANG (Kaga usah pake looping rumit)
+    -- Kalo Tool-nya ada di dalem Backpack tas orang, TENDANG!
+    if obj:FindFirstAncestorOfClass("Backpack") then 
+        return false 
+    end
+    -- Kalo Tool-nya nempel di Karakter (Model ber-Humanoid) orang, TENDANG!
+    local ancestorModel = obj:FindFirstAncestorOfClass("Model")
+    if ancestorModel and ancestorModel:FindFirstChildOfClass("Humanoid") then 
+        return false 
+    end
+
+    -- Kalo lolos semua ini, itu udah 1000000% BUAH ASLI NGANGGUR DI TANAH!
     return true
 end
 
