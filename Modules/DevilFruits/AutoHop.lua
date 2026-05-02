@@ -11,6 +11,7 @@ local Players     = game:GetService("Players")
 local Me = Players.LocalPlayer
 
 -- // Wait for Global Framework
+-- Pecah kondisi biar keliatat jelas dependency apa aja yang ditunggu
 while not (
     _G.Cat and
     _G.Cat.UI and
@@ -33,6 +34,7 @@ local ESP      = _G.Cat.ESP
 
 local Page = UI.CreateTab("Devil Fruits", false)
 
+-- Toggle: Auto Hop Server
 UI.CreateToggle(
     Page,
     "Auto Hop Server",
@@ -88,6 +90,7 @@ function _G.Cat.HopServer()
                     local tx   = pos.X + (size.X / 2)
                     local ty   = pos.Y + (size.Y / 2) + 58
 
+                    -- Klik tombol open
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     task.wait(0.05)
                     VIM:SendMouseButtonEvent(tx, ty, 0, false, game, 0)
@@ -100,6 +103,7 @@ function _G.Cat.HopServer()
                 continue
             end
 
+            -- Tunggu list server loading
             local listArea = browser:FindFirstChild("Inside", true)
             local count    = 0
 
@@ -113,6 +117,7 @@ function _G.Cat.HopServer()
                 local scrollFrame = browser:FindFirstChild("FakeScroll", true)
                 local dummyScroll = browser:FindFirstChild("ScrollingFrame", true)
 
+                -- Acak posisi scroll
                 if dummyScroll and dummyScroll:IsA("ScrollingFrame") then
                     local randY = math.random(500, 2500)
                     dummyScroll.CanvasPosition = Vector2.new(0, randY)
@@ -125,6 +130,7 @@ function _G.Cat.HopServer()
                 local sPos    = scrollFrame.AbsolutePosition
                 local sSize   = scrollFrame.AbsoluteSize
 
+                -- Kumpulin tombol join yang keliatan
                 for _, v in pairs(listArea:GetDescendants()) do
                     local isBtn = v:IsA("TextButton") 
                         and v.Name == "Join" 
@@ -135,12 +141,14 @@ function _G.Cat.HopServer()
                         local yMin = sPos.Y
                         local yMax = sPos.Y + sSize.Y - 30
 
+                        -- Cek apakah di area visible
                         if vy > yMin and vy < yMax then
                             table.insert(buttons, v)
                         end
                     end
                 end
 
+                -- Coba join server
                 for _, target in pairs(buttons) do
                     if not Settings.AutoHop then break end
 
@@ -149,6 +157,7 @@ function _G.Cat.HopServer()
                     local tx = bp.X + (bs.X / 2)
                     local ty = bp.Y + (bs.Y / 2) + 58
 
+                    -- Klik Join & Enter
                     VIM:SendMouseButtonEvent(tx, ty, 0, true, game, 0)
                     VIM:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
                     task.wait(0.05)
@@ -181,39 +190,31 @@ end
 -- [[ LOKASI: PALING BAWAH SENDIRI ]]
 
 task.spawn(function()
-    task.wait(10)
+    task.wait(10) -- Jeda awal biar game stabil
 
     while task.wait(2) do
+        -- // Safety Check: Skip kalo game belum siap
         if not State.IsGameReady then
             _G.Cat.WaitUntilReady()
-            task.wait(5)
+            task.wait(5) -- Jeda lama pas loading
             continue
         end
 
+        -- // Main Logic
         if Settings.AutoHop and State.IsGameReady then
             local success, err = pcall(function()
                 local fruitCount = 0
 
-                -- Scan Data ESP PINTER (Anti Ketipu Pemain Lain)
+                -- Scan Data ESP (Cek buah di workspace)
                 if _G.Cat.ESP and _G.Cat.ESP.Data then
                     for fruit, _ in pairs(_G.Cat.ESP.Data) do
-                        if fruit and fruit.Parent then
-                            -- 1. Cek apakah buah lagi dipegang orang (Ada Humanoid di sekitarnya)
-                            local ownerChar = fruit:FindFirstAncestorWhichIsA("Model")
-                            local isHeld = ownerChar and ownerChar:FindFirstChild("Humanoid") ~= nil
-                            
-                            -- 2. Cek apakah buah ada di dalem tas orang
-                            local isInBag = fruit:FindFirstAncestorWhichIsA("Backpack") ~= nil
-
-                            -- FILTER MUTLAK: Hitung HANYA JIKA buah bener-bener jatuh di tanah bebas!
-                            if fruit:IsDescendantOf(workspace) and not isHeld and not isInBag then
-                                fruitCount = fruitCount + 1
-                            end
+                        if fruit and fruit.Parent == workspace then
+                            fruitCount = fruitCount + 1
                         end
                     end
                 end
 
-                -- Logic Hop: Kalau ga ada buah valid, pindah server
+                -- Logic Hop: Kalo ga ada buah, pindah server
                 if fruitCount == 0 then
                     if not isHopping then
                         _G.Cat.HopServer()
@@ -226,7 +227,8 @@ task.spawn(function()
             end
         end
 
-        -- Cleanup Logic
+        -- // Cleanup Logic
+        -- Reset kalo fitur dimatiin pas proses hop jalan
         if isHopping and not Settings.AutoHop then
             isHopping = false
 
