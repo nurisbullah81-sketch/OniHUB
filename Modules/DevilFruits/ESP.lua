@@ -53,18 +53,30 @@ local function GetPosition(fruit)
     return ok and pos or nil
 end
 
--- // FIX 1: ANTI NPC GACHA & DEALER
+-- // FIX 1: ANTI NPC GACHA & DEALER (BLACKLIST MUTLAK)
 local function IsFruit(obj)
     if not obj then return false end
     if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
 
-    -- Kalau objeknya punya Humanoid, itu NPC/Pemain, BUKAN BUAH!
+    -- Kalau objeknya punya Humanoid, coret (NPC normal/Player)
     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
         return false 
     end
 
+    local lowerName = string.lower(obj.Name)
+
+    -- BLACKLIST NAMA NPC (Karena mereka kaga pake Humanoid)
+    local isNPC = string.find(lowerName, "dealer") 
+               or string.find(lowerName, "gacha") 
+               or string.find(lowerName, "cousin")
+               or string.find(lowerName, "remover")
+               or string.find(lowerName, "merchant")
+               or string.find(lowerName, "npc")
+               
+    if isNPC then return false end
+
     -- Standar nama buah Blox Fruits
-    return string.find(string.lower(obj.Name), "fruit") ~= nil
+    return string.find(lowerName, "fruit") ~= nil
 end
 
 -- // FIX 2: DETEKSI BUAH DI PEGANG ORANG
