@@ -163,8 +163,16 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
-            -- Karena yang masuk tabel Data udah 100% murni, kaga usah difilter lagi di sini!
-            if fruit and fruit:IsDescendantOf(Workspace) then
+            -- FIX: Cek ulang apakah Parent-nya itu Karakter (Humanoid) atau Backpack
+            local isHeld = false
+            if fruit.Parent then
+                if fruit.Parent:IsA("Backpack") or fruit.Parent:FindFirstChild("Humanoid") then
+                    isHeld = true
+                end
+            end
+
+            -- Kalo masih di Workspace dan KAGA dipegang siapapun
+            if fruit and fruit:IsDescendantOf(Workspace) and not isHeld then
                 local p = GetPosition(fruit)
                 if p then
                     local d = (p - hrp.Position).Magnitude
@@ -174,6 +182,7 @@ _G.Cat.ESP = {
                     end
                 end
             else
+                -- Kalo udah masuk tangan/tas, HANGUSKAN DARI ESP!
                 RemoveESP(fruit)
             end
         end
@@ -194,7 +203,13 @@ task.spawn(function()
         local myPos = hrp.Position
 
         for fruit, entry in pairs(Data) do
-            if not fruit or not fruit:IsDescendantOf(Workspace) then
+            -- FIX: Pengecekan ketat biar kaga dobel di tangan
+            local isHeld = false
+            if fruit.Parent and (fruit.Parent:IsA("Backpack") or fruit.Parent:FindFirstChild("Humanoid")) then
+                isHeld = true
+            end
+
+            if not fruit or not fruit:IsDescendantOf(Workspace) or isHeld then
                 RemoveESP(fruit)
                 continue
             end
