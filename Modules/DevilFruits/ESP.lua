@@ -50,13 +50,13 @@ local function GetPosition(fruit)
 end
 
 local function IsFruit(obj)
-    -- Hanya terima Tool (Tolak Model NPC/Gacha)
+    -- Hanya terima Tool (Menyiksa Gacha/NPC yang Model)
     if not obj:IsA("Tool") then return false end
     
-    -- Harus punya fisik Handle
-    if not obj:FindFirstChild("Handle") then return false end
+    -- KEMBALIK KE LOGIC ASLI LU: Cari BasePart APAPUN (Kaga peduli namanya Handle/Fruit/apa)
+    if not obj:FindFirstChildWhichIsA("BasePart", true) then return false end
     
-    -- Harus ada kata "fruit" di namanya
+    -- Harus ada kata "fruit"
     local lowerName = string.lower(obj.Name)
     if not string.find(lowerName, "fruit") then return false end
     
@@ -119,7 +119,7 @@ _G.Cat.ESP = {
     Data = Data,
     Pos  = GetPosition,
 
-            GetNearestFruit = function()
+    GetNearestFruit = function()
         local closest = nil
         local minDist = math.huge
         local char    = Me.Character
@@ -128,8 +128,8 @@ _G.Cat.ESP = {
         if not hrp then return nil end
 
         for fruit, _ in pairs(Data) do
-            -- DETOX MAYAT: Kalau Handle-nya ilang, hapus paksa dari memori!
-            if not fruit or not fruit.Parent or not fruit:FindFirstChild("Handle") then
+            -- DETOX MAYAT: Kalau fisiknya ilang, hapus paksa dari memori!
+            if not fruit or not fruit.Parent or not fruit:FindFirstChildWhichIsA("BasePart", true) then
                 RemoveESP(fruit)
                 continue
             end
@@ -170,8 +170,8 @@ task.spawn(function()
         local myPos = hrp.Position
 
         for fruit, entry in pairs(Data) do
-            -- DETOX REALTIME: Kalau mayat, bersihkan dari UI juga
-            if not fruit or not fruit.Parent or not fruit:FindFirstChild("Handle") then
+            -- DETOX REALTIME: Kalau fisiknya ilang, bersihkan dari UI juga
+            if not fruit or not fruit.Parent or not fruit:FindFirstChildWhichIsA("BasePart", true) then
                 RemoveESP(fruit)
                 continue
             end
@@ -196,26 +196,16 @@ end)
 -- 6. WORKSPACE MONITORING & SCAN
 -- ==========================================
 
--- Fast Reject: Langsung tolak kalau objek bukan Tool biar kaga makan resource
+-- Fast Reject: Langsung tolak kalau objek bukan Tool
 Workspace.DescendantAdded:Connect(function(obj)
     if not obj:IsA("Tool") then return end
     
     task.delay(0.5, function()
         pcall(function()
-            -- Cek lagi apakah dia masih valid setelah 0.5 detik
             if not obj:IsA("Tool") or not obj.Parent then return end
             
-            -- Sihir Anti-Gacha Lag: Tunggu Handle muncul maksimal 2 detik.
-            -- Ini yang bikin buah drop Gacha yang lambat loading bisa kebaca!
-            local handle = obj:WaitForChild("Handle", 2)
-            if not handle then return end 
-            
-            local lowerName = string.lower(obj.Name)
-            if not string.find(lowerName, "fruit") then return end
-            
-            if obj:FindFirstAncestorOfClass("Backpack") then return end
-            
-            if not Data[obj] then
+            -- Langsung pakai logic IsFruit yang udah kembali normal
+            if IsFruit(obj) and not Data[obj] then
                 AddESP(obj)
             end
         end)
