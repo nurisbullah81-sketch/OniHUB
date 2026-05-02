@@ -53,30 +53,44 @@ local function GetPosition(fruit)
     return ok and pos or nil
 end
 
--- // FIX 1: ANTI NPC GACHA & DEALER (BLACKLIST MUTLAK)
+-- // FIX MUTLAK: ANTI GHOST FRUIT & NPC
 local function IsFruit(obj)
     if not obj then return false end
+    
+    -- Wajib berwujud Tool (buah yang jatuh) atau Model
     if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
 
-    -- Kalau objeknya punya Humanoid, coret (NPC normal/Player)
+    -- Coret keras kalo punya nyawa (NPC)
     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
         return false 
     end
 
     local lowerName = string.lower(obj.Name)
 
-    -- BLACKLIST NAMA NPC (Karena mereka kaga pake Humanoid)
+    -- Blacklist nama abang-abang NPC
     local isNPC = string.find(lowerName, "dealer") 
                or string.find(lowerName, "gacha") 
                or string.find(lowerName, "cousin")
                or string.find(lowerName, "remover")
                or string.find(lowerName, "merchant")
                or string.find(lowerName, "npc")
-               
     if isNPC then return false end
 
-    -- Standar nama buah Blox Fruits
-    return string.find(lowerName, "fruit") ~= nil
+    -- Wajib ada kata "fruit" di namanya
+    if string.find(lowerName, "fruit") == nil then return false end
+
+    -- ==========================================
+    -- FILTER PAMUNGKAS (ANTI GHOST FRUIT)
+    -- Objek WAJIB punya part fisik, kalo kaga ada buang!
+    -- ==========================================
+    local hasPhysics = false
+    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
+        hasPhysics = true
+    elseif obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)) then
+        hasPhysics = true
+    end
+
+    return hasPhysics
 end
 
 -- // FIX 2: DETEKSI BUAH DI PEGANG ORANG
