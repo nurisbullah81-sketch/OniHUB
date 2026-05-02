@@ -63,11 +63,24 @@ local function GetPosition(fruit)
     return ok and pos or nil
 end
 
--- Fungsi: Validasi apakah objek adalah Buah
+-- Fungsi: Validasi apakah objek adalah Buah Asli Blox Fruits
 local function IsFruit(obj)
     if not (obj and obj.Parent) then return false end
-    if not (obj:IsA("Tool") or obj:IsA("Model")) then return false end
-    return obj:FindFirstChild("Fruit") ~= nil
+    
+    local isToolOrModel = obj:IsA("Tool") or obj:IsA("Model")
+    if not isToolOrModel then return false end
+
+    -- CARA 1: Cek nama objek. Semua buah Blox Fruits namanya mengandung kata "Fruit"
+    if string.find(obj.Name, "Fruit") then
+        return true
+    end
+
+    -- CARA 2: Cek komponen Handle (buat Tool yang drop di tanah)
+    if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
+        return true
+    end
+
+    return false
 end
 
 -- [[ === FITUR BARU: ANTI BUAH ORANG === ]]
@@ -234,10 +247,11 @@ Workspace.ChildRemoved:Connect(function(obj)
 end)
 
 -- ==========================================
--- 7. INITIAL SCAN
+-- 7. INITIAL SCAN (OPTIMIZED)
 -- ==========================================
-for _, obj in ipairs(Workspace:GetDescendants()) do
-    -- FILTER: Saat awal scan, abaikan buah yang udah dipegang orang
+-- Jangan pakai GetDescendants() untuk semua isi workspace, bikin ngelag!
+-- Cukup scan anak-anak langsung dari workspace.
+for _, obj in ipairs(Workspace:GetChildren()) do
     if IsFruit(obj) and not Data[obj] and not IsHeldByPlayer(obj) then
         AddESP(obj)
     end
