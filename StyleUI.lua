@@ -1,205 +1,124 @@
 -- [[ ==========================================
---      CATHUB PREMIUM: REDZ HUB STYLE
---      100% PURE INSTANCE.NEW (ZERO LIBRARIES)
+--      CATHUB PREMIUM: FLUENT UI (FIX FINAL)
 --    ========================================== ]]
 
-local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local RunService  = game:GetService("RunService")
+local Players     = game:GetService("Players")
+local ConfigFile  = "CatHUB_Config.json"
 
--- Pasang Rem: Tunggu karakter masuk server
-repeat task.wait() until Players.LocalPlayer
+_G.Cat = _G.Cat or {}
+_G.Cat.Player = Players.LocalPlayer
+_G.Cat.Labels = _G.Cat.Labels or {}
+if not _G.Cat.Settings then _G.Cat.Settings = {} end
 
--- Anti Numpuk (Hapus UI lama kalau di-execute ulang)
-if CoreGui:FindFirstChild("CatHub_Redz") then
-    CoreGui.CatHub_Redz:Destroy()
+local function SaveSettings()
+    pcall(function() writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings)) end)
 end
+_G.Cat.SaveSettings = SaveSettings
 
--- 1. BIKIN KANVAS UTAMA
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CatHub_Redz"
-ScreenGui.Parent = CoreGui
-ScreenGui.ResetOnSpawn = false
-
--- 2. BIKIN WINDOW UTAMA (RAMPING & COMPACT ALA REDZ)
-local MainWindow = Instance.new("Frame")
-MainWindow.Name = "MainWindow"
-MainWindow.Size = UDim2.new(0, 380, 0, 400) -- Ukuran ramping kaga nutupin map
-MainWindow.Position = UDim2.new(0.5, -190, 0.5, -200)
-MainWindow.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Hitam pekat elegan
-MainWindow.BorderSizePixel = 0
-MainWindow.Active = true
-MainWindow.Draggable = true -- Langsung bisa digeser bebas
-MainWindow.Parent = ScreenGui
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 8)
-MainCorner.Parent = MainWindow
-
--- Aksen Garis Merah di sekeliling UI
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(255, 40, 40) 
-MainStroke.Thickness = 1.5
-MainStroke.Parent = MainWindow
-
--- 3. BIKIN TOP BAR (TEMPAT JUDUL)
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 45)
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainWindow
-
-local TopCorner = Instance.new("UICorner")
-TopCorner.CornerRadius = UDim.new(0, 8)
-TopCorner.Parent = TopBar
-
--- Nambal sudut bawah TopBar biar nyatu sama bodi
-local TopPatch = Instance.new("Frame")
-TopPatch.Size = UDim2.new(1, 0, 0, 10)
-TopPatch.Position = UDim2.new(0, 0, 1, -10)
-TopPatch.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-TopPatch.BorderSizePixel = 0
-TopPatch.Parent = TopBar
-
-local GarisBatas = Instance.new("Frame")
-GarisBatas.Size = UDim2.new(1, 0, 0, 1)
-GarisBatas.Position = UDim2.new(0, 0, 1, 0)
-GarisBatas.BackgroundColor3 = Color3.fromRGB(255, 40, 40) -- Garis merah pembatas
-GarisBatas.BorderSizePixel = 0
-GarisBatas.Parent = TopBar
-
--- 4. JUDUL UI (ENGLISH)
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -20, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "CATHUB PREMIUM"
-Title.TextColor3 = Color3.fromRGB(255, 50, 50)
-Title.Font = Enum.Font.GothamBold -- Font tebal modern
-Title.TextSize = 16
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
-
--- 5. BIKIN TEMPAT MENU SCROLL DI BAWAHNYA
-local ContentScroll = Instance.new("ScrollingFrame")
-ContentScroll.Size = UDim2.new(1, -20, 1, -60)
-ContentScroll.Position = UDim2.new(0, 10, 0, 55)
-ContentScroll.BackgroundTransparency = 1
-ContentScroll.BorderSizePixel = 0
-ContentScroll.ScrollBarThickness = 3
-ContentScroll.ScrollBarImageColor3 = Color3.fromRGB(255, 40, 40)
-ContentScroll.Parent = MainWindow
-
-local ScrollLayout = Instance.new("UIListLayout")
-ScrollLayout.Padding = UDim.new(0, 10) -- Jarak antar tombol
-ScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-ScrollLayout.Parent = ContentScroll
+_G.Cat.Theme = {
+    CardBG = Color3.fromRGB(30, 30, 30), SideBG = Color3.fromRGB(40, 40, 40), Line = Color3.fromRGB(60, 60, 60),
+    Text = Color3.fromRGB(240, 240, 240), TextDim = Color3.fromRGB(150, 150, 150), CatPurple = Color3.fromRGB(170, 85, 255)
+}
 
 -- ==========================================
---    FUNGSI PEMBUAT KOMPONEN (MILIK LU 100%)
+-- 1. LOAD FLUENT DARI GITHUB LU SENDIRI
 -- ==========================================
-local OniUI = {}
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/nurisbullah81/OniHUB/main/Fluent.lua"))()
 
--- Fungsi bikin Label Text
-function OniUI.CreateLabel(textValue)
-    local LabelFrame = Instance.new("Frame")
-    LabelFrame.Size = UDim2.new(1, 0, 0, 25)
-    LabelFrame.BackgroundTransparency = 1
-    LabelFrame.Parent = ContentScroll
-
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, 0, 1, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = textValue
-    Label.TextColor3 = Color3.fromRGB(180, 180, 180)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = 13
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = LabelFrame
-    return Label
+if not Fluent then
+    warn("[CatHUB] Gagal load Fluent dari GitHub!")
+    return
 end
 
--- Fungsi bikin Toggle Button (Tombol On/Off)
-function OniUI.CreateToggle(name, callback)
-    local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, 0, 0, 38)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    ToggleFrame.BorderSizePixel = 0
-    ToggleFrame.Parent = ContentScroll
+-- ==========================================
+-- 2. BUAT WINDOW & PATCH
+-- ==========================================
+local Window = Fluent:CreateWindow({
+    Title = "CatHUB",
+    SubTitle = "[Freemium] Blox Fruits",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true, 
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
 
-    local ToggleCorner = Instance.new("UICorner")
-    ToggleCorner.CornerRadius = UDim.new(0, 6)
-    ToggleCorner.Parent = ToggleFrame
-
-    local ToggleText = Instance.new("TextLabel")
-    ToggleText.Size = UDim2.new(1, -60, 1, 0)
-    ToggleText.Position = UDim2.new(0, 12, 0, 0)
-    ToggleText.BackgroundTransparency = 1
-    ToggleText.Text = name
-    ToggleText.TextColor3 = Color3.fromRGB(220, 220, 220)
-    ToggleText.Font = Enum.Font.GothamMedium
-    ToggleText.TextSize = 13
-    ToggleText.TextXAlignment = Enum.TextXAlignment.Left
-    ToggleText.Parent = ToggleFrame
-
-    local BtnOuter = Instance.new("TextButton")
-    BtnOuter.Size = UDim2.new(0, 24, 0, 24)
-    BtnOuter.Position = UDim2.new(1, -36, 0.5, -12)
-    BtnOuter.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    BtnOuter.Text = ""
-    BtnOuter.Parent = ToggleFrame
-
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 4)
-    BtnCorner.Parent = BtnOuter
-
-    local BtnStroke = Instance.new("UIStroke")
-    BtnStroke.Color = Color3.fromRGB(60, 60, 60)
-    BtnStroke.Parent = BtnOuter
-
-    local BtnInner = Instance.new("Frame")
-    BtnInner.Size = UDim2.new(1, -6, 1, -6)
-    BtnInner.Position = UDim2.new(0, 3, 0, 3)
-    BtnInner.BackgroundColor3 = Color3.fromRGB(255, 40, 40)
-    BtnInner.BackgroundTransparency = 1 -- Default OFF (Transparan)
-    BtnInner.Parent = BtnOuter
-
-    local InnerCorner = Instance.new("UICorner")
-    InnerCorner.CornerRadius = UDim.new(0, 2)
-    InnerCorner.Parent = BtnInner
-
-    local isToggled = false
-    BtnOuter.MouseButton1Click:Connect(function()
-        isToggled = not isToggled
-        if isToggled then
-            BtnInner.BackgroundTransparency = 0 -- Nyala Merah
-            BtnStroke.Color = Color3.fromRGB(255, 40, 40)
-        else
-            BtnInner.BackgroundTransparency = 1 -- Mati
-            BtnStroke.Color = Color3.fromRGB(60, 60, 60)
+-- Obat Posisi Nyangkuk
+task.spawn(function()
+    task.wait(1)
+    for _, gui in ipairs(game:GetService("CoreGui"):GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            for _, obj in ipairs(gui:GetChildren()) do
+                if obj:IsA("Frame") and math.abs(obj.Size.X.Offset - 580) < 10 and math.abs(obj.Size.Y.Offset - 460) < 10 then
+                    obj.AnchorPoint = Vector2.new(0.5, 0.5)
+                    obj.Position = UDim2.new(0.5, 0, 0.5, 0)
+                    break
+                end
+            end
         end
-        callback(isToggled)
-    end)
+    end
+end)
+
+-- Obat Skill Nyangkuk
+RunService:BindToRenderStep("CatHUB_CameraFix", Enum.RenderPriority.Camera.Value + 1, function()
+    if not _G.Cat.State or not _G.Cat.State.IsGameReady then return end
+    local cam = workspace.CurrentCamera
+    local char = Players.LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health > 0 then
+            if cam.CameraType ~= Enum.CameraType.Custom then cam.CameraType = Enum.CameraType.Custom end
+            if cam.CameraSubject ~= hum then cam.CameraSubject = hum end
+        end
+    end
+end)
+
+-- ==========================================
+-- 3. WRAPPER ENGINE
+-- ==========================================
+local Tabs = {}
+local function CreateTab(name, isFirst)
+    if not Window then return {} end
+    if not Tabs[name] then Tabs[name] = Window:AddTab({ Title = name, Icon = "" }) end
+    if isFirst then pcall(function() Window:SelectTab(1) end) end
+    return Tabs[name]
+end
+
+local function CreateSection(parentTab, text)
+    if not Window then return end
+    parentTab:AddSection(text)
+end
+
+local function CreateToggle(parentTab, text, description, stateRef, callback)
+    if not Window then return end
+    parentTab:AddToggle("T_"..text, {
+        Title = text, Description = description or "", Default = stateRef or false,
+        Callback = function(state) if callback then callback(state) end; SaveSettings() end
+    })
+end
+
+local function CreateLabel(parentTab, text, description)
+    if not Window then return { Text = text or "" } end
+    local p = parentTab:AddParagraph({ Title = text, Content = description or "" })
+    local fakeLabel = {}
+    setmetatable(fakeLabel, { __newindex = function(t, k, v) if k == "Text" then p:SetTitle(v) end end })
+    return fakeLabel
 end
 
 -- ==========================================
---    IMPLEMENTASI MENU LU
+-- 4. INIT & EXPORT
 -- ==========================================
+CreateTab("Status", true)
+CreateTab("Auto Farm", false)
+CreateTab("Devil Fruits", false)
+CreateTab("Misc", false)
 
-OniUI.CreateLabel("Player Information")
+_G.Cat.UI = {
+    CreateTab = CreateTab, CreateSection = CreateSection,
+    CreateToggle = CreateToggle, CreateLabel = CreateLabel,
+    Theme = _G.Cat.Theme, SaveSettings = SaveSettings
+}
 
-local LblLevel = OniUI.CreateLabel("Level: Waiting Data...")
-local LblBeli  = OniUI.CreateLabel("Beli: Waiting Data...")
-
-OniUI.CreateLabel("Main Farm Configuration")
-
-OniUI.CreateToggle("Enable Auto Farm", function(state)
-    print("Auto Farm is now: ", state)
-    -- Masukin logic Auto Farm lu di sini
-end)
-
-OniUI.CreateToggle("Auto Store Fruit", function(state)
-    print("Auto Store is now: ", state)
-end)
-
--- Biar gampang dipanggil di file lain
-_G.OniUI = OniUI
+Fluent:Notify({ Title = "CatHUB", Content = "UI Loaded!", Duration = 3 })
