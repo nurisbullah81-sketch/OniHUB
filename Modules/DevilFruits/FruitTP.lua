@@ -228,14 +228,22 @@ task.spawn(function()
                     noclipConn = RunService.Stepped:Connect(function()
                         if not isTweening then return end
 
-                        -- Matikan collision dari memori
+                        -- Matikan collision tubuh kita
                         for part, _ in pairs(originalCollisions) do
                             if part.CanCollide then
                                 part.CanCollide = false
                             end
                         end
 
-                        -- Kunci physics
+                        -- 🚨 RAHASIA PREMIUM: MATIKAN FISIKA BUAH TARGET
+                        -- Touched-nya tetap nyala, tapi tendangannya ilang 100%
+                        if currentTarget then
+                            local targetPart = currentTarget:FindFirstChildWhichIsA("BasePart", true)
+                            if targetPart and targetPart.CanCollide then
+                                targetPart.CanCollide = false
+                            end
+                        end
+
                         hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                         char:PivotTo(ProxyPart.CFrame)
                     end)
