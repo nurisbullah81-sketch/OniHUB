@@ -1,6 +1,6 @@
 -- [[ ==========================================
---      CATHUB v3.0 · REDZ HUB ACCURATE STYLE
---      Modular UI Framework · Blox Fruits
+--      CATHUB PREMIUM · REDZ HUB REPLICA v3.0
+--      Exact visual clone of redz Hub : Blox Fruits
 --    ========================================== ]]
 
 -- // Services
@@ -11,101 +11,85 @@ local HttpService  = game:GetService("HttpService")
 local Players      = game:GetService("Players")
 local RunService   = game:GetService("RunService")
 
--- // Anti-Duplicate
+-- // Anti-Duplicate Cleanup
 if CoreGui:FindFirstChild("CatUI") then
     CoreGui.CatUI:Destroy()
 end
 
--- // Global State
-_G.Cat          = _G.Cat or {}
-_G.Cat.Player   = Players.LocalPlayer
-_G.Cat.Settings = _G.Cat.Settings or {}
+-- ==========================================
+-- 1. SYSTEM CONFIG
+-- ==========================================
 
--- ============================================================
--- THEME  ·  Warna akurat sesuai Redz Hub screenshot
--- ============================================================
+local ConfigFile = "CatHUB_Config.json"
 
-local C = {
-    -- Window Backgrounds
-    BG          = Color3.fromRGB(14,  14,  18),    -- Body utama
-    SideBG      = Color3.fromRGB(20,  20,  26),    -- Sidebar
-    TopBG       = Color3.fromRGB(18,  18,  23),    -- Topbar
+_G.Cat             = _G.Cat or {}
+_G.Cat.Player      = Players.LocalPlayer
+_G.Cat.Labels      = _G.Cat.Labels or {}
+_G.Cat.Settings    = _G.Cat.Settings or {}
 
-    -- Cards / Rows
-    Row         = Color3.fromRGB(24,  24,  32),    -- Row/card background
-    RowHov      = Color3.fromRGB(31,  31,  41),    -- Hover state
+-- ==========================================
+-- 2. UTILITIES
+-- ==========================================
 
-    -- Tab States
-    TabActBG    = Color3.fromRGB(22,  38,  75),    -- Active tab: blue tint
-    TabLine     = Color3.fromRGB(62, 112, 235),    -- Active left bar
-
-    -- Borders
-    Border      = Color3.fromRGB(34,  34,  46),    -- Border halus
-    Divider     = Color3.fromRGB(28,  28,  38),    -- Garis divider
-
-    -- Accent Blue
-    Blue        = Color3.fromRGB(62,  112, 235),   -- Biru utama
-    BlueLight   = Color3.fromRGB(100, 150, 255),   -- Biru terang
-
-    -- Toggle
-    TglOn       = Color3.fromRGB(62,  112, 235),
-    TglOff      = Color3.fromRGB(46,  46,  60),
-    TglDot      = Color3.fromRGB(255, 255, 255),
-
-    -- Typography
-    Text        = Color3.fromRGB(225, 228, 238),   -- Teks utama
-    TextSub     = Color3.fromRGB(125, 128, 148),   -- Deskripsi
-    TextDim     = Color3.fromRGB(65,  68,  85),    -- Dimmed
-
-    -- Status / Extras
-    Gold        = Color3.fromRGB(255, 187,   0),
-    Green       = Color3.fromRGB(52,  211, 153),
-    Red         = Color3.fromRGB(240,  70,  70),
-    Purple      = Color3.fromRGB(160, 100, 255),
-}
-
-_G.Cat.Theme = C
-
--- ============================================================
--- UTILITIES
--- ============================================================
-
--- Shorthand tween
-local function Tween(obj, props, duration, style)
-    TweenService:Create(
-        obj,
-        TweenInfo.new(duration or 0.18, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-        props
-    ):Play()
+local function Tween(obj, props, duration, style, direction)
+    local info = TweenInfo.new(
+        duration   or 0.2,
+        style      or Enum.EasingStyle.Quint,
+        direction  or Enum.EasingDirection.Out
+    )
+    TweenService:Create(obj, info, props):Play()
 end
 
--- UICorner helper
-local function Corner(parent, radius)
-    local c = Instance.new("UICorner", parent)
-    c.CornerRadius = UDim.new(0, radius or 6)
-    return c
-end
-
--- UIStroke helper
-local function Stroke(parent, color, thickness)
-    local s = Instance.new("UIStroke", parent)
-    s.Color     = color or C.Border
-    s.Thickness = thickness or 1
-    return s
-end
-
--- Save settings
 local function SaveSettings()
     pcall(function()
-        writefile("CatHUB_Config.json", HttpService:JSONEncode(_G.Cat.Settings))
+        writefile(ConfigFile, HttpService:JSONEncode(_G.Cat.Settings))
     end)
 end
 
 _G.Cat.SaveSettings = SaveSettings
 
--- ============================================================
--- ROOT SCREENGUI
--- ============================================================
+-- ==========================================
+-- 3. THEME · Exact Redz Hub dark palette
+-- ==========================================
+
+local T = {
+    -- Base Backgrounds
+    BG0     = Color3.fromRGB(12,  12,  16),   -- Main window
+    BG1     = Color3.fromRGB(16,  16,  22),   -- Sidebar
+    BG2     = Color3.fromRGB(22,  22,  30),   -- Cards
+    BG3     = Color3.fromRGB(28,  28,  38),   -- Card hover
+    TopBG   = Color3.fromRGB(14,  14,  20),   -- Topbar
+
+    -- Borders
+    Line    = Color3.fromRGB(34,  34,  48),
+    LineAct = Color3.fromRGB(80,  130, 255),
+
+    -- Text
+    Text    = Color3.fromRGB(225, 225, 235),
+    TextSub = Color3.fromRGB(140, 140, 155),
+    TextDim = Color3.fromRGB(80,  80,  95),
+
+    -- Accent (Blue-Purple as Redz)
+    Accent  = Color3.fromRGB(85,  130, 255),
+    AccentD = Color3.fromRGB(55,  100, 210),
+
+    -- Toggle
+    TglOn   = Color3.fromRGB(85,  130, 255),
+    TglOff  = Color3.fromRGB(50,  50,  65),
+    TglDot  = Color3.fromRGB(255, 255, 255),
+
+    -- Status Colors
+    Gold    = Color3.fromRGB(255, 195,  0),
+    Green   = Color3.fromRGB(52,  220, 155),
+    Red     = Color3.fromRGB(255, 70,  70),
+    Purple  = Color3.fromRGB(140, 100, 255),
+}
+
+_G.Cat.Theme = T
+
+-- ==========================================
+-- 4. ROOT SCREENGUI
+-- ==========================================
 
 local Gui = Instance.new("ScreenGui", CoreGui)
 Gui.Name           = "CatUI"
@@ -113,297 +97,332 @@ Gui.ResetOnSpawn   = false
 Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 Gui.DisplayOrder   = 999
 
--- ============================================================
--- FLOATING TOGGLE BUTTON
--- ============================================================
+-- ==========================================
+-- 5. FLOATING TOGGLE BUTTON
+-- ==========================================
 
 local FloatCont = Instance.new("Frame", Gui)
-FloatCont.Name                   = "FloatCont"
-FloatCont.Size                   = UDim2.new(0, 88, 0, 32)
-FloatCont.Position               = UDim2.new(0, 12, 0.5, -16)
+FloatCont.Name                   = "FloatContainer"
+FloatCont.Size                   = UDim2.new(0, 80, 0, 34)
+FloatCont.Position               = UDim2.new(0, 16, 0.5, -17)
 FloatCont.BackgroundTransparency = 1
 FloatCont.ZIndex                 = 99999
 
--- Drag handle (invisible, kiri)
+local FloatBtn = Instance.new("TextButton", FloatCont)
+FloatBtn.Size             = UDim2.new(0, 50, 1, 0)
+FloatBtn.Position         = UDim2.new(0, 30, 0, 0)
+FloatBtn.BackgroundColor3 = T.BG2
+FloatBtn.Text             = "CAT"
+FloatBtn.TextColor3       = T.Accent
+FloatBtn.Font             = Enum.Font.GothamBold
+FloatBtn.TextSize         = 13
+FloatBtn.BorderSizePixel  = 0
+FloatBtn.AutoButtonColor  = false
+FloatBtn.ZIndex           = 99999
+
+do
+    local c = Instance.new("UICorner", FloatBtn)
+    c.CornerRadius = UDim.new(0, 8)
+    local s = Instance.new("UIStroke", FloatBtn)
+    s.Color     = T.Line
+    s.Thickness = 1
+end
+
 local FloatDrag = Instance.new("TextButton", FloatCont)
-FloatDrag.Size                   = UDim2.new(0, 28, 1, 0)
+FloatDrag.Size                   = UDim2.new(0, 30, 1, 0)
 FloatDrag.BackgroundTransparency = 1
 FloatDrag.Text                   = ""
 FloatDrag.AutoButtonColor        = false
+FloatDrag.ZIndex                 = 99999
 
--- Tombol utama
-local FloatBtn = Instance.new("TextButton", FloatCont)
-FloatBtn.Size             = UDim2.new(0, 58, 1, 0)
-FloatBtn.Position         = UDim2.new(0, 30, 0, 0)
-FloatBtn.BackgroundColor3 = C.Row
-FloatBtn.Text             = "CAT"
-FloatBtn.TextColor3       = C.Blue
-FloatBtn.Font             = Enum.Font.GothamBold
-FloatBtn.TextSize         = 12
-FloatBtn.BorderSizePixel  = 0
-FloatBtn.AutoButtonColor  = false
-
-Corner(FloatBtn, 6)
-Stroke(FloatBtn, C.Border, 1)
-
-FloatBtn.MouseEnter:Connect(function() Tween(FloatBtn, {BackgroundColor3 = C.RowHov}, 0.1) end)
-FloatBtn.MouseLeave:Connect(function() Tween(FloatBtn, {BackgroundColor3 = C.Row},    0.1) end)
-
--- ============================================================
--- MAIN WINDOW  (660x450, persis rasio Redz Hub)
--- ============================================================
+-- ==========================================
+-- 6. MAIN WINDOW
+-- ==========================================
 
 local Main = Instance.new("Frame", Gui)
 Main.Name             = "MainFrame"
-Main.Size             = UDim2.new(0, 660, 0, 450)
-Main.Position         = UDim2.new(0.5, -330, 0.5, -225)
-Main.BackgroundColor3 = C.BG
+Main.Size             = UDim2.new(0, 640, 0, 420)
+Main.Position         = UDim2.new(0.5, -320, 0.5, -210)
+Main.BackgroundColor3 = T.BG0
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
+Main.Visible          = true
 
-Corner(Main, 8)
-Stroke(Main, C.Border, 1)
+do
+    local c = Instance.new("UICorner", Main)
+    c.CornerRadius = UDim.new(0, 8)
+    local s = Instance.new("UIStroke", Main)
+    s.Color     = T.Line
+    s.Thickness = 1
+end
 
--- Toggle visibility
 FloatBtn.MouseButton1Click:Connect(function()
     Main.Visible = not Main.Visible
 end)
 
--- ============================================================
--- TOP BAR
--- ============================================================
+-- ==========================================
+-- 7. TOP BAR · redz hub style
+-- ==========================================
 
 local Top = Instance.new("Frame", Main)
 Top.Name             = "TopBar"
-Top.Size             = UDim2.new(1, 0, 0, 38)
-Top.BackgroundColor3 = C.TopBG
+Top.Size             = UDim2.new(1, 0, 0, 42)
+Top.BackgroundColor3 = T.TopBG
 Top.BorderSizePixel  = 0
-Top.ZIndex           = 5
+Top.ZIndex           = 2
 
-Corner(Top, 8)
+do
+    local c = Instance.new("UICorner", Top)
+    c.CornerRadius = UDim.new(0, 8)
+    local fix = Instance.new("Frame", Top)
+    fix.Size             = UDim2.new(1, 0, 0, 12)
+    fix.Position         = UDim2.new(0, 0, 1, -12)
+    fix.BackgroundColor3 = T.TopBG
+    fix.BorderSizePixel  = 0
+    local line = Instance.new("Frame", Top)
+    line.Size             = UDim2.new(1, 0, 0, 1)
+    line.Position         = UDim2.new(0, 0, 1, -1)
+    line.BackgroundColor3 = T.Line
+    line.BorderSizePixel  = 0
+end
 
--- Fix: kotak sudut bawah topbar
-local TopFix = Instance.new("Frame", Top)
-TopFix.Size             = UDim2.new(1, 0, 0, 9)
-TopFix.Position         = UDim2.new(0, 0, 1, -9)
-TopFix.BackgroundColor3 = C.TopBG
-TopFix.BorderSizePixel  = 0
-
--- Garis bawah topbar
-local TopLine = Instance.new("Frame", Top)
-TopLine.Size             = UDim2.new(1, 0, 0, 1)
-TopLine.Position         = UDim2.new(0, 0, 1, -1)
-TopLine.BackgroundColor3 = C.Border
-TopLine.BorderSizePixel  = 0
-
--- // Title layout (matching "redz Hub : Blox Fruits" style)
+-- Title text: "redz hub · Blox Fruits"
 local TitleCont = Instance.new("Frame", Top)
-TitleCont.Size                   = UDim2.new(0, 420, 1, 0)
+TitleCont.Name                   = "TitleCont"
+TitleCont.Size                   = UDim2.new(0, 340, 1, 0)
 TitleCont.Position               = UDim2.new(0, 14, 0, 0)
 TitleCont.BackgroundTransparency = 1
 
 local TitleList = Instance.new("UIListLayout", TitleCont)
 TitleList.FillDirection     = Enum.FillDirection.Horizontal
 TitleList.VerticalAlignment = Enum.VerticalAlignment.Center
-TitleList.Padding           = UDim.new(0, 4)
+TitleList.Padding           = UDim.new(0, 5)
 
-local function MkTitle(text, color, font, size)
+local function MakeTitlePart(text, color, font, size)
     local l = Instance.new("TextLabel", TitleCont)
     l.Text                   = text
     l.TextColor3             = color
-    l.Font                   = font   or Enum.Font.GothamBold
-    l.TextSize               = size   or 13
+    l.Font                   = font or Enum.Font.GothamBold
+    l.TextSize               = size or 13
     l.BackgroundTransparency = 1
     l.AutomaticSize          = Enum.AutomaticSize.XY
     return l
 end
 
-MkTitle("Cat",          C.Blue,    Enum.Font.GothamBold,   14)
-MkTitle("HUB",          C.Text,    Enum.Font.GothamBold,   14)
-MkTitle(":",            C.TextDim, Enum.Font.Gotham,       13)
-MkTitle("Blox Fruits",  C.Text,    Enum.Font.GothamMedium, 13)
-MkTitle("[Freemium]",   C.Gold,    Enum.Font.GothamMedium, 11)
+MakeTitlePart("redz",        T.Accent,  Enum.Font.GothamBold,   14)
+MakeTitlePart("hub",         T.Text,    Enum.Font.GothamBold,   14)
+MakeTitlePart("·",           T.TextDim, Enum.Font.Gotham,       14)
+MakeTitlePart("Blox Fruits", T.TextSub, Enum.Font.GothamMedium, 12)
 
--- // Window control buttons (close & minimize)
-local function MkWinBtn(xOffset, text, size)
+-- Window control buttons (close & minimize)
+local function MakeWinBtn(xOffset, symbol, size)
     local b = Instance.new("TextButton", Top)
-    b.Size                   = UDim2.new(0, 36, 0, 38)
+    b.Size                   = UDim2.new(0, 42, 0, 42)
     b.Position               = UDim2.new(1, xOffset, 0, 0)
-    b.Text                   = text
-    b.TextColor3             = C.TextSub
-    b.TextSize               = size or 14
+    b.Text                   = symbol
+    b.TextColor3             = T.TextSub
+    b.TextSize               = size or 16
     b.Font                   = Enum.Font.GothamBold
     b.BackgroundTransparency = 1
     b.AutoButtonColor        = false
-    b.ZIndex                 = 6
+    b.ZIndex                 = 3
     return b
 end
 
-local BtnX   = MkWinBtn(-36, "✕", 14)
-local BtnMin = MkWinBtn(-72, "–", 16)
+local BtnX = MakeWinBtn(-42,  "✕", 16)
+local BtnM = MakeWinBtn(-84,  "—", 14)
 
--- Hover colors
-BtnX.MouseEnter:Connect(function()   Tween(BtnX,   {TextColor3 = C.Red},     0.1) end)
-BtnX.MouseLeave:Connect(function()   Tween(BtnX,   {TextColor3 = C.TextSub}, 0.1) end)
-BtnMin.MouseEnter:Connect(function() Tween(BtnMin, {TextColor3 = C.Text},    0.1) end)
-BtnMin.MouseLeave:Connect(function() Tween(BtnMin, {TextColor3 = C.TextSub}, 0.1) end)
+BtnX.MouseEnter:Connect(function() Tween(BtnX, {TextColor3 = T.Red}, 0.1) end)
+BtnX.MouseLeave:Connect(function() Tween(BtnX, {TextColor3 = T.TextSub}, 0.1) end)
+BtnM.MouseEnter:Connect(function() Tween(BtnM, {TextColor3 = T.Text}, 0.1) end)
+BtnM.MouseLeave:Connect(function() Tween(BtnM, {TextColor3 = T.TextSub}, 0.1) end)
 
--- Close
 BtnX.MouseButton1Click:Connect(function()
     Main.Visible = false
 end)
 
--- Minimize / restore
-local isMin  = false
-local lastSz = Main.Size
+local isMinimized = false
+local lastSize    = Main.Size
 
-BtnMin.MouseButton1Click:Connect(function()
-    isMin = not isMin
-    if isMin then lastSz = Main.Size end
-    local h = isMin and 38 or lastSz.Y.Offset
-    Tween(Main, {Size = UDim2.new(0, Main.Size.X.Offset, 0, h)}, 0.22, Enum.EasingStyle.Quint)
+BtnM.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then lastSize = Main.Size end
+    local h = isMinimized and 42 or lastSize.Y.Offset
+    Tween(Main, { Size = UDim2.new(0, Main.Size.X.Offset, 0, h) }, 0.25, Enum.EasingStyle.Quint)
 end)
 
--- ============================================================
--- DRAG & RESIZE  (state table bersih)
--- ============================================================
+-- ==========================================
+-- 8. DRAG & RESIZE STATE
+-- ==========================================
 
-local DS = { -- Drag State
-    main  = {on = false, start = nil, pos  = nil},
-    float = {on = false, start = nil, pos  = nil},
-    rsz   = {on = false, start = nil, size = nil},
-}
+local dragMain  = { active = false, start = nil, pos = nil }
+local dragFloat = { active = false, start = nil, pos = nil }
+local resizer   = { active = false, start = nil, size = nil }
 
--- Main window drag (dari topbar)
 Top.InputBegan:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.MouseButton1
     or i.UserInputType == Enum.UserInputType.Touch then
-        DS.main.on    = true
-        DS.main.start = i.Position
-        DS.main.pos   = Main.Position
+        dragMain.active = true
+        dragMain.start  = i.Position
+        dragMain.pos    = Main.Position
     end
 end)
+
 Top.InputEnded:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.MouseButton1
     or i.UserInputType == Enum.UserInputType.Touch then
-        DS.main.on = false
+        dragMain.active = false
     end
 end)
 
--- Float button drag
 FloatDrag.InputBegan:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.MouseButton1
     or i.UserInputType == Enum.UserInputType.Touch then
-        DS.float.on    = true
-        DS.float.start = i.Position
-        DS.float.pos   = FloatCont.Position
+        dragFloat.active = true
+        dragFloat.start  = i.Position
+        dragFloat.pos    = FloatCont.Position
     end
 end)
+
 FloatDrag.InputEnded:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.MouseButton1
     or i.UserInputType == Enum.UserInputType.Touch then
-        DS.float.on = false
+        dragFloat.active = false
     end
 end)
 
--- Resize handle (pojok kanan bawah)
-local ResizeHandle = Instance.new("TextButton", Main)
-ResizeHandle.Size                   = UDim2.new(0, 20, 0, 20)
-ResizeHandle.Position               = UDim2.new(1, -20, 1, -20)
-ResizeHandle.BackgroundTransparency = 1
-ResizeHandle.Text                   = "⌟"
-ResizeHandle.TextColor3             = C.TextDim
-ResizeHandle.TextSize               = 20
-ResizeHandle.Font                   = Enum.Font.Gotham
-ResizeHandle.ZIndex                 = 99999
-ResizeHandle.AutoButtonColor        = false
+-- Resize handle kanan-bawah
+local Resizer = Instance.new("TextButton", Main)
+Resizer.Size                   = UDim2.new(0, 28, 0, 28)
+Resizer.Position               = UDim2.new(1, -28, 1, -28)
+Resizer.BackgroundTransparency = 1
+Resizer.Text                   = "⌟"
+Resizer.TextColor3             = T.TextDim
+Resizer.TextSize               = 24
+Resizer.Font                   = Enum.Font.Gotham
+Resizer.ZIndex                 = 99999
+Resizer.AutoButtonColor        = false
 
-ResizeHandle.InputBegan:Connect(function(i)
+Resizer.InputBegan:Connect(function(i)
     if (i.UserInputType == Enum.UserInputType.MouseButton1
-    or  i.UserInputType == Enum.UserInputType.Touch) and not isMin then
-        DS.rsz.on    = true
-        DS.rsz.start = UserInput:GetMouseLocation()
-        DS.rsz.size  = Main.Size
+    or  i.UserInputType == Enum.UserInputType.Touch)
+    and not isMinimized then
+        resizer.active = true
+        resizer.start  = UserInput:GetMouseLocation()
+        resizer.size   = Main.Size
     end
 end)
 
--- Unified input handler
 UserInput.InputChanged:Connect(function(i)
     local isMove = i.UserInputType == Enum.UserInputType.MouseMovement
                or i.UserInputType == Enum.UserInputType.Touch
     if not isMove then return end
 
-    -- Window drag
-    if DS.main.on and DS.main.start then
-        local d = i.Position - DS.main.start
+    if dragMain.active and dragMain.start then
+        local d = i.Position - dragMain.start
         Main.Position = UDim2.new(
-            DS.main.pos.X.Scale, DS.main.pos.X.Offset + d.X,
-            DS.main.pos.Y.Scale, DS.main.pos.Y.Offset + d.Y
+            dragMain.pos.X.Scale, dragMain.pos.X.Offset + d.X,
+            dragMain.pos.Y.Scale, dragMain.pos.Y.Offset + d.Y
         )
     end
 
-    -- Float drag
-    if DS.float.on and DS.float.start then
-        local d = i.Position - DS.float.start
+    if dragFloat.active and dragFloat.start then
+        local d = i.Position - dragFloat.start
         FloatCont.Position = UDim2.new(
-            DS.float.pos.X.Scale, DS.float.pos.X.Offset + d.X,
-            DS.float.pos.Y.Scale, DS.float.pos.Y.Offset + d.Y
+            dragFloat.pos.X.Scale, dragFloat.pos.X.Offset + d.X,
+            dragFloat.pos.Y.Scale, dragFloat.pos.Y.Offset + d.Y
         )
     end
 
-    -- Window resize
-    if DS.rsz.on and DS.rsz.start then
+    if resizer.active and resizer.start then
         local cur = UserInput:GetMouseLocation()
-        local d   = cur - DS.rsz.start
+        local d   = cur - resizer.start
         Main.Size = UDim2.new(0,
-            math.clamp(DS.rsz.size.X.Offset + d.X, 420, 950),
+            math.clamp(resizer.size.X.Offset + d.X, 420, 1000),
             0,
-            math.clamp(DS.rsz.size.Y.Offset + d.Y, 280, 750)
+            math.clamp(resizer.size.Y.Offset + d.Y, 280, 800)
         )
-        lastSz = Main.Size
+        lastSize = Main.Size
     end
 end)
 
--- Stop semua drag/resize
 UserInput.InputEnded:Connect(function(i)
     if i.UserInputType == Enum.UserInputType.MouseButton1
     or i.UserInputType == Enum.UserInputType.Touch then
-        DS.main.on  = false
-        DS.float.on = false
-        DS.rsz.on   = false
+        dragMain.active  = false
+        dragFloat.active = false
+        resizer.active   = false
     end
 end)
 
--- ============================================================
--- BODY  (di bawah topbar)
--- ============================================================
+-- ==========================================
+-- 9. BODY LAYOUT
+-- ==========================================
 
 local Body = Instance.new("Frame", Main)
 Body.Name                   = "Body"
-Body.Size                   = UDim2.new(1, 0, 1, -38)
-Body.Position               = UDim2.new(0, 0, 0, 38)
+Body.Size                   = UDim2.new(1, 0, 1, -42)
+Body.Position               = UDim2.new(0, 0, 0, 42)
 Body.BackgroundTransparency = 1
 
--- ============================================================
--- SIDEBAR  (175px lebar, persis Redz Hub)
--- ============================================================
+-- ==========================================
+-- 10. SIDEBAR (exact Redz style)
+-- ==========================================
 
 local Side = Instance.new("Frame", Body)
 Side.Name             = "Sidebar"
-Side.Size             = UDim2.new(0, 175, 1, 0)
-Side.BackgroundColor3 = C.SideBG
+Side.Size             = UDim2.new(0, 170, 1, 0)
+Side.BackgroundColor3 = T.BG1
 Side.BorderSizePixel  = 0
 
--- Garis pembatas kanan sidebar
 local SideLine = Instance.new("Frame", Side)
 SideLine.Size             = UDim2.new(0, 1, 1, 0)
 SideLine.Position         = UDim2.new(1, -1, 0, 0)
-SideLine.BackgroundColor3 = C.Border
+SideLine.BackgroundColor3 = T.Line
 SideLine.BorderSizePixel  = 0
 
--- ScrollingFrame untuk list tab
+-- Search Box
+local SearchWrap = Instance.new("Frame", Side)
+SearchWrap.Name             = "SearchWrap"
+SearchWrap.Size             = UDim2.new(1, -16, 0, 30)
+SearchWrap.Position         = UDim2.new(0, 8, 0, 12)
+SearchWrap.BackgroundColor3 = T.BG2
+SearchWrap.BorderSizePixel  = 0
+
+do
+    local c = Instance.new("UICorner", SearchWrap)
+    c.CornerRadius = UDim.new(0, 7)
+    local s = Instance.new("UIStroke", SearchWrap)
+    s.Color     = T.Line
+    s.Thickness = 1
+end
+
+local SearchIcon = Instance.new("TextLabel", SearchWrap)
+SearchIcon.Size                   = UDim2.new(0, 24, 1, 0)
+SearchIcon.Position               = UDim2.new(0, 6, 0, 0)
+SearchIcon.Text                   = "⌕"
+SearchIcon.TextSize               = 15
+SearchIcon.TextColor3             = T.TextDim
+SearchIcon.Font                   = Enum.Font.Gotham
+SearchIcon.BackgroundTransparency = 1
+
+local SearchBox = Instance.new("TextBox", SearchWrap)
+SearchBox.Size                   = UDim2.new(1, -30, 1, 0)
+SearchBox.Position               = UDim2.new(0, 26, 0, 0)
+SearchBox.BackgroundTransparency = 1
+SearchBox.Text                   = ""
+SearchBox.PlaceholderText        = "Search..."
+SearchBox.TextColor3             = T.Text
+SearchBox.PlaceholderColor3      = T.TextDim
+SearchBox.Font                   = Enum.Font.GothamMedium
+SearchBox.TextSize               = 12
+SearchBox.TextXAlignment         = Enum.TextXAlignment.Left
+
+-- Scrollable tab list
 local SideScroll = Instance.new("ScrollingFrame", Side)
-SideScroll.Size                   = UDim2.new(1, 0, 1, 0)
+SideScroll.Name                   = "SideScroll"
+SideScroll.Size                   = UDim2.new(1, 0, 1, -52)
+SideScroll.Position               = UDim2.new(0, 0, 0, 52)
 SideScroll.BackgroundTransparency = 1
 SideScroll.ScrollBarThickness     = 0
 SideScroll.BorderSizePixel        = 0
@@ -413,822 +432,723 @@ local SideList = Instance.new("UIListLayout", SideScroll)
 SideList.Padding   = UDim.new(0, 2)
 SideList.SortOrder = Enum.SortOrder.LayoutOrder
 
-local SidePadding = Instance.new("UIPadding", SideScroll)
-SidePadding.PaddingLeft   = UDim.new(0, 8)
-SidePadding.PaddingRight  = UDim.new(0, 8)
-SidePadding.PaddingTop    = UDim.new(0, 10)
-SidePadding.PaddingBottom = UDim.new(0, 10)
+local SidePad = Instance.new("UIPadding", SideScroll)
+SidePad.PaddingLeft   = UDim.new(0, 8)
+SidePad.PaddingRight  = UDim.new(0, 8)
+SidePad.PaddingTop    = UDim.new(0, 4)
+SidePad.PaddingBottom = UDim.new(0, 8)
 
--- Auto canvas size
 SideList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    SideScroll.CanvasSize = UDim2.new(0, 0, 0, SideList.AbsoluteContentSize.Y + 20)
+    SideScroll.CanvasSize = UDim2.new(0, 0, 0, SideList.AbsoluteContentSize.Y + 16)
 end)
 
--- ============================================================
--- CONTENT AREA  (kanan sidebar)
--- ============================================================
+-- ==========================================
+-- 11. CONTENT AREA
+-- ==========================================
 
 local ContentArea = Instance.new("Frame", Body)
 ContentArea.Name                   = "ContentArea"
-ContentArea.Size                   = UDim2.new(1, -175, 1, 0)
-ContentArea.Position               = UDim2.new(0, 175, 0, 0)
+ContentArea.Size                   = UDim2.new(1, -170, 1, 0)
+ContentArea.Position               = UDim2.new(0, 170, 0, 0)
 ContentArea.BackgroundTransparency = 1
 
--- ============================================================
--- TAB CONFIG  (10 tab sesuai Redz Hub)
--- ============================================================
+-- ==========================================
+-- 12. FOOTER STATUS BAR (Health, Energy)
+-- ==========================================
 
-local TAB_CONFIG = {
-    {name = "Farm",        icon = "⚔",  order = 1},
-    {name = "Sea",         icon = "≈",  order = 2},
-    {name = "Quests",      icon = "✦",  order = 3},
-    {name = "Raid/Fruits", icon = "◎",  order = 4},
-    {name = "Stats",       icon = "≡",  order = 5},
-    {name = "Teleport",    icon = "◇",  order = 6},
-    {name = "Visual",      icon = "●",  order = 7},
-    {name = "Shop",        icon = "◆",  order = 8},
-    {name = "Misc",        icon = "⚙",  order = 9},
-    {name = "Status",      icon = "◈",  order = 10},
+local Footer = Instance.new("Frame", Main)
+Footer.Name             = "Footer"
+Footer.Size             = UDim2.new(1, 0, 0, 32)
+Footer.Position         = UDim2.new(0, 0, 1, -32)
+Footer.BackgroundColor3 = T.TopBG
+Footer.BorderSizePixel  = 0
+Footer.ZIndex           = 2
+
+do
+    local line = Instance.new("Frame", Footer)
+    line.Size             = UDim2.new(1, 0, 0, 1)
+    line.BackgroundColor3 = T.Line
+    line.BorderSizePixel  = 0
+end
+
+-- Health display
+local HealthFrame = Instance.new("Frame", Footer)
+HealthFrame.Size                   = UDim2.new(0, 140, 0, 20)
+HealthFrame.Position               = UDim2.new(0, 14, 0.5, -10)
+HealthFrame.BackgroundTransparency = 1
+
+local HealthIcon = Instance.new("TextLabel", HealthFrame)
+HealthIcon.Size                   = UDim2.new(0, 18, 1, 0)
+HealthIcon.Text                   = "♥"
+HealthIcon.TextColor3             = T.Red
+HealthIcon.Font                   = Enum.Font.GothamBold
+HealthIcon.TextSize               = 13
+HealthIcon.BackgroundTransparency = 1
+
+local HealthText = Instance.new("TextLabel", HealthFrame)
+HealthText.Size                   = UDim2.new(1, -22, 1, 0)
+HealthText.Position               = UDim2.new(0, 20, 0, 0)
+HealthText.Text                   = "Health · 100 / 100"
+HealthText.TextColor3             = T.Text
+HealthText.Font                   = Enum.Font.GothamMedium
+HealthText.TextSize               = 11
+HealthText.TextXAlignment         = Enum.TextXAlignment.Left
+HealthText.BackgroundTransparency = 1
+
+-- Energy display
+local EnergyFrame = Instance.new("Frame", Footer)
+EnergyFrame.Size                   = UDim2.new(0, 140, 0, 20)
+EnergyFrame.Position               = UDim2.new(0, 160, 0.5, -10)
+EnergyFrame.BackgroundTransparency = 1
+
+local EnergyIcon = Instance.new("TextLabel", EnergyFrame)
+EnergyIcon.Size                   = UDim2.new(0, 18, 1, 0)
+EnergyIcon.Text                   = "⚡"
+EnergyIcon.TextColor3             = T.Gold
+EnergyIcon.Font                   = Enum.Font.GothamBold
+EnergyIcon.TextSize               = 13
+EnergyIcon.BackgroundTransparency = 1
+
+local EnergyText = Instance.new("TextLabel", EnergyFrame)
+EnergyText.Size                   = UDim2.new(1, -22, 1, 0)
+EnergyText.Position               = UDim2.new(0, 20, 0, 0)
+EnergyText.Text                   = "Energy · 100 / 100"
+EnergyText.TextColor3             = T.Text
+EnergyText.Font                   = Enum.Font.GothamMedium
+EnergyText.TextSize               = 11
+EnergyText.TextXAlignment         = Enum.TextXAlignment.Left
+EnergyText.BackgroundTransparency = 1
+
+-- Player count / version text (kanan footer)
+local VersionText = Instance.new("TextLabel", Footer)
+VersionText.Size                   = UDim2.new(0, 120, 1, 0)
+VersionText.Position               = UDim2.new(1, -130, 0, 0)
+VersionText.Text                   = "u.16 · 016/1,261"
+VersionText.TextColor3             = T.TextSub
+VersionText.Font                   = Enum.Font.GothamMedium
+VersionText.TextSize               = 10
+VersionText.TextXAlignment         = Enum.TextXAlignment.Right
+VersionText.BackgroundTransparency = 1
+
+-- Update footer stats dynamically
+local function UpdateFooterStats()
+    local player = Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            local health = math.floor(humanoid.Health)
+            local maxHealth = math.floor(humanoid.MaxHealth)
+            HealthText.Text = "Health · " .. health .. " / " .. maxHealth
+
+            -- Energy (jika ada atribut energy di game)
+            -- Placeholder, bisa disambungkan ke sistem energy game
+            EnergyText.Text = "Energy · 100 / 100"
+        end
+    end
+    -- Player count
+    local count = #Players:GetPlayers()
+    VersionText.Text = "u.16 · " .. count .. "/" .. game.Players.MaxPlayers
+end
+
+-- Update berkala
+RunService.Stepped:Connect(UpdateFooterStats)
+
+-- Public method to update
+_G.Cat.UpdateFooter = UpdateFooterStats
+
+-- Adjust body size to accommodate footer
+Body.Size = UDim2.new(1, 0, 1, -74) -- 42 top + 32 bottom
+Body.Position = UDim2.new(0, 0, 0, 42)
+
+-- ==========================================
+-- 13. TAB SYSTEM (mirip Redz sidebar)
+-- ==========================================
+
+local Pages    = {}
+local AllItems = {}
+
+-- Tab order & icons matching Redz Hub
+local TabOrder = {
+    "Farm",
+    "Fishing",
+    "Quest/Items",
+    "Raid/Fruits",
+    "Sea",
+    "Stats",
+    "Teleport",
+    "Status",
+    "Visual",
+    "Shop",
+    "Misc",
 }
 
--- State
-local Pages    = {}   -- {name → {Btn, Page, Ind, Icon, Lbl}}
-local AllItems = {}   -- untuk search
+local TabIcons = {
+    ["Farm"]        = "⚔",
+    ["Fishing"]     = "🎣",
+    ["Quest/Items"] = "📋",
+    ["Raid/Fruits"] = "🍈",
+    ["Sea"]         = "🌊",
+    ["Stats"]       = "📊",
+    ["Teleport"]    = "◎",
+    ["Status"]      = "◈",
+    ["Visual"]      = "👁",
+    ["Shop"]        = "🛒",
+    ["Misc"]        = "⚙",
+    ["Auto Farm"]   = "⚔",
+    ["Devil Fruits"]= "◉",
+}
 
--- ============================================================
--- FUNCTION: CreateTab
--- ============================================================
-
-local function CreateTab(name, icon, isFirst)
+local function CreateTab(name, isFirst)
     if Pages[name] then return Pages[name].Page end
 
-    -- Cari order dari config
     local order = 99
-    for _, cfg in ipairs(TAB_CONFIG) do
-        if cfg.name == name then order = cfg.order break end
+    for i, v in ipairs(TabOrder) do
+        if v == name then order = i break end
     end
+    if order == 99 and name == "Auto Farm" then order = 1 end
+    if order == 99 and name == "Devil Fruits" then order = 4 end
 
-    -- ── Sidebar Button ──────────────────────────────────────
-
+    -- ── Sidebar Button ──────────────────────
     local Btn = Instance.new("TextButton", SideScroll)
-    Btn.Name             = name .. "_Tab"
+    Btn.Name             = name .. "_TabBtn"
     Btn.LayoutOrder      = order
     Btn.Size             = UDim2.new(1, 0, 0, 36)
-    Btn.BackgroundColor3 = isFirst and C.TabActBG or C.SideBG
+    Btn.BackgroundColor3 = isFirst and T.BG2 or T.BG1
     Btn.Text             = ""
     Btn.BorderSizePixel  = 0
     Btn.AutoButtonColor  = false
 
-    Corner(Btn, 6)
+    local BtnCorner = Instance.new("UICorner", Btn)
+    BtnCorner.CornerRadius = UDim.new(0, 7)
 
-    -- Left indicator (biru, hanya muncul saat aktif)
+    -- Left indicator bar
     local Ind = Instance.new("Frame", Btn)
-    Ind.Name             = "Ind"
-    Ind.Size             = UDim2.new(0, 3, 0, 18)
-    Ind.Position         = UDim2.new(0, 0, 0.5, -9)
-    Ind.BackgroundColor3 = C.TabLine
+    Ind.Name             = "Indicator"
+    Ind.Size             = UDim2.new(0, 3, 0, 16)
+    Ind.Position         = UDim2.new(0, 0, 0.5, -8)
+    Ind.BackgroundColor3 = T.Accent
     Ind.BorderSizePixel  = 0
-    Ind.Visible          = isFirst or false
+    Ind.Visible          = isFirst
 
-    Corner(Ind, 3)
+    local IndCorner = Instance.new("UICorner", Ind)
+    IndCorner.CornerRadius = UDim.new(1, 0)
 
     -- Icon
-    local IconLbl = Instance.new("TextLabel", Btn)
-    IconLbl.Size                   = UDim2.new(0, 28, 1, 0)
-    IconLbl.Position               = UDim2.new(0, 10, 0, 0)
-    IconLbl.Text                   = icon or "●"
-    IconLbl.TextSize               = 13
-    IconLbl.TextColor3             = isFirst and C.Blue or C.TextDim
-    IconLbl.Font                   = Enum.Font.GothamBold
-    IconLbl.BackgroundTransparency = 1
+    local Icon = Instance.new("TextLabel", Btn)
+    Icon.Size                   = UDim2.new(0, 26, 1, 0)
+    Icon.Position               = UDim2.new(0, 12, 0, 0)
+    Icon.Text                   = TabIcons[name] or "●"
+    Icon.TextSize               = 14
+    Icon.TextColor3             = isFirst and T.Accent or T.TextDim
+    Icon.Font                   = Enum.Font.Gotham
+    Icon.BackgroundTransparency = 1
 
     -- Label
-    local TabLbl = Instance.new("TextLabel", Btn)
-    TabLbl.Size                   = UDim2.new(1, -44, 1, 0)
-    TabLbl.Position               = UDim2.new(0, 38, 0, 0)
-    TabLbl.Text                   = name
-    TabLbl.TextColor3             = isFirst and C.Text or C.TextSub
-    TabLbl.Font                   = Enum.Font.GothamMedium
-    TabLbl.TextSize               = 12
-    TabLbl.TextXAlignment         = Enum.TextXAlignment.Left
-    TabLbl.BackgroundTransparency = 1
+    local Lbl = Instance.new("TextLabel", Btn)
+    Lbl.Size                   = UDim2.new(1, -44, 1, 0)
+    Lbl.Position               = UDim2.new(0, 40, 0, 0)
+    Lbl.Text                   = name
+    Lbl.TextColor3             = isFirst and T.Text or T.TextSub
+    Lbl.Font                   = Enum.Font.GothamMedium
+    Lbl.TextSize               = 12
+    Lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    Lbl.BackgroundTransparency = 1
 
-    -- Hover effect
+    -- Hover
     Btn.MouseEnter:Connect(function()
-        if Pages[name] and Pages[name].Page.Visible then return end
-        Tween(Btn, {BackgroundColor3 = Color3.fromRGB(26, 28, 38)}, 0.1)
+        if not Pages[name] or not Pages[name].Page.Visible then
+            Tween(Btn, { BackgroundColor3 = T.BG3 }, 0.1)
+        end
     end)
     Btn.MouseLeave:Connect(function()
-        if Pages[name] and Pages[name].Page.Visible then return end
-        Tween(Btn, {BackgroundColor3 = C.SideBG}, 0.1)
+        if not Pages[name] or not Pages[name].Page.Visible then
+            Tween(Btn, { BackgroundColor3 = T.BG1 }, 0.1)
+        end
     end)
 
-    -- ── Content Page ────────────────────────────────────────
-
+    -- ── Content Page ────────────────────────
     local Page = Instance.new("ScrollingFrame", ContentArea)
     Page.Name                   = name .. "_Page"
-    Page.Size                   = UDim2.new(1, -16, 1, -12)
-    Page.Position               = UDim2.new(0, 8, 0, 6)
+    Page.Size                   = UDim2.new(1, -14, 1, -14)
+    Page.Position               = UDim2.new(0, 7, 0, 7)
     Page.BackgroundTransparency = 1
     Page.ScrollBarThickness     = 2
-    Page.ScrollBarImageColor3   = C.Border
-    Page.Visible                = isFirst or false
+    Page.ScrollBarImageColor3   = T.Line
+    Page.Visible                = isFirst
     Page.BorderSizePixel        = 0
     Page.CanvasSize             = UDim2.new(0, 0, 0, 0)
 
-    local PLayout = Instance.new("UIListLayout", Page)
-    PLayout.Padding   = UDim.new(0, 4)
-    PLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    local PageLayout = Instance.new("UIListLayout", Page)
+    PageLayout.Padding   = UDim.new(0, 5)
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    local PPad = Instance.new("UIPadding", Page)
-    PPad.PaddingTop    = UDim.new(0, 4)
-    PPad.PaddingLeft   = UDim.new(0, 2)
-    PPad.PaddingRight  = UDim.new(0, 6)
-    PPad.PaddingBottom = UDim.new(0, 14)
+    local PagePad = Instance.new("UIPadding", Page)
+    PagePad.PaddingTop    = UDim.new(0, 6)
+    PagePad.PaddingLeft   = UDim.new(0, 2)
+    PagePad.PaddingRight  = UDim.new(0, 8)
+    PagePad.PaddingBottom = UDim.new(0, 12)
 
-    -- Auto canvas
-    PLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Page.CanvasSize = UDim2.new(0, 0, 0, PLayout.AbsoluteContentSize.Y + 22)
+    PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, PageLayout.AbsoluteContentSize.Y + 20)
     end)
 
-    -- ── Tab Switch Logic ─────────────────────────────────────
-
+    -- ── Tab Switch ─────────────────────────
     Btn.MouseButton1Click:Connect(function()
         if Pages[name] and Pages[name].Page.Visible then return end
 
         for n, d in pairs(Pages) do
-            local act = (n == name)
+            local active = (n == name)
+            d.Page.Visible = active
+            d.Ind.Visible  = active
 
-            d.Page.Visible = act
-            d.Ind.Visible  = act
-
-            Tween(d.Btn,  {BackgroundColor3 = act and C.TabActBG or C.SideBG}, 0.15)
-            Tween(d.Icon, {TextColor3       = act and C.Blue     or C.TextDim}, 0.15)
-            Tween(d.Lbl,  {TextColor3       = act and C.Text     or C.TextSub}, 0.15)
+            Tween(d.Btn,  { BackgroundColor3 = active and T.BG2 or T.BG1 }, 0.15)
+            Tween(d.Icon, { TextColor3       = active and T.Accent or T.TextDim }, 0.15)
+            Tween(d.Lbl,  { TextColor3       = active and T.Text or T.TextSub  }, 0.15)
         end
     end)
 
-    -- Register
-    Pages[name] = {
-        Btn  = Btn,
-        Page = Page,
-        Ind  = Ind,
-        Icon = IconLbl,
-        Lbl  = TabLbl,
-    }
-
+    Pages[name] = { Btn = Btn, Page = Page, Ind = Ind, Icon = Icon, Lbl = Lbl }
     return Page
 end
 
--- ============================================================
--- COMPONENTS
--- ============================================================
+-- ==========================================
+-- 14. UI COMPONENTS (exact Redz style)
+-- ==========================================
 
--- // Section Header  →  Plain white bold text (persis Redz Hub)
+-- Section Header with right divider
 local function CreateSection(parent, text)
-    local F = Instance.new("Frame", parent)
-    F.Name                   = "Sec_" .. text
-    F.LayoutOrder            = #parent:GetChildren()
-    F.Size                   = UDim2.new(1, 0, 0, 34)
-    F.BackgroundTransparency = 1
+    local Frame = Instance.new("Frame", parent)
+    Frame.Name                   = "Sec_" .. text
+    Frame.LayoutOrder            = #parent:GetChildren()
+    Frame.Size                   = UDim2.new(1, 0, 0, 28)
+    Frame.BackgroundTransparency = 1
 
-    local L = Instance.new("TextLabel", F)
-    L.Size                   = UDim2.new(1, -8, 1, 0)
-    L.Position               = UDim2.new(0, 4, 0, 6)
-    L.Text                   = text
-    L.TextColor3             = C.Text
-    L.Font                   = Enum.Font.GothamBold
-    L.TextSize               = 14
-    L.TextXAlignment         = Enum.TextXAlignment.Left
-    L.BackgroundTransparency = 1
+    local Lbl = Instance.new("TextLabel", Frame)
+    Lbl.Size                   = UDim2.new(0, 0, 1, 0)
+    Lbl.AutomaticSize          = Enum.AutomaticSize.X
+    Lbl.Position               = UDim2.new(0, 2, 0, 0)
+    Lbl.Text                   = string.upper(text)
+    Lbl.TextColor3             = T.TextSub
+    Lbl.Font                   = Enum.Font.GothamBold
+    Lbl.TextSize               = 10
+    Lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    Lbl.BackgroundTransparency = 1
 
-    return L
+    local Line = Instance.new("Frame", Frame)
+    Line.Name             = "Line"
+    Line.AnchorPoint      = Vector2.new(0, 0.5)
+    Line.Size             = UDim2.new(1, -130, 0, 1)
+    Line.Position         = UDim2.new(0, 126, 0.6, 0)
+    Line.BackgroundColor3 = T.Line
+    Line.BorderSizePixel  = 0
 end
 
--- // Dropdown Row  →  Title + "∧" + VALUE (persis Farm Tool → Sword)
-local function CreateDropdown(parent, title, desc, options, defaultIdx, callback)
-    local h   = desc and 50 or 36
-    local idx = defaultIdx or 1
+-- Toggle Switch (Redz style track + dot)
+local function CreateToggle(parent, text, description, defaultState, callback)
+    local h = description and 56 or 40
 
-    local Row = Instance.new("TextButton", parent)
-    Row.Name             = title .. "_DD"
-    Row.LayoutOrder      = #parent:GetChildren()
-    Row.Size             = UDim2.new(1, 0, 0, h)
-    Row.BackgroundColor3 = C.Row
-    Row.BorderSizePixel  = 0
-    Row.Text             = ""
-    Row.AutoButtonColor  = false
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Name             = text .. "_Toggle"
+    Btn.LayoutOrder      = #parent:GetChildren()
+    Btn.Size             = UDim2.new(1, 0, 0, h)
+    Btn.BackgroundColor3 = T.BG2
+    Btn.BorderSizePixel  = 0
+    Btn.Text             = ""
+    Btn.AutoButtonColor  = false
 
-    Corner(Row, 6)
-    Stroke(Row, C.Border, 1)
+    local Corner = Instance.new("UICorner", Btn)
+    Corner.CornerRadius = UDim.new(0, 7)
 
-    -- Title (kiri)
-    local TLbl = Instance.new("TextLabel", Row)
-    TLbl.Size                   = UDim2.new(0.52, 0, 0, 18)
-    TLbl.Position               = UDim2.new(0, 12, 0, desc and 7 or 9)
-    TLbl.Text                   = title
-    TLbl.TextColor3             = C.Text
-    TLbl.Font                   = Enum.Font.GothamMedium
-    TLbl.TextSize               = 12
-    TLbl.TextXAlignment         = Enum.TextXAlignment.Left
-    TLbl.BackgroundTransparency = 1
+    local Stroke = Instance.new("UIStroke", Btn)
+    Stroke.Color     = T.Line
+    Stroke.Thickness = 1
 
-    -- Deskripsi (optional)
-    if desc then
-        local DLbl = Instance.new("TextLabel", Row)
-        DLbl.Size                   = UDim2.new(0.52, 0, 0, 14)
-        DLbl.Position               = UDim2.new(0, 12, 0, 28)
-        DLbl.Text                   = desc
-        DLbl.TextColor3             = C.TextSub
-        DLbl.Font                   = Enum.Font.Gotham
-        DLbl.TextSize               = 10
-        DLbl.TextXAlignment         = Enum.TextXAlignment.Left
-        DLbl.BackgroundTransparency = 1
+    Btn.MouseEnter:Connect(function() Tween(Btn, { BackgroundColor3 = T.BG3 }, 0.1) end)
+    Btn.MouseLeave:Connect(function() Tween(Btn, { BackgroundColor3 = T.BG2 }, 0.1) end)
+
+    local Title = Instance.new("TextLabel", Btn)
+    Title.Size                   = UDim2.new(1, -70, 0, 18)
+    Title.Position               = UDim2.new(0, 14, 0, description and 8 or 11)
+    Title.Text                   = text
+    Title.TextColor3             = T.Text
+    Title.Font                   = Enum.Font.GothamMedium
+    Title.TextSize               = 12
+    Title.TextXAlignment         = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
+
+    if description then
+        local Desc = Instance.new("TextLabel", Btn)
+        Desc.Size                   = UDim2.new(1, -70, 0, 14)
+        Desc.Position               = UDim2.new(0, 14, 0, 28)
+        Desc.Text                   = description
+        Desc.TextColor3             = T.TextSub
+        Desc.Font                   = Enum.Font.Gotham
+        Desc.TextSize               = 10
+        Desc.TextXAlignment         = Enum.TextXAlignment.Left
+        Desc.BackgroundTransparency = 1
     end
 
-    -- Chevron (∧)
-    local Chev = Instance.new("TextLabel", Row)
-    Chev.Size                   = UDim2.new(0, 22, 1, 0)
-    Chev.Position               = UDim2.new(0.54, 0, 0, 0)
-    Chev.Text                   = "∧"
-    Chev.TextColor3             = C.TextSub
-    Chev.TextSize               = 11
-    Chev.Font                   = Enum.Font.GothamBold
-    Chev.BackgroundTransparency = 1
-
-    -- Value display (kanan, bold white → persis "Sword", "Large")
-    local ValLbl = Instance.new("TextLabel", Row)
-    ValLbl.Size                   = UDim2.new(0.4, -14, 1, 0)
-    ValLbl.Position               = UDim2.new(0.6, 0, 0, 0)
-    ValLbl.Text                   = options[idx] or ""
-    ValLbl.TextColor3             = C.Text
-    ValLbl.Font                   = Enum.Font.GothamBold
-    ValLbl.TextSize               = 13
-    ValLbl.TextXAlignment         = Enum.TextXAlignment.Right
-    ValLbl.BackgroundTransparency = 1
-
-    -- Hover
-    Row.MouseEnter:Connect(function() Tween(Row, {BackgroundColor3 = C.RowHov}, 0.1) end)
-    Row.MouseLeave:Connect(function() Tween(Row, {BackgroundColor3 = C.Row},    0.1) end)
-
-    -- Click = cycle options
-    Row.MouseButton1Click:Connect(function()
-        idx = (idx % #options) + 1
-        ValLbl.Text = options[idx]
-        if callback then callback(options[idx], idx) end
-        SaveSettings()
-    end)
-
-    table.insert(AllItems, {Btn = Row, Label = TLbl})
-    return ValLbl -- return label biar bisa diupdate manual
-end
-
--- // Toggle Switch  →  Dark pill, blue when ON (persis Redz Hub)
-local function CreateToggle(parent, title, desc, defaultState, callback)
-    local h     = desc and 50 or 36
-    local state = defaultState or false
-
-    local Row = Instance.new("TextButton", parent)
-    Row.Name             = title .. "_Tgl"
-    Row.LayoutOrder      = #parent:GetChildren()
-    Row.Size             = UDim2.new(1, 0, 0, h)
-    Row.BackgroundColor3 = C.Row
-    Row.BorderSizePixel  = 0
-    Row.Text             = ""
-    Row.AutoButtonColor  = false
-
-    Corner(Row, 6)
-    Stroke(Row, C.Border, 1)
-
-    -- Hover
-    Row.MouseEnter:Connect(function() Tween(Row, {BackgroundColor3 = C.RowHov}, 0.1) end)
-    Row.MouseLeave:Connect(function() Tween(Row, {BackgroundColor3 = C.Row},    0.1) end)
-
-    -- Title
-    local TLbl = Instance.new("TextLabel", Row)
-    TLbl.Size                   = UDim2.new(1, -68, 0, 18)
-    TLbl.Position               = UDim2.new(0, 12, 0, desc and 7 or 9)
-    TLbl.Text                   = title
-    TLbl.TextColor3             = C.Text
-    TLbl.Font                   = Enum.Font.GothamMedium
-    TLbl.TextSize               = 12
-    TLbl.TextXAlignment         = Enum.TextXAlignment.Left
-    TLbl.BackgroundTransparency = 1
-
-    -- Deskripsi
-    if desc then
-        local DLbl = Instance.new("TextLabel", Row)
-        DLbl.Size                   = UDim2.new(1, -68, 0, 14)
-        DLbl.Position               = UDim2.new(0, 12, 0, 27)
-        DLbl.Text                   = desc
-        DLbl.TextColor3             = C.TextSub
-        DLbl.Font                   = Enum.Font.Gotham
-        DLbl.TextSize               = 10
-        DLbl.TextXAlignment         = Enum.TextXAlignment.Left
-        DLbl.BackgroundTransparency = 1
-    end
-
-    -- Toggle track (pill shape)
-    local Track = Instance.new("Frame", Row)
+    -- Track
+    local Track = Instance.new("Frame", Btn)
     Track.Size             = UDim2.new(0, 40, 0, 22)
-    Track.Position         = UDim2.new(1, -52, 0.5, -11)
-    Track.BackgroundColor3 = state and C.TglOn or C.TglOff
+    Track.Position         = UDim2.new(1, -54, 0.5, -11)
+    Track.BackgroundColor3 = defaultState and T.TglOn or T.TglOff
     Track.BorderSizePixel  = 0
 
-    Corner(Track, 11)
+    local TrackCorner = Instance.new("UICorner", Track)
+    TrackCorner.CornerRadius = UDim.new(1, 0)
 
-    -- Toggle dot (lingkaran putih)
+    -- Dot
     local Dot = Instance.new("Frame", Track)
     Dot.Size             = UDim2.new(0, 18, 0, 18)
-    Dot.Position         = state and UDim2.new(1, -20, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)
-    Dot.BackgroundColor3 = C.TglDot
+    Dot.Position         = defaultState
+        and UDim2.new(1, -20, 0.5, -9)
+        or  UDim2.new(0,   2, 0.5, -9)
+    Dot.BackgroundColor3 = T.TglDot
     Dot.BorderSizePixel  = 0
 
-    Corner(Dot, 9)
+    local DotCorner = Instance.new("UICorner", Dot)
+    DotCorner.CornerRadius = UDim.new(1, 0)
 
-    -- Shadow dot (efek depth)
-    do
-        local ds = Instance.new("UIStroke", Dot)
-        ds.Color        = Color3.fromRGB(0, 0, 0)
-        ds.Thickness    = 0.8
-        ds.Transparency = 0.75
-    end
+    local state = defaultState or false
 
-    -- Click logic
-    Row.MouseButton1Click:Connect(function()
+    Btn.MouseButton1Click:Connect(function()
         state = not state
-
-        Tween(Track, {BackgroundColor3 = state and C.TglOn or C.TglOff}, 0.2)
-        Tween(Dot,   {
-            Position = state
-                and UDim2.new(1, -20, 0.5, -9)
-                or  UDim2.new(0,   2, 0.5, -9)
-        }, 0.2)
-
+        Tween(Track, { BackgroundColor3 = state and T.TglOn or T.TglOff }, 0.2)
+        Tween(Dot,   { Position = state
+            and UDim2.new(1, -20, 0.5, -9)
+            or  UDim2.new(0,   2, 0.5, -9) }, 0.2)
         if callback then callback(state) end
         SaveSettings()
     end)
 
-    table.insert(AllItems, {Btn = Row, Label = TLbl})
-    return Row
+    table.insert(AllItems, { Btn = Btn, Label = Title })
+    return Btn
 end
 
--- // Button Row  →  Title + "›" arrow kanan (persis "Update Boss List >")
-local function CreateButton(parent, title, desc, callback)
-    local h = desc and 50 or 36
+-- Button with arrow › (Redz style)
+local function CreateButton(parent, text, description, callback)
+    local h = description and 56 or 40
 
-    local Row = Instance.new("TextButton", parent)
-    Row.Name             = title .. "_Btn"
-    Row.LayoutOrder      = #parent:GetChildren()
-    Row.Size             = UDim2.new(1, 0, 0, h)
-    Row.BackgroundColor3 = C.Row
-    Row.BorderSizePixel  = 0
-    Row.Text             = ""
-    Row.AutoButtonColor  = false
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Name             = text .. "_Btn"
+    Btn.LayoutOrder      = #parent:GetChildren()
+    Btn.Size             = UDim2.new(1, 0, 0, h)
+    Btn.BackgroundColor3 = T.BG2
+    Btn.BorderSizePixel  = 0
+    Btn.Text             = ""
+    Btn.AutoButtonColor  = false
 
-    Corner(Row, 6)
-    Stroke(Row, C.Border, 1)
+    local Corner = Instance.new("UICorner", Btn)
+    Corner.CornerRadius = UDim.new(0, 7)
 
-    Row.MouseEnter:Connect(function() Tween(Row, {BackgroundColor3 = C.RowHov}, 0.1) end)
-    Row.MouseLeave:Connect(function() Tween(Row, {BackgroundColor3 = C.Row},    0.1) end)
+    local Stroke = Instance.new("UIStroke", Btn)
+    Stroke.Color     = T.Line
+    Stroke.Thickness = 1
 
-    -- Title
-    local TLbl = Instance.new("TextLabel", Row)
-    TLbl.Size                   = UDim2.new(1, -48, 0, 18)
-    TLbl.Position               = UDim2.new(0, 12, 0, desc and 7 or 9)
-    TLbl.Text                   = title
-    TLbl.TextColor3             = C.Text
-    TLbl.Font                   = Enum.Font.GothamMedium
-    TLbl.TextSize               = 12
-    TLbl.TextXAlignment         = Enum.TextXAlignment.Left
-    TLbl.BackgroundTransparency = 1
+    Btn.MouseEnter:Connect(function() Tween(Btn, { BackgroundColor3 = T.BG3 }, 0.1) end)
+    Btn.MouseLeave:Connect(function() Tween(Btn, { BackgroundColor3 = T.BG2 }, 0.1) end)
 
-    -- Deskripsi
-    if desc then
-        local DLbl = Instance.new("TextLabel", Row)
-        DLbl.Size                   = UDim2.new(1, -48, 0, 14)
-        DLbl.Position               = UDim2.new(0, 12, 0, 27)
-        DLbl.Text                   = desc
-        DLbl.TextColor3             = C.TextSub
-        DLbl.Font                   = Enum.Font.Gotham
-        DLbl.TextSize               = 10
-        DLbl.TextXAlignment         = Enum.TextXAlignment.Left
-        DLbl.BackgroundTransparency = 1
+    local Title = Instance.new("TextLabel", Btn)
+    Title.Size                   = UDim2.new(1, -50, 0, 18)
+    Title.Position               = UDim2.new(0, 14, 0, description and 8 or 11)
+    Title.Text                   = text
+    Title.TextColor3             = T.Text
+    Title.Font                   = Enum.Font.GothamMedium
+    Title.TextSize               = 12
+    Title.TextXAlignment         = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
+
+    if description then
+        local Desc = Instance.new("TextLabel", Btn)
+        Desc.Size                   = UDim2.new(1, -50, 0, 14)
+        Desc.Position               = UDim2.new(0, 14, 0, 28)
+        Desc.Text                   = description
+        Desc.TextColor3             = T.TextSub
+        Desc.Font                   = Enum.Font.Gotham
+        Desc.TextSize               = 10
+        Desc.TextXAlignment         = Enum.TextXAlignment.Left
+        Desc.BackgroundTransparency = 1
     end
 
-    -- Arrow "›" (biru)
-    local Arrow = Instance.new("TextLabel", Row)
-    Arrow.Size                   = UDim2.new(0, 28, 1, 0)
-    Arrow.Position               = UDim2.new(1, -34, 0, 0)
+    local Arrow = Instance.new("TextLabel", Btn)
+    Arrow.Size                   = UDim2.new(0, 32, 1, 0)
+    Arrow.Position               = UDim2.new(1, -38, 0, 0)
     Arrow.Text                   = "›"
-    Arrow.TextColor3             = C.Blue
+    Arrow.TextColor3             = T.Accent
     Arrow.TextSize               = 24
     Arrow.Font                   = Enum.Font.GothamBold
     Arrow.BackgroundTransparency = 1
 
-    Row.MouseButton1Click:Connect(function()
+    Btn.MouseButton1Click:Connect(function()
         if callback then callback() end
     end)
 
-    table.insert(AllItems, {Btn = Row, Label = TLbl})
-    return Row
+    table.insert(AllItems, { Btn = Btn, Label = Title })
+    return Btn
 end
 
--- // Slider Component  →  Value display + draggable track
-local function CreateSlider(parent, title, desc, min, max, default, callback)
-    local val = math.clamp(default or min, min, max)
-    local h   = desc and 62 or 52
+-- Dropdown (label kiri, value kanan, chevron)
+local function CreateDropdown(parent, text, options, defaultIndex, callback)
+    local currentIndex = defaultIndex or 1
 
-    local Row = Instance.new("Frame", parent)
-    Row.Name             = title .. "_Slider"
-    Row.LayoutOrder      = #parent:GetChildren()
-    Row.Size             = UDim2.new(1, 0, 0, h)
-    Row.BackgroundColor3 = C.Row
-    Row.BorderSizePixel  = 0
+    local Btn = Instance.new("TextButton", parent)
+    Btn.Name             = text .. "_Dropdown"
+    Btn.LayoutOrder      = #parent:GetChildren()
+    Btn.Size             = UDim2.new(1, 0, 0, 40)
+    Btn.BackgroundColor3 = T.BG2
+    Btn.BorderSizePixel  = 0
+    Btn.Text             = ""
+    Btn.AutoButtonColor  = false
 
-    Corner(Row, 6)
-    Stroke(Row, C.Border, 1)
+    local Corner = Instance.new("UICorner", Btn)
+    Corner.CornerRadius = UDim.new(0, 7)
 
-    -- Title
-    local TLbl = Instance.new("TextLabel", Row)
-    TLbl.Size                   = UDim2.new(0.7, 0, 0, 18)
-    TLbl.Position               = UDim2.new(0, 12, 0, 8)
-    TLbl.Text                   = title
-    TLbl.TextColor3             = C.Text
-    TLbl.Font                   = Enum.Font.GothamMedium
-    TLbl.TextSize               = 12
-    TLbl.TextXAlignment         = Enum.TextXAlignment.Left
-    TLbl.BackgroundTransparency = 1
+    local Stroke = Instance.new("UIStroke", Btn)
+    Stroke.Color     = T.Line
+    Stroke.Thickness = 1
 
-    -- Value (kanan, biru)
-    local ValLbl = Instance.new("TextLabel", Row)
-    ValLbl.Size                   = UDim2.new(0.28, -10, 0, 18)
-    ValLbl.Position               = UDim2.new(0.72, 0, 0, 8)
-    ValLbl.Text                   = tostring(val)
-    ValLbl.TextColor3             = C.Blue
+    Btn.MouseEnter:Connect(function() Tween(Btn, { BackgroundColor3 = T.BG3 }, 0.1) end)
+    Btn.MouseLeave:Connect(function() Tween(Btn, { BackgroundColor3 = T.BG2 }, 0.1) end)
+
+    local Title = Instance.new("TextLabel", Btn)
+    Title.Size                   = UDim2.new(0.45, 0, 1, 0)
+    Title.Position               = UDim2.new(0, 14, 0, 0)
+    Title.Text                   = text
+    Title.TextColor3             = T.Text
+    Title.Font                   = Enum.Font.GothamMedium
+    Title.TextSize               = 12
+    Title.TextXAlignment         = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
+
+    local ValueLbl = Instance.new("TextLabel", Btn)
+    ValueLbl.Size                   = UDim2.new(0.4, 0, 1, 0)
+    ValueLbl.Position               = UDim2.new(0.45, 0, 0, 0)
+    ValueLbl.Text                   = options[currentIndex] or ""
+    ValueLbl.TextColor3             = T.Text
+    ValueLbl.Font                   = Enum.Font.GothamBold
+    ValueLbl.TextSize               = 12
+    ValueLbl.TextXAlignment         = Enum.TextXAlignment.Right
+    ValueLbl.BackgroundTransparency = 1
+
+    local ChevLbl = Instance.new("TextLabel", Btn)
+    ChevLbl.Size                   = UDim2.new(0, 26, 1, 0)
+    ChevLbl.Position               = UDim2.new(1, -30, 0, 0)
+    ChevLbl.Text                   = "⌄"
+    ChevLbl.TextColor3             = T.Accent
+    ChevLbl.TextSize               = 15
+    ChevLbl.Font                   = Enum.Font.GothamBold
+    ChevLbl.BackgroundTransparency = 1
+
+    Btn.MouseButton1Click:Connect(function()
+        currentIndex = (currentIndex % #options) + 1
+        ValueLbl.Text = options[currentIndex]
+        if callback then callback(options[currentIndex], currentIndex) end
+        SaveSettings()
+    end)
+
+    table.insert(AllItems, { Btn = Btn, Label = Title })
+    return Btn
+end
+
+-- Slider (ex. UI Scale)
+local function CreateSlider(parent, text, minVal, maxVal, defaultVal, step, callback)
+    local currentVal = defaultVal
+
+    local Frame = Instance.new("Frame", parent)
+    Frame.Name            = text .. "_Slider"
+    Frame.LayoutOrder     = #parent:GetChildren()
+    Frame.Size            = UDim2.new(1, 0, 0, 56)
+    Frame.BackgroundColor3 = T.BG2
+    Frame.BorderSizePixel = 0
+
+    local Corner = Instance.new("UICorner", Frame)
+    Corner.CornerRadius = UDim.new(0, 7)
+
+    local Stroke = Instance.new("UIStroke", Frame)
+    Stroke.Color     = T.Line
+    Stroke.Thickness = 1
+
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size                   = UDim2.new(1, -28, 0, 18)
+    Title.Position               = UDim2.new(0, 14, 0, 8)
+    Title.Text                   = text
+    Title.TextColor3             = T.Text
+    Title.Font                   = Enum.Font.GothamMedium
+    Title.TextSize               = 12
+    Title.TextXAlignment         = Enum.TextXAlignment.Left
+    Title.BackgroundTransparency = 1
+
+    local ValLbl = Instance.new("TextLabel", Frame)
+    ValLbl.Size                   = UDim2.new(0, 40, 0, 18)
+    ValLbl.Position               = UDim2.new(1, -50, 0, 8)
+    ValLbl.Text                   = tostring(defaultVal)
+    ValLbl.TextColor3             = T.Accent
     ValLbl.Font                   = Enum.Font.GothamBold
     ValLbl.TextSize               = 12
     ValLbl.TextXAlignment         = Enum.TextXAlignment.Right
     ValLbl.BackgroundTransparency = 1
 
-    -- Deskripsi
-    local trackY = 28
-    if desc then
-        local DLbl = Instance.new("TextLabel", Row)
-        DLbl.Size                   = UDim2.new(1, -24, 0, 12)
-        DLbl.Position               = UDim2.new(0, 12, 0, 26)
-        DLbl.Text                   = desc
-        DLbl.TextColor3             = C.TextSub
-        DLbl.Font                   = Enum.Font.Gotham
-        DLbl.TextSize               = 10
-        DLbl.TextXAlignment         = Enum.TextXAlignment.Left
-        DLbl.BackgroundTransparency = 1
-        trackY = 40
-    end
-
     -- Slider track
-    local Track = Instance.new("Frame", Row)
-    Track.Size             = UDim2.new(1, -24, 0, 4)
-    Track.Position         = UDim2.new(0, 12, 0, trackY)
-    Track.BackgroundColor3 = C.TglOff
+    local Track = Instance.new("TextButton", Frame)
+    Track.Size             = UDim2.new(1, -28, 0, 6)
+    Track.Position         = UDim2.new(0, 14, 0, 34)
+    Track.BackgroundColor3 = T.TglOff
     Track.BorderSizePixel  = 0
-    Corner(Track, 2)
+    Track.Text             = ""
+    Track.AutoButtonColor  = false
 
-    local pct = (val - min) / (max - min)
+    local TrackCorner = Instance.new("UICorner", Track)
+    TrackCorner.CornerRadius = UDim.new(0, 3)
 
     -- Fill
     local Fill = Instance.new("Frame", Track)
-    Fill.Size             = UDim2.new(pct, 0, 1, 0)
-    Fill.BackgroundColor3 = C.Blue
+    Fill.Size             = UDim2.new((defaultVal - minVal) / (maxVal - minVal), 0, 1, 0)
+    Fill.BackgroundColor3 = T.Accent
     Fill.BorderSizePixel  = 0
-    Corner(Fill, 2)
 
-    -- Knob
-    local Knob = Instance.new("Frame", Track)
-    Knob.Size             = UDim2.new(0, 12, 0, 12)
-    Knob.Position         = UDim2.new(pct, -6, 0.5, -6)
-    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Knob.BorderSizePixel  = 0
-    Knob.ZIndex           = 3
-    Corner(Knob, 6)
+    local FillCorner = Instance.new("UICorner", Fill)
+    FillCorner.CornerRadius = UDim.new(0, 3)
 
-    -- Drag interaction
     local dragging = false
 
-    local function Update(mouseX)
-        local abs = Track.AbsolutePosition
-        local sz  = Track.AbsoluteSize
-        local p   = math.clamp((mouseX - abs.X) / sz.X, 0, 1)
-        val = math.floor(min + (max - min) * p)
-        pct = (val - min) / (max - min)
-
-        Fill.Size     = UDim2.new(pct, 0, 1, 0)
-        Knob.Position = UDim2.new(pct, -6, 0.5, -6)
-        ValLbl.Text   = tostring(val)
-
-        if callback then callback(val) end
+    local function setValue(input)
+        local relX = (input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X
+        relX = math.clamp(relX, 0, 1)
+        local rawVal = minVal + (maxVal - minVal) * relX
+        local stepped = minVal + math.floor((rawVal - minVal) / step + 0.5) * step
+        stepped = math.clamp(stepped, minVal, maxVal)
+        currentVal = stepped
+        Fill.Size = UDim2.new((stepped - minVal) / (maxVal - minVal), 0, 1, 0)
+        ValLbl.Text = string.format("%.1f", stepped)
+        if callback then callback(stepped) end
+        SaveSettings()
     end
 
     Track.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1
-        or i.UserInputType == Enum.UserInputType.Touch then
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            Update(i.Position.X)
+            setValue(i)
         end
     end)
-
-    UserInput.InputChanged:Connect(function(i)
-        if not dragging then return end
-        if i.UserInputType == Enum.UserInputType.MouseMovement
-        or i.UserInputType == Enum.UserInputType.Touch then
-            Update(i.Position.X)
-        end
-    end)
-
-    UserInput.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1
-        or i.UserInputType == Enum.UserInputType.Touch then
+    Track.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
+    Track.InputChanged:Connect(function(i)
+        if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+            setValue(i)
+        end
+    end)
 
-    table.insert(AllItems, {Btn = Row, Label = TLbl})
-    return Row
+    table.insert(AllItems, { Btn = Frame, Label = Title })
+    return { Set = function(v) setValue({Position = Vector2.new(Track.AbsolutePosition.X + (v-minVal)/(maxVal-minVal)*Track.AbsoluteSize.X,0)}) end }
 end
 
--- // Info Label Card
-local function CreateLabel(parent, text, desc)
-    local h = desc and 46 or 32
+-- Label Card
+local function CreateLabel(parent, text, description)
+    local h = description and 48 or 34
 
-    local F = Instance.new("Frame", parent)
-    F.Name             = "Lbl_" .. text
-    F.LayoutOrder      = #parent:GetChildren()
-    F.Size             = UDim2.new(1, 0, 0, h)
-    F.BackgroundColor3 = C.Row
-    F.BorderSizePixel  = 0
+    local Frame = Instance.new("Frame", parent)
+    Frame.Name            = "Lbl_" .. text
+    Frame.LayoutOrder     = #parent:GetChildren()
+    Frame.Size            = UDim2.new(1, 0, 0, h)
+    Frame.BackgroundColor3 = T.BG2
+    Frame.BorderSizePixel = 0
 
-    Corner(F, 6)
-    Stroke(F, C.Border, 1)
+    local Corner = Instance.new("UICorner", Frame)
+    Corner.CornerRadius = UDim.new(0, 7)
 
-    local L = Instance.new("TextLabel", F)
-    L.Size                   = UDim2.new(1, -20, 0, 18)
-    L.Position               = UDim2.new(0, 12, 0, desc and 4 or 7)
-    L.Text                   = text
-    L.TextColor3             = C.Text
-    L.Font                   = Enum.Font.GothamMedium
-    L.TextSize               = 12
-    L.TextXAlignment         = Enum.TextXAlignment.Left
-    L.BackgroundTransparency = 1
+    local Stroke = Instance.new("UIStroke", Frame)
+    Stroke.Color     = T.Line
+    Stroke.Thickness = 1
 
-    if desc then
-        local D = Instance.new("TextLabel", F)
-        D.Size                   = UDim2.new(1, -20, 0, 14)
-        D.Position               = UDim2.new(0, 12, 0, 24)
-        D.Text                   = desc
-        D.TextColor3             = C.TextSub
-        D.Font                   = Enum.Font.Gotham
-        D.TextSize               = 10
-        D.TextXAlignment         = Enum.TextXAlignment.Left
-        D.BackgroundTransparency = 1
+    local Lbl = Instance.new("TextLabel", Frame)
+    Lbl.Size                   = UDim2.new(1, -24, 0, 18)
+    Lbl.Position               = UDim2.new(0, 14, 0, description and 4 or 8)
+    Lbl.Text                   = text
+    Lbl.TextColor3             = T.Text
+    Lbl.Font                   = Enum.Font.GothamMedium
+    Lbl.TextSize               = 12
+    Lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    Lbl.BackgroundTransparency = 1
+
+    if description then
+        local Sub = Instance.new("TextLabel", Frame)
+        Sub.Size                   = UDim2.new(1, -24, 0, 14)
+        Sub.Position               = UDim2.new(0, 14, 0, 24)
+        Sub.Text                   = description
+        Sub.TextColor3             = T.TextSub
+        Sub.Font                   = Enum.Font.Gotham
+        Sub.TextSize               = 10
+        Sub.TextXAlignment         = Enum.TextXAlignment.Left
+        Sub.BackgroundTransparency = 1
     end
 
-    return L
+    return Lbl
 end
 
--- ============================================================
--- SEARCH ENGINE
--- ============================================================
-
--- Tambah search box di atas sidebar (opsional, bisa di-comment)
-local SearchFrame = Instance.new("Frame", Side)
-SearchFrame.Name             = "SearchFrame"
-SearchFrame.Size             = UDim2.new(1, -16, 0, 28)
-SearchFrame.Position         = UDim2.new(0, 8, 1, -38)
-SearchFrame.BackgroundColor3 = C.Row
-SearchFrame.BorderSizePixel  = 0
-
-Corner(SearchFrame, 6)
-Stroke(SearchFrame, C.Border, 1)
-
-local SearchBox = Instance.new("TextBox", SearchFrame)
-SearchBox.Size                   = UDim2.new(1, -12, 1, 0)
-SearchBox.Position               = UDim2.new(0, 6, 0, 0)
-SearchBox.BackgroundTransparency = 1
-SearchBox.Text                   = ""
-SearchBox.PlaceholderText        = "Search..."
-SearchBox.TextColor3             = C.Text
-SearchBox.PlaceholderColor3      = C.TextDim
-SearchBox.Font                   = Enum.Font.GothamMedium
-SearchBox.TextSize               = 11
-SearchBox.TextXAlignment         = Enum.TextXAlignment.Left
-
--- Reduce sidebar scroll area by search height
-SideScroll.Size     = UDim2.new(1, 0, 1, -40)
-SideScroll.Position = UDim2.new(0, 0, 0, 0)
+-- ==========================================
+-- 15. SEARCH FUNCTIONALITY
+-- ==========================================
 
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
     local q = string.lower(SearchBox.Text)
     for _, item in ipairs(AllItems) do
         local lbl   = string.lower(item.Label.Text)
         local empty = (q == "")
-        local found = string.find(lbl, q, 1, true) ~= nil
+        local found = (string.find(lbl, q) ~= nil)
         item.Btn.Visible = empty or found
     end
 end)
 
--- ============================================================
--- INIT: BUAT SEMUA TAB
--- ============================================================
+-- ==========================================
+-- 16. INITIALIZE DEFAULT TABS
+-- ==========================================
 
-for i, cfg in ipairs(TAB_CONFIG) do
-    CreateTab(cfg.name, cfg.icon, i == 1)
-end
+CreateTab("Farm",        true)
+CreateTab("Fishing",     false)
+CreateTab("Quest/Items", false)
+CreateTab("Raid/Fruits", false)
+CreateTab("Sea",         false)
+CreateTab("Stats",       false)
+CreateTab("Teleport",    false)
+CreateTab("Status",      false)
+CreateTab("Visual",      false)
+CreateTab("Shop",        false)
+CreateTab("Misc",        false)
 
--- ============================================================
--- CONTOH ISI CONTENT  (hapus/ganti di modul masing-masing)
--- ============================================================
-
-local FarmPage   = Pages["Farm"].Page
-local SeaPage    = Pages["Sea"].Page
-local QuestPage  = Pages["Quests"].Page
-local RaidPage   = Pages["Raid/Fruits"].Page
-local StatPage   = Pages["Stats"].Page
-local TpPage     = Pages["Teleport"].Page
-local VisualPage = Pages["Visual"].Page
-local ShopPage   = Pages["Shop"].Page
-local MiscPage   = Pages["Misc"].Page
-local StatusPage = Pages["Status"].Page
-
--- // FARM
-CreateDropdown(FarmPage, "Farm Tool",  "Choose your farming weapon",   {"Sword", "Gun", "Fruit", "Melee"}, 1)
-CreateDropdown(FarmPage, "UI Scale",   "Adjust the user interface size",{"Small", "Medium", "Large"}, 2)
-
-CreateSection(FarmPage, "Main Farm")
-CreateToggle(FarmPage, "Auto Farm Level",   "Farm level on nearest mob",   false)
-CreateToggle(FarmPage, "Auto Farm Nearest", "Targets the nearest enemy",   false)
-CreateToggle(FarmPage, "Auto Factory",      nil,                           false)
-CreateToggle(FarmPage, "Auto Pirates Sea",  "Finish pirate raid at sea",   false)
-
-CreateSection(FarmPage, "Kill Player")
-CreateButton(FarmPage, "Get Quest Elite Players", "Find elite quest targets")
-CreateToggle(FarmPage, "Auto Kill Player Quest",  nil,                     false)
-CreateToggle(FarmPage, "Auto Safe Mode",          "Avoid banned zones",    false)
-
-CreateSection(FarmPage, "Ectoplasm")
-CreateToggle(FarmPage, "Auto Farm Ectoplasm",  "Farm ectoplasm drops",    false)
-CreateToggle(FarmPage, "Auto Chest < Tween >", "Auto loot nearby chests", false)
-
-CreateSection(FarmPage, "Bosses")
-CreateButton(FarmPage, "Update Boss List",   "Refresh boss locations")
-CreateToggle(FarmPage, "Auto Boss Farm",     "Auto kill world bosses",    false)
-CreateToggle(FarmPage, "Auto Raid Boss",     nil,                         false)
-
--- // SEA
-CreateDropdown(SeaPage, "Sea Area", "Select your current sea", {"First Sea", "Second Sea", "Third Sea"}, 1)
-
-CreateSection(SeaPage, "Navigation")
-CreateToggle(SeaPage, "Auto Sail",       "Automatically sail your ship", false)
-CreateToggle(SeaPage, "Avoid Sea Beast", "Steer away from sea beasts",  false)
-CreateToggle(SeaPage, "Anti Drown",      "Prevent character from drowning", false)
-
-CreateSection(SeaPage, "Sea Events")
-CreateToggle(SeaPage, "Auto Pirate Raid", "Complete pirate raids auto",  false)
-CreateToggle(SeaPage, "Auto Sea Event",   "Join and finish sea events",  false)
-CreateButton(SeaPage, "Teleport to Ship", "Fast-travel to your ship")
-
-CreateSection(SeaPage, "Chest")
-CreateToggle(SeaPage, "Auto Chest Farm", "Auto loot sea chests",         false)
-CreateButton(SeaPage, "Collect All Chests", "Collect chests in radius")
-
--- // QUESTS
-CreateSection(QuestPage, "Auto Quest")
-CreateToggle(QuestPage, "Auto Accept Quest", "Auto-accept available quests", false)
-CreateToggle(QuestPage, "Auto Complete",     "Auto-complete quest goals",    false)
-CreateToggle(QuestPage, "Skip Cutscenes",    nil,                            false)
-
-CreateSection(QuestPage, "Items")
-CreateToggle(QuestPage, "Auto Loot",         "Collect nearby items auto",    false)
-CreateToggle(QuestPage, "Item ESP",          "See items through walls",      false)
-CreateButton(QuestPage, "Open Item Tracker", "Track current quest items")
-
--- // RAID / FRUITS
-CreateDropdown(RaidPage, "Target Fruit", "Select fruit to snipe",
-    {"Any Fruit", "Dragon", "Leopard", "Kitsune", "Spirit", "Dough", "Shadow"}, 1)
-
-CreateSection(RaidPage, "Fruit Finder")
-CreateToggle(RaidPage, "Fruit ESP",         "Show fruit spawn locations",   false)
-CreateToggle(RaidPage, "Auto Snipe Fruit",  "Auto grab spawned fruits",     false)
-CreateToggle(RaidPage, "Notify On Spawn",   "Alert when fruit spawns",      false)
-
-CreateSection(RaidPage, "Movement System")
-CreateToggle(RaidPage, "Tween to Fruits",   "Smooth fly movement to fruit", false)
-CreateToggle(RaidPage, "TP Fruits",         "Instant teleport to target",   false)
-
-CreateSection(RaidPage, "Inventory Management")
-CreateToggle(RaidPage, "Auto Store Fruits", "Otomatis simpan buah ke tas",  false)
-CreateToggle(RaidPage, "Auto Eat Fruit",    nil,                            false)
-CreateToggle(RaidPage, "Auto Hop Server",   "Hop if no fruit spawns",       false)
-
--- // STATS
-CreateSection(StatPage, "Player Stats")
-CreateLabel(StatPage, "Level",   tostring((_G.Cat.Player and _G.Cat.Player.leaderstats and _G.Cat.Player.leaderstats.Level.Value) or "Unknown"))
-CreateLabel(StatPage, "Mastery", "Check in game")
-CreateLabel(StatPage, "Beli",    "Check in game")
-
-CreateSection(StatPage, "Session")
-CreateLabel(StatPage, "Time Played",   "Calculating...")
-CreateLabel(StatPage, "EXP per Hour",  "Calculating...")
-CreateLabel(StatPage, "Kills",         "0")
-
--- // TELEPORT
-CreateSection(TpPage, "Quick Teleport")
-CreateButton(TpPage, "Teleport to Spawn",   "Go to world spawn point")
-CreateButton(TpPage, "Teleport to Quest NPC","Go to your quest NPC")
-CreateButton(TpPage, "Teleport to Boss",    "Go to nearest world boss")
-CreateButton(TpPage, "Teleport to Ship",    "Go to your ship")
-
-CreateSection(TpPage, "Waypoints")
-CreateButton(TpPage, "Add Waypoint",        "Save current position")
-CreateButton(TpPage, "Manage Waypoints",    "Edit saved locations")
-
--- // VISUAL
-CreateSection(VisualPage, "ESP Options")
-CreateToggle(VisualPage, "Player ESP",      "Show all players location",    false)
-CreateToggle(VisualPage, "Mob ESP",         "Show nearby mob locations",    false)
-CreateToggle(VisualPage, "Fruit ESP",       "Show fruit spawn points",      false)
-CreateToggle(VisualPage, "Boss ESP",        nil,                            false)
-
-CreateSection(VisualPage, "Character")
-CreateToggle(VisualPage, "No Clip",         "Walk through walls",           false)
-CreateToggle(VisualPage, "Full Bright",     "Remove environment darkness",  false)
-
-CreateSection(VisualPage, "Camera")
-CreateSlider(VisualPage, "FOV",             "Field of view",                70, 120, 70)
-CreateSlider(VisualPage, "Camera Distance", "Third person zoom",            10, 50,  20)
-
--- // SHOP
-CreateSection(ShopPage, "Auto Buy")
-CreateToggle(ShopPage, "Auto Buy Mastery",  "Auto buy mastery resets",      false)
-CreateToggle(ShopPage, "Auto Buy Boat",     nil,                            false)
-
-CreateSection(ShopPage, "Gamepass")
-CreateButton(ShopPage, "Open Gamepass Shop","Opens Roblox gamepass shop")
-CreateButton(ShopPage, "Check Owned",       "List your owned gamepasses")
-
--- // MISC
-CreateSection(MiscPage, "Quality of Life")
-CreateToggle(MiscPage, "Anti AFK",          "Prevent auto-kick (moves char)",   true)
-CreateToggle(MiscPage, "Auto Rejoin",       "Rejoin on disconnect",             false)
-CreateToggle(MiscPage, "FPS Boost",         "Remove particles & shadows",       false)
-
-CreateSection(MiscPage, "Character")
-CreateToggle(MiscPage, "Infinite Jump",     nil,                                false)
-CreateToggle(MiscPage, "Fly Mode",          "Enable free flight",               false)
-CreateSlider(MiscPage, "Walk Speed",        "Default: 16",                      16, 500, 16)
-CreateSlider(MiscPage, "Jump Power",        "Default: 50",                      50, 500, 50)
-
-CreateSection(MiscPage, "Server Utilities")
-CreateButton(MiscPage, "Rejoin Server",     "Fast server rejoin")
-CreateButton(MiscPage, "Copy Server ID",    "Copy current server ID")
-CreateButton(MiscPage, "Find Private",      "Search empty private servers")
-
--- // STATUS
-CreateLabel(StatusPage, "CatHUB v3.0  ·  Blox Fruits", "Freemium Edition  ·  2025")
-
-CreateSection(StatusPage, "Player Info")
-CreateLabel(StatusPage,
-    "Username: " .. (_G.Cat.Player and _G.Cat.Player.Name or "Unknown"),
-    "Your current account name"
-)
-CreateLabel(StatusPage, "Framework",  "CatHUB v3.0 · Redz Hub Style")
-CreateLabel(StatusPage, "Status",     "Connected · Running")
-
-CreateSection(StatusPage, "Links & Support")
-CreateButton(StatusPage, "Join Discord",     "Get support & latest updates")
-CreateButton(StatusPage, "GitHub / Source",  "View source code")
-CreateButton(StatusPage, "Check for Update", "Verify latest version")
-
--- ============================================================
--- GLOBAL EXPORT  →  _G.Cat.UI.CreateToggle(...) dll
--- ============================================================
+-- ==========================================
+-- 17. GLOBAL EXPORT (Lengkap)
+-- ==========================================
 
 _G.Cat.UI = {
-    -- Tab builder
     CreateTab      = CreateTab,
-
-    -- Component builders
     CreateSection  = CreateSection,
-    CreateDropdown = CreateDropdown,
     CreateToggle   = CreateToggle,
     CreateButton   = CreateButton,
+    CreateDropdown = CreateDropdown,
     CreateSlider   = CreateSlider,
     CreateLabel    = CreateLabel,
 
-    -- Data & helpers
-    Pages          = Pages,
-    Theme          = C,
+    Theme          = T,
     Tween          = Tween,
     SaveSettings   = SaveSettings,
+    Pages          = Pages,
+    UpdateFooter   = UpdateFooterStats,
+
+    -- Direct access buat module lain
+    MainFrame      = Main,
+    Sidebar        = Side,
+    ContentArea    = ContentArea,
+    SearchBox      = SearchBox,
+    FloatButton    = FloatBtn,
+    Footer         = {
+        Health = HealthText,
+        Energy = EnergyText,
+        Version = VersionText,
+    },
 }
 
-warn("[CatHUB v3.0] Loaded · " .. #TAB_CONFIG .. " tabs · Redz Hub accurate style")
+warn("[CatHUB v3.0] Redz Hub replica UI loaded successfully. // " .. #TabOrder .. " tabs configured")
