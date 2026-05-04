@@ -1,1080 +1,758 @@
--- [[ ==========================================
---      CATHUB PREMIUM · REDZ HUB REPLICA v3.0
---      Full Library (1/5..5/5 merged)
---      replica of redzlib without emojis
---    ========================================== ]]
+-- [[ CAT HUB: FULL UI LAYOUT (REDZ STYLE) ]]
+-- STRICTLY USING REDZ LIB V5 API SIGNATURES
 
--- Services
-local Services = {
-    CoreGui           = game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"),
-    TweenService      = game:GetService("TweenService"),
-    UserInputService  = game:GetService("UserInputService"),
-    HttpService       = game:GetService("HttpService"),
-    RunService        = game:GetService("RunService"),
-    Players           = game:GetService("Players"),
-    MarketplaceService= game:GetService("MarketplaceService"),
-    ClipboardService  = game:GetService("ClipboardService"),
-}
-
-local CoreGui         = Services.CoreGui
-local TweenService    = Services.TweenService
-local UserInputService= Services.UserInputService
-local HttpService     = Services.HttpService
-local RunService      = Services.RunService
-local Players         = Services.Players
-local Player          = Players.LocalPlayer
-
--- ==========================================
--- LIBRARY CONFIG
--- ==========================================
-local CatHUB = {
-    Themes = {
-        Darker = {
-            ["Color Hub 1"] = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(25, 25, 25)),
-                ColorSequenceKeypoint.new(0.50, Color3.fromRGB(32.5, 32.5, 32.5)),
-                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(25, 25, 25))
-            }),
-            ["Color Hub 2"] = Color3.fromRGB(30, 30, 30),
-            ["Color Stroke"] = Color3.fromRGB(40, 40, 40),
-            ["Color Theme"] = Color3.fromRGB(88, 101, 242),
-            ["Color Text"] = Color3.fromRGB(243, 243, 243),
-            ["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
-        },
-        Dark = {
-            ["Color Hub 1"] = ColorSequence.new({
-                ColorSequenceKeypoint.new(0.00, Color3.fromRGB(40, 40, 40)),
-                ColorSequenceKeypoint.new(0.50, Color3.fromRGB(47.5, 47.5, 47.5)),
-                ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 40, 40))
-            }),
-            ["Color Hub 2"] = Color3.fromRGB(45, 45, 45),
-            ["Color Stroke"] = Color3.fromRGB(65, 65, 65),
-            ["Color Theme"] = Color3.fromRGB(65, 150, 255),
-            ["Color Text"] = Color3.fromRGB(245, 245, 245),
-            ["Color Dark Text"] = Color3.fromRGB(190, 190, 190)
-        },
-    },
-    Save = {
-        UISize = {550, 380},
-        TabSize = 160,
-        Theme = "Darker"
-    },
-    Settings = {},
-    Connection = {},
-    Instances = {},
-    Elements = {},
-    Options = {},
-    Flags = {},
-    Tabs = {},
-}
-
-local redzlib = CatHUB
-local Theme = redzlib.Themes[redzlib.Save.Theme]
-
--- Viewport scale
-local ViewportSize = workspace.CurrentCamera.ViewportSize
-local UIScale = ViewportSize.Y / 450
-
--- ==========================================
--- UTILITY FUNCTIONS
--- ==========================================
-local function Create(className, parent, props, children)
-    local obj = Instance.new(className)
-    if parent then obj.Parent = parent end
-    if props then
-        for k, v in pairs(props) do obj[k] = v end
-    end
-    if children then
-        for _, child in ipairs(children) do child.Parent = obj end
-    end
-    return obj
-end
-
-local function Tween(obj, props, duration, easing, waitFlag)
-    local info = TweenInfo.new(duration or 0.25, easing or Enum.EasingStyle.Quint)
-    local tween = TweenService:Create(obj, info, props)
-    tween:Play()
-    if waitFlag then tween.Completed:Wait() end
-    return tween
-end
-
-local function MakeDrag(object)
-    object.Active = true
-    object.AutoButtonColor = false
-    local dragStart, startPos, inputOn
-    
-    local function update(input)
-        local delta = input.Position - dragStart
-        local newPos = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X / UIScale,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y / UIScale
-        )
-        Tween(object, {Position = newPos}, 0.35)
-    end
-    
-    object.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            startPos = object.Position
-            dragStart = input.Position
-            inputOn = true
-            while UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                RunService.Heartbeat:Wait()
-                if inputOn then update(input) end
-            end
-            inputOn = false
-        end
-    end)
-    return object
-end
-
-local function ConnectSave(object, func)
-    object.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            while UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do task.wait() end
-            func()
-        end
-    end)
-end
-
--- ==========================================
--- SCREEN GUI
--- ==========================================
-local ScreenGui = Create("ScreenGui", CoreGui, {
-    Name = "CatHUB",
-    ResetOnSpawn = false,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-}, {
-    Create("UIScale", { Scale = UIScale, Name = "Scale" })
+local Window = redzlib:MakeWindow({
+    "CatHUB",
+    "by : CatHUB Team",
+    false -- Nonaktifkan auto-save file biar nggak numpuk
 })
 
-if CoreGui:FindFirstChild(ScreenGui.Name) and CoreGui:FindFirstChild(ScreenGui.Name) ~= ScreenGui then
-    CoreGui:FindFirstChild(ScreenGui.Name):Destroy()
-end
+-- ==========================================
+-- TAB 1: MAIN
+-- ==========================================
+local TabMain = Window:MakeTab({"Main", "home"})
+
+TabMain:AddSection("Player Statistics")
+TabMain:AddParagraph({
+    "Status",
+    "Level: - | Beli: - | Fragments: -\nMelee: - | Sword: - | Gun: - | Defense: - | Fruit: -"
+})
+
+TabMain:AddSection("Server Info")
+TabMain:AddParagraph({
+    "Server",
+    "Time Left: -\nPlayers: - / -"
+})
+
+TabMain:AddSection("Actions")
+TabMain:AddButton({
+    "Rejoin Server",
+    function() 
+        -- [HUBUNGKAN KE LOGIC REJOIN LO]
+    end,
+    Desc = "Kembali ke server yang sama"
+})
+
+TabMain:AddButton({
+    "Server Hop",
+    function() 
+        -- [HUBUNGKAN KE LOGIC HOP LO]
+    end,
+    Desc = "Cari server baru yang sepi"
+})
+
+TabMain:AddToggle({
+    "Auto Server Hop",
+    false, -- Default
+    function(Value)
+        -- [COMING SOON] _G.Cat.Settings.AutoHop = Value
+    end,
+    "AutoHop",
+    Desc = "Otomatis pindah server saat selesai / kosong"
+})
+
+TabMain:AddSection("Utility")
+TabMain:AddButton({
+    "Remove Lava",
+    function() end, -- [COMING SOON]
+    Desc = "Hilangkan lava di Prehistoric Island"
+})
+
+TabMain:AddButton({
+    "Remove Boat Collision",
+    function() end, -- [COMING SOON]
+    Desc = "Hilangi collision boat biar nggak nyangkut"
+})
+
+TabMain:AddSection("Community")
+TabMain:AddDiscordInvite({
+    "CatHUB Discord",
+    "Join discord untuk update script, lapor bug, dan request fitur.",
+    "rbxassetid://0", -- Ganti dengan ID Logo Server Discord lo
+    "discord.gg/catHub" -- Ganti dengan link invite lo
+})
 
 -- ==========================================
--- WINDOW BUILDER
+-- TAB 2: FARM (Bagian 1: Core Settings)
 -- ==========================================
-function MakeWindow(configs)
-    local TitleText = configs[1] or configs.Name or configs.Title or "CatHUB"
-    local SubTitleText = configs[2] or configs.SubTitle or ""
-    local SaveFile = configs[3] or configs.SaveFolder or false
-    
-    redzlib.Settings.ScriptFile = SaveFile
-    
-    local UISizeX, UISizeY = unpack(redzlib.Save.UISize)
-    
-    local MainFrame = Create("ImageButton", ScreenGui, {
-        Size = UDim2.fromOffset(UISizeX, UISizeY),
-        Position = UDim2.new(0.5, -UISizeX/2, 0.5, -UISizeY/2),
-        BackgroundTransparency = 0.03,
-        Name = "Hub",
-        AutoButtonColor = false,
-    }, {
-        Create("UIGradient", {
-            Color = Theme["Color Hub 1"],
-            Rotation = 45,
-            Name = "Gradient"
-        })
-    })
-    MakeDrag(MainFrame)
-    
-    local MainCorner = Create("UICorner", MainFrame, { CornerRadius = UDim.new(0, 7) })
-    local Components = Create("Folder", MainFrame, { Name = "Components" })
-    local DropdownHolder = Create("Folder", ScreenGui, { Name = "Dropdown" })
-    
-    -- Top Bar
-    local TopBar = Create("Frame", Components, {
-        Size = UDim2.new(1, 0, 0, 28),
-        BackgroundTransparency = 1,
-        Name = "Top Bar"
-    })
-    
-    local Title = Create("TextLabel", TopBar, {
-        Position = UDim2.new(0, 15, 0.5),
-        AnchorPoint = Vector2.new(0, 0.5),
-        AutomaticSize = "XY",
-        Text = TitleText,
-        TextXAlignment = "Left",
-        TextSize = 12,
-        TextColor3 = Theme["Color Text"],
-        BackgroundTransparency = 1,
-        Font = Enum.Font.BuilderSansBold,
-        Name = "Title"
-    })
-    Create("TextLabel", {
-        Size = UDim2.fromScale(0, 1),
-        AutomaticSize = "X",
-        AnchorPoint = Vector2.new(0, 1),
-        Position = UDim2.new(1, 5, 0.9),
-        Text = SubTitleText,
-        TextColor3 = Theme["Color Dark Text"],
-        BackgroundTransparency = 1,
-        TextXAlignment = "Left",
-        TextYAlignment = "Bottom",
-        TextSize = 8,
-        Font = Enum.Font.Gotham,
-        Name = "SubTitle",
-        Parent = Title
-    })
-    
-    -- Sidebar
-    local TabScroll = Create("ScrollingFrame", Components, {
-        Size = UDim2.new(0, redzlib.Save.TabSize, 1, -TopBar.Size.Y.Offset),
-        Position = UDim2.new(0, 0, 1, 0),
-        AnchorPoint = Vector2.new(0, 1),
-        ScrollBarThickness = 1.5,
-        BackgroundTransparency = 1,
-        ScrollBarImageColor3 = Theme["Color Theme"],
-        ScrollBarImageTransparency = 0.2,
-        CanvasSize = UDim2.new(),
-        AutomaticCanvasSize = "Y",
-        ScrollingDirection = "Y",
-        BorderSizePixel = 0,
-        Name = "Tab Scroll",
-    }, {
-        Create("UIPadding", { PaddingLeft = UDim.new(0,8), PaddingRight = UDim.new(0,8), PaddingTop = UDim.new(0,10), PaddingBottom = UDim.new(0,10) }),
-        Create("UIListLayout", { Padding = UDim.new(0,5) })
-    })
-    
-    -- Content area
-    local Containers = Create("Frame", Components, {
-        Size = UDim2.new(1, -TabScroll.Size.X.Offset, 1, -TopBar.Size.Y.Offset),
-        AnchorPoint = Vector2.new(1, 1),
-        Position = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        ClipsDescendants = true,
-        Name = "Containers"
-    })
-    
-    -- Resize handles
-    local ResizeWindow = MakeDrag(Create("ImageButton", MainFrame, {
-        Size = UDim2.new(0, 35, 0, 35),
-        Position = MainFrame.Size,
-        AnchorPoint = Vector2.new(0.8, 0.8),
-        BackgroundTransparency = 1,
-        Active = true,
-        Name = "Control Hub Size"
-    }))
-    local ResizeTab = MakeDrag(Create("ImageButton", MainFrame, {
-        Size = UDim2.new(0, 20, 1, -30),
-        Position = UDim2.new(0, TabScroll.Size.X.Offset, 1, 0),
-        AnchorPoint = Vector2.new(0.5, 1),
-        BackgroundTransparency = 1,
-        Active = true,
-        Name = "Control Tab Size"
-    }))
-    
-    local function UpdateSizes()
-        local newTabSize = math.clamp(ResizeTab.Position.X.Offset, 135, 250)
-        local newWindowX = math.clamp(ResizeWindow.Position.X.Offset, 430, 1000)
-        local newWindowY = math.clamp(ResizeWindow.Position.Y.Offset, 200, 500)
-        TabScroll.Size = UDim2.new(0, newTabSize, 1, -TopBar.Size.Y.Offset)
-        Containers.Size = UDim2.new(1, -newTabSize, 1, -TopBar.Size.Y.Offset)
-        MainFrame.Size = UDim2.fromOffset(newWindowX, newWindowY)
+local TabFarm = Window:MakeTab({"Farm", "sword"})
+
+TabFarm:AddSection("Auto Farm")
+TabFarm:AddToggle({
+    "Auto Farm",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.AutoFarm = Value
+    end,
+    "AutoFarm",
+    Desc = "Farm mob otomatis sesuai level"
+})
+
+TabFarm:AddToggle({
+    "Auto Quest",
+    true,
+    function(Value)
+        -- _G.Cat.Settings.AutoQuest = Value
+    end,
+    "AutoQuest",
+    Desc = "Ambil dan selesaikan quest otomatis"
+})
+
+TabFarm:AddDropdown({
+    "Farm Mode",
+    {"Normal", "Chest", "Bounty", "Factory"},
+    "Normal",
+    function(Value)
+        -- Logic pindah mode farm
+    end,
+    "FarmMode"
+})
+
+TabFarm:AddDropdown({
+    "Select Sea",
+    {"Sea 1", "Sea 2", "Sea 3"},
+    "Sea 1",
+    function(Value)
+        -- Logic filter sea
+    end,
+    "FarmSea"
+})
+
+TabFarm:AddSection("Combat Settings")
+TabFarm:AddToggle({
+    "Fast Attack",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.FastAttack = Value
+    end,
+    "FastAttack",
+    Desc = "Meningkatkan kecepatan serangan M1"
+})
+
+TabFarm:AddToggle({
+    "Auto Click / M1",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.AutoAttack = Value
+    end,
+    "AutoClick",
+    Desc = "Klik otomatis tanpa perlu pencet mouse"
+})
+
+TabFarm:AddToggle({
+    "Bring Mobs",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.BringMobs = Value
+    end,
+    "BringMobs",
+    Desc = "Mengumpulkan semua mob ke satu tempat"
+})
+
+TabFarm:AddSlider({
+    "Bring Distance",
+    10, 500, 10, 150,
+    function(Value)
+        -- Logic ubah jarak bring
+    end,
+    "BringDistance",
+    Desc = "Jarak maksimal mob yang akan di-bring"
+})
+
+TabFarm:AddSection("Haki & Buff")
+TabFarm:AddToggle({
+    "Auto Buso",
+    true,
+    function(Value)
+        -- _G.Cat.Settings.AutoBuso = Value
+    end,
+    "AutoBuso",
+    Desc = "Aktifkan Haki Pelindung otomatis"
+})
+
+TabFarm:AddToggle({
+    "Auto Ken",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "AutoKen",
+    Desc = "Aktifkan Haki Penglihatan otomatis"
+})
+
+TabFarm:AddSlider({
+    "Attack Distance",
+    10, 300, 10, 75,
+    function(Value)
+        -- Logic ubah jarak serangan
+    end,
+    "AttackDistance",
+    Desc = "Jarak mob sebelum mulai menyerang"
+})
+
+-- (LANJUTAN TAB FARM)
+-- ==========================================
+-- FARM: WEAPON CONFIG
+-- ==========================================
+TabFarm:AddSection("Weapon Selection")
+
+TabFarm:AddDropdown({
+    "Select Melee",
+    {"Combat", "Dark Step", "Electro", 
+    "Fishman Karate", "Dragon Breath", 
+    "Superhuman", "Death Step", "Sharkman Karate", 
+    "Electric Claw", "Dragon Talon", "Godhuman"},
+    "Combat",
+
+    function(Value) end, -- [COMING SOON]
+    "MeleeWeapon"
+})
+
+TabFarm:AddDropdown({
+    "Select Sword",
+    {"None", "Saber", "Katana", 
+    "Dual Katana", "Iron Mace", 
+    "Triple Katana", "Pipe", 
+    "Dual-Headed Blade", "Soul Cane", 
+    "Bisento", "Wando", "Shisui", "Saddi", 
+    "Yoru", "Tushita", "Spikey Trident", 
+    "Hallow Scythe", "Dark Dagger", 
+    "Midnight Blade", "Buddy Sword", "Canvander"},
+    "None",
+
+    function(Value) end, -- [COMING SOON]
+    "SwordWeapon"
+})
+
+TabFarm:AddDropdown({
+    "Select Gun",
+    {"None", "Musket", "Slingshot", "Flintlock", "Refined Slingshot", "Dual Flintlock", "Cannon", "Kabucha"},
+    "None",
+    function(Value) end, -- [COMING SOON]
+    "GunWeapon"
+})
+
+-- ==========================================
+-- FARM: DEVIL FRUIT CONFIG
+-- ==========================================
+TabFarm:AddSection("Devil Fruit Config")
+
+TabFarm:AddToggle({
+    "Use Devil Fruit",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "UseFruit",
+    Desc = "Gunakan skill buah iblis saat farm"
+})
+
+TabFarm:AddDropdown({
+    "Select Devil Fruit",
+    {"None", "Rocket", "Spin", "Blade", "Spring", "Bomb", "Smoke", "Spike", "Flame", "Sand", "Dark", "Diamond", "Light", "Rubber", "Ghost", "Magma", "Quake", "Buddha", "Love", "Spider", "Sound", "Phoenix", "Portal", "Rumble", "Pain", "Blizzard", "Gravity", "Mammoth", "T-Rex", "Dough", "Shadow", "Venom", "Control", "Spirit", "Leopard", "Kitsune"},
+    "None",
+    function(Value) end, -- [COMING SOON]
+    "FruitWeapon"
+})
+
+TabFarm:AddDropdown({
+    "Fruit Attack Type",
+    {"Melee", "Fruit M1"},
+    "Melee",
+    function(Value) end, -- [COMING SOON]
+    "FruitAttackType",
+    Desc = "Pilih mode serangan saat buah aktif"
+})
+
+-- ==========================================
+-- FARM: SKILL SETTINGS (Z, X, C, V, F)
+-- ==========================================
+TabFarm:AddSection("Skill Config")
+
+TabFarm:AddToggle({
+    "Skill Z",
+    true,
+    function(Value) end, -- [COMING SOON]
+    "SkillZ"
+})
+TabFarm:AddToggle({
+    "Skill X",
+    true,
+    function(Value) end, -- [COMING SOON]
+    "SkillX"
+})
+TabFarm:AddToggle({
+    "Skill C",
+    true,
+    function(Value) end, -- [COMING SOON]
+    "SkillC"
+})
+TabFarm:AddToggle({
+    "Skill V",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "SkillV"
+})
+TabFarm:AddToggle({
+    "Skill F",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "SkillF"
+})
+
+-- ==========================================
+-- TAB 3: STATS
+-- ==========================================
+local TabStats = Window:MakeTab({"Stats", "bar-chart-2"})
+
+TabStats:AddSection("Auto Stats")
+TabStats:AddToggle({
+    "Auto Allocate Stats",
+    false,
+    function(Value)
+        -- Logic auto stat on/off
+    end,
+    "AutoStats",
+    Desc = "Otomatis beli stat saat dapat point"
+})
+
+TabStats:AddSection("Stat Distribution")
+TabStats:AddToggle({
+    "Melee",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "StatMelee"
+})
+TabStats:AddToggle({
+    "Defense",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "StatDefense"
+})
+TabStats:AddToggle({
+    "Sword",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "StatSword"
+})
+TabStats:AddToggle({
+    "Gun",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "StatGun"
+})
+TabStats:AddToggle({
+    "Devil Fruit",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "StatFruit"
+})
+
+TabStats:AddSection("Advanced Settings")
+TabStats:AddSlider({
+    "Points to Keep",
+    1, 2550, 1, 5,
+    function(Value)
+        -- Logic simpan stat minimum
+    end,
+    "PointsToKeep",
+    Desc = "Jumlah point yang nggak akan di pakai otomatis"
+})
+
+TabStats:AddToggle({
+    "Lock Stats at Max",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "LockMaxStats",
+    Desc = "Berhenti auto stat saat satu stat mencapai max"
+})
+
+-- ==========================================
+-- TAB 4: SHOP
+-- ==========================================
+local TabShop = Window:MakeTab({"Shop", "shopping-bag"})
+
+TabShop:AddSection("Fighting Styles")
+TabShop:AddDropdown({
+    "Select Style",
+    {"Black Leg", "Electro", "Fishman Karate", "Dragon Breath", "Superhuman", "Death Step", "Sharkman Karate", "Electric Claw", "Dragon Talon", "Godhuman"},
+    "Black Leg",
+    function() end, -- [COMING SOON]
+    "ShopStyleDropdown"
+})
+TabShop:AddButton({
+    "Buy Fighting Style",
+    function() 
+        -- Logic beli style: Module.FireRemote("BuyHaki", DropdownValue)
+    end,
+    Desc = "Beli style yang dipilih di dropdown"
+})
+
+TabShop:AddSection("Swords")
+TabShop:AddDropdown({
+    "Select Sword",
+    {"Katana", "Cutlass", "Dual Katana", "Iron Mace", "Triple Katana", "Pipe", "Dual-Headed Blade", "Soul Cane", "Bisento"},
+    "Katana",
+    function() end, -- [COMING SOON]
+    "ShopSwordDropdown"
+})
+TabShop:AddButton({
+    "Buy Sword",
+    function() 
+        -- Logic beli sword: Module.FireRemote("BuyItem", DropdownValue)
+    end,
+    Desc = "Beli pedang yang dipilih di dropdown"
+})
+
+TabShop:AddSection("Guns")
+TabShop:AddDropdown({
+    "Select Gun",
+    {"Musket", "Slingshot", "Flintlock", "Refined Slingshot", "Dual Flintlock", "Cannon", "Kabucha"},
+    "Musket",
+    function() end, -- [COMING SOON]
+    "ShopGunDropdown"
+})
+TabShop:AddButton({
+    "Buy Gun",
+    function() 
+        -- Logic beli gun
+    end,
+    Desc = "Beli senjata api yang dipilih di dropdown"
+})
+
+TabShop:AddSection("Accessories & Misc")
+TabShop:AddButton({
+    "Buy Race Reroll",
+    function() 
+        -- Module.FireRemote("BlackbeardReward", "Reroll", "2")
+    end,
+    Desc = "Mengulang race (Butuh 1500 Fragments)"
+})
+TabShop:AddButton({
+    "Buy Stat Refund",
+    function() 
+        -- Module.FireRemote("BlackbeardReward", "Refund", "2")
+    end,
+    Desc = "Reset semua stat (Butuh 2500 Fragments)"
+})
+TabShop:AddButton({
+    "Buy Ghoul Mask",
+    function() 
+        -- Module.FireRemote("Ectoplasm", "Buy", 2)
+    end,
+    Desc = "Beli Ghoul Mask (Butuh 50 Ectoplasm)"
+})
+
+-- ==========================================
+-- TAB 5: DEVIL FRUIT
+-- ==========================================
+local TabDF = Window:MakeTab({"Devil Fruit", "apple"})
+
+TabDF:AddSection("ESP & Tracking")
+TabDF:AddToggle({
+    "Fruit ESP",
+    false,
+    function(Value) 
+        -- _G.Cat.Settings.FruitESP = Value
+    end,
+    "FruitESP",
+    Desc = "Tunjukkan lokasi buah di seluruh map"
+})
+TabDF:AddToggle({
+    "Near Fruit ESP",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "NearFruitESP",
+    Desc = "Tunjukkan buah yang cuma dekat dengan player"
+})
+TabDF:AddToggle({
+    "Fruit Sniper",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "FruitSniper",
+    Desc = "Lock kamera otomatis ke buah yang muncul"
+})
+
+TabDF:AddSection("Auto Grab & Store")
+TabDF:AddToggle({
+    "Auto Grab Fruit",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "AutoGrab",
+    Desc = "Otomatis ambil buah yang ada di map/dekat"
+})
+TabDF:AddToggle({
+    "Auto Store Fruit",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.AutoStoreFruit = Value
+    end,
+    "AutoStore",
+    Desc = "Simpan buah yang baru diambil langsung ke inventory"
+})
+TabDF:AddDropdown({
+    "Store To",
+    {"Inventory", "Coffin", "Treasure"},
+    "Inventory",
+    function() end, -- [COMING SOON]
+    "StoreLocation",
+    Desc = "Pilih tempat menyimpan buah"
+})
+
+-- ==========================================
+-- TAB 6: RAID
+-- ==========================================
+local TabRaid = Window:MakeTab({"Raid", "zap"})
+
+TabRaid:AddSection("Raid Configuration")
+TabRaid:AddDropdown({
+    "Raid Type",
+    {"Normal", "Advanced"},
+    "Normal",
+    function() end, -- [COMING SOON]
+    "RaidType"
+})
+TabRaid:AddDropdown({
+    "Select Raid Fruit",
+    {"Flame", "Ice", "Quake", "Light", "Dark", "Rumble", "Magma", "Buddha", "Sand", "Spider", "Phoenix", "Dough", "Venom", "Control", "Shadow", "Dragon", "Leopard", "Kitsune", "T-Rex", "Mammoth", "Blizzard", "Gravity", "Pain"},
+    "Flame",
+    function() end, -- [COMING SOON]
+    "SelectRaid"
+})
+
+TabRaid:AddSection("Automation")
+TabRaid:AddToggle({
+    "Auto Start Raid",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "AutoStartRaid",
+    Desc = "Mulai raid otomatis saat sudah di pulau"
+})
+TabRaid:AddToggle({
+    "Auto Next Island",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "AutoNextIsland",
+    Desc = "Otomatis pindah ke pulau berikutnya saat mob kosong"
+})
+
+TabRaid:AddSection("Raid Boosts")
+TabRaid:AddToggle({
+    "Kill Aura Raid",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "KillAuraRaid",
+    Desc = "Bunuh semua mob sekitar secara instan"
+})
+TabRaid:AddToggle({
+    "Super Bring Raid",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "SuperBringRaid",
+    Desc = "Kumpulkan semua mob di raid ke satu titik"
+})
+
+-- ==========================================
+-- TAB 7: TELEPORT
+-- ==========================================
+local TabTeleport = Window:MakeTab({"Teleport", "map-pin"})
+
+TabTeleport:AddSection("Sea Selection")
+TabTeleport:AddDropdown({
+    "Select Sea",
+    {"Sea 1", "Sea 2", "Sea 3"},
+    "Sea 1",
+    function() end, -- [COMING SOON]
+    "TeleportSea"
+})
+
+TabTeleport:AddSection("Island Teleport")
+-- List panjang biar mirip asli
+TabTeleport:AddDropdown({
+    "Select Island",
+    {"Pirate Village", "Marine Fortress", "Jungle", "Pirate Ship", "Desert", "Green Zone", "Magma Village", "Underwater City", "Prison", "Colosseum", "Fishman Cave", "Skylands", "Skypiea", "Impel Down", "Upper Yard", "Cake Island", "Cursed Ship", "Frozen Village", "Mansion", "Floating Turtle", "Hydra Island", "Great Tree", "Castle on the Sea", "Tiki Outpost", "Sea of Treats", "Diary Island", "Peanut Island", "Ice Cream Island", "Chocolate Island", "Candy Island"},
+    "Pirate Village",
+    function() end, -- [COMING SOON]
+    "TeleportIsland"
+})
+TabTeleport:AddButton({
+    "Teleport to Island",
+    function() 
+        -- Logic teleport: CFrame ke posisi island
+    end,
+    Desc = "Teleport langsung ke pulau yang dipilih"
+})
+
+TabTeleport:AddSection("Dungeons")
+TabTeleport:AddButton({
+    "Teleport to Factory",
+    function() end, -- [COMING SOON]
+    Desc = "Masuk ke dalam Factory"
+})
+TabTeleport:AddButton({
+    "Teleport to Raid Lobby",
+    function() end, -- [COMING SOON]
+    Desc = "Teleport ke tempat awal masuk raid"
+})
+
+TabTeleport:AddSection("Sea Events")
+TabTeleport:AddButton({
+    "Teleport to Sea Beast",
+    function() end, -- [COMING SOON]
+    Desc = "Teleport ke lokasi Sea Beast terdekat"
+})
+TabTeleport:AddButton({
+    "Teleport to Ship Raid",
+    function() end, -- [COMING SOON]
+    Desc = "Teleport ke kapal Ship Raid"
+})
+
+-- ==========================================
+-- TAB 8: MISC
+-- ==========================================
+local TabMisc = Window:MakeTab({"Misc", "settings2"})
+
+TabMisc:AddSection("Player Utilities")
+TabMisc:AddToggle({
+    "Anti AFK",
+    true,
+    function(Value)
+        -- _G.Cat.Settings.AntiAFK = Value
+    end,
+    "AntiAFK",
+    Desc = "Mencegah kick karena idle terlalu lama"
+})
+TabMisc:AddToggle({
+    "FPS Boost",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.FPSBoost = Value
+    end,
+    "FPSBoost",
+    Desc = "Menaikkan FPS dengan menurunkan kualitas grafis"
+})
+TabMisc:AddToggle({
+    "Click Teleport",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "ClickTP",
+    Desc = "Teleport ke tempat yang diklik mouse"
+})
+TabMisc:AddToggle({
+    "Infinite Range",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "InfiniteRange",
+    Desc = "Biar bisa pickpocket/interaksi dari jarak jauh"
+})
+
+TabMisc:AddSection("Webhook Notifications")
+TabMisc:AddToggle({
+    "Fruit Webhook",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.FruitWebhook = Value
+    end,
+    "FruitWebhook",
+    Desc = "Kirim notif ke Discord saat buah spawn"
+})
+TabMisc:AddTextBox({
+    "Webhook URL",
+    "",
+    "Input Discord Webhook URL...",
+    false,
+    function(Value)
+        -- _G.Cat.Settings.FruitWebhookURL = Value
     end
-    
-    ResizeWindow:GetPropertyChangedSignal("Position"):Connect(UpdateSizes)
-    ResizeTab:GetPropertyChangedSignal("Position"):Connect(UpdateSizes)
-    
-    ConnectSave(ResizeWindow, function()
-        if not Minimized then redzlib.Save.UISize = {MainFrame.Size.X.Offset, MainFrame.Size.Y.Offset} end
-    end)
-    ConnectSave(ResizeTab, function()
-        redzlib.Save.TabSize = TabScroll.Size.X.Offset
-    end)
-    
-    -- Controls
-    local CloseButton = Create("ImageButton", TopBar, {
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new(1, -10, 0.5),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://10747384394", -- X icon
-        AutoButtonColor = false,
-        Name = "Close"
-    })
-    local MinimizeButton = Create("ImageButton", TopBar, {
-        Size = UDim2.new(0, 14, 0, 14),
-        Position = UDim2.new(1, -35, 0.5),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://10734896206", -- minus
-        AutoButtonColor = false,
-        Name = "Minimize"
-    })
-    
-    local Minimized, SaveSize, WaitClick = false, nil, false
-    
-    local function MinimizeToggle()
-        if WaitClick then return end
-        WaitClick = true
-        if Minimized then
-            MinimizeButton.Image = "rbxassetid://10734896206"
-            Tween(MainFrame, {Size = SaveSize}, 0.25, nil, true)
-            ResizeWindow.Visible = true
-            ResizeTab.Visible = true
-            Minimized = false
-        else
-            MinimizeButton.Image = "rbxassetid://10734924532" -- plus
-            SaveSize = MainFrame.Size
-            ResizeWindow.Visible = false
-            ResizeTab.Visible = false
-            Tween(MainFrame, {Size = UDim2.fromOffset(MainFrame.Size.X.Offset, 28)}, 0.25, nil, true)
-            Minimized = true
-        end
-        WaitClick = false
-    end
-    MinimizeButton.Activated:Connect(MinimizeToggle)
-    
-    -- Dialog
-    local function ShowDialog(configs)
-        local DTitle = configs[1] or configs.Title or "Dialog"
-        local DText = configs[2] or configs.Text or ""
-        local DOptions = configs[3] or configs.Options or {}
-        
-        local Screen = Create("Frame", MainFrame, {
-            BackgroundTransparency = 0.6,
-            Active = true,
-            BackgroundColor3 = Color3.fromRGB(0,0,0),
-            Size = UDim2.new(1,0,1,0),
-            Name = "Dialog",
-        })
-        MainCorner:Clone().Parent = Screen
-        
-        local Frame = Create("Frame", Screen, {
-            Size = UDim2.fromOffset(250,150),
-            Position = UDim2.fromScale(0.5,0.5),
-            AnchorPoint = Vector2.new(0.5,0.5),
-            BackgroundColor3 = Theme["Color Hub 2"]
-        }, {
-            Create("UIGradient", { Color = Theme["Color Hub 1"], Rotation = 270 }),
-            Create("UICorner", { CornerRadius = UDim.new(0,6) }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamBold, Size = UDim2.new(1,0,0,20), Text = DTitle,
-                TextColor3 = Theme["Color Text"], TextSize = 15,
-                Position = UDim2.fromOffset(15,5), BackgroundTransparency = 1
-            }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamMedium, Size = UDim2.new(1,-25), AutomaticSize = "Y",
-                Text = DText, TextColor3 = Theme["Color Dark Text"], TextSize = 12,
-                Position = UDim2.fromOffset(15,25), BackgroundTransparency = 1, TextWrapped = true
-            }),
-            Create("Frame", {
-                Size = UDim2.fromScale(1,0.35), Position = UDim2.fromScale(0,1),
-                AnchorPoint = Vector2.new(0,1), BackgroundColor3 = Theme["Color Hub 2"],
-                BackgroundTransparency = 1, Name = "ButtonsHolder"
-            })
-        })
-        
-        local ButtonsHolder = Frame.ButtonsHolder
-        local ButtonCount = 0
-        for _, opt in ipairs(DOptions) do
-            local name, callback = opt[1], opt[2] or function()end
-            ButtonCount = ButtonCount + 1
-            local btn = Create("TextButton", ButtonsHolder, {
-                Text = name, Font = Enum.Font.GothamBold, TextColor3 = Theme["Color Text"],
-                TextSize = 12, BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false
-            }, { Create("UICorner", { CornerRadius = UDim.new(0,4) }) })
-            btn.MouseButton1Click:Connect(function()
-                Screen:Destroy()
-                callback()
-            end)
-        end
-        for _, btn in ipairs(ButtonsHolder:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.Size = UDim2.new(1/ButtonCount - ((ButtonCount-1)*10)/ButtonCount, 0, 0, 32)
-            end
-        end
-        Create("UIListLayout", ButtonsHolder, {
-            Padding = UDim.new(0,10), VerticalAlignment = "Center",
-            FillDirection = "Horizontal", HorizontalAlignment = "Center"
-        })
-        Tween(Frame, {Size = UDim2.fromOffset(200,120)}, 0.2)
-        Tween(Frame, {Size = UDim2.fromOffset(250,150)}, 0.15)
-        return { Close = function() Screen:Destroy() end }
-    end
-    
-    -- Window methods
-    local Window = {}
-    local FirstTab = false
-    
-    function Window:Minimize()
-        MainFrame.Visible = not MainFrame.Visible
-    end
-    function Window:CloseBtn()
-        ShowDialog({
-            Title = "Close",
-            Text = "Close the UI?",
-            Options = {
-                {"Yes", function() ScreenGui:Destroy() end},
-                {"No", function() end}
+})
+TabMisc:AddDropdown({
+    "Webhook Rarity",
+    {"Mythical Only", "Legendary & Above", "All Fruits"},
+    "Mythical Only",
+    function() end, -- [COMING SOON]
+    "WebhookRarity",
+    Desc = "Filter tipe buah yang trigger webhook"
+})
+
+TabMisc:AddSection("Combat Utilities")
+TabMisc:AddToggle({
+    "Kill Aura",
+    false,
+    function(Value) end, -- [COMING SOON]
+    "KillAura",
+    Desc = "Bunuh semua mob dalam radius instan"
+})
+TabMisc:AddSlider({
+    "Kill Aura Distance",
+    50, 1000, 50, 500,
+    function() end, -- [COMING SOON]
+    "KillAuraDistance",
+    Desc = "Jarak maksimal Kill Aura"
+})
+
+-- ==========================================
+-- TAB 9: SETTINGS (PENGATURAN UI)
+-- ==========================================
+local TabSettings = Window:MakeTab({"Settings", "sliders-horizontal"})
+
+TabSettings:AddSection("UI Appearance")
+TabSettings:AddDropdown({
+    "Select Theme",
+    {"Darker", "Dark", "Purple"},
+    "Darker",
+    function(Value)
+        -- Ini fungsi NATIF dari Redz Lib V5
+        redzlib:SetTheme(Value)
+    end,
+    "UITheme",
+    Desc = "Ganti skema warna keseluruhan UI"
+})
+
+TabSettings:AddSlider({
+    "UI Scale",
+    300, 2000, 50, 450,
+    function(Value)
+        -- Ini fungsi NATIF dari Redz Lib V5 (Default 450)
+        redzlib:SetScale(Value)
+    end,
+    "UIScale",
+    Desc = "Perbesar/Perkecil ukuran UI (Default: 450)"
+})
+
+TabSettings:AddSection("Window Controls")
+TabSettings:AddButton({
+    "Toggle Minimize UI",
+    function()
+        -- Ini fungsi NATIF dari Redz Lib V5
+        Window:Minimize()
+    end,
+    Desc = "Sembunyikan atau tampilkan UI secara langsung"
+})
+
+TabSettings:AddButton({
+    "Reset UI to Default",
+    function()
+        -- Reset scale ke default (450) dan tema ke Darker
+        redzlib:SetScale(450)
+        redzlib:SetTheme("Darker")
+    end,
+    Desc = "Kembalikan ukuran dan warna UI ke awal"
+})
+
+TabSettings:AddSection("Mobile Support")
+TabSettings:AddButton({
+    "Create Minimize Button",
+    function()
+        -- Ini fungsi NATIF Redz Lib V5 untuk bikin tombol floating di HP
+        Window:AddMinimizeButton({
+            Corner = UDim.new(0, 12),
+            BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+            Stroke = {
+                Color = Color3.fromRGB(60, 60, 60),
+                Thickness = 1
             }
         })
-    end
-    function Window:AddMinimizeButton(configs)
-        local btn = MakeDrag(Create("ImageButton", ScreenGui, {
-            Size = UDim2.fromOffset(35,35),
-            Position = UDim2.fromScale(0.15,0.15),
-            BackgroundTransparency = 1,
-            BackgroundColor3 = Theme["Color Hub 2"],
-            AutoButtonColor = false,
-            Image = configs.Image or ""
-        }, {
-            configs.Corner and Create("UICorner", configs.Corner),
-            configs.Stroke and Create("UIStroke", configs.Stroke)
-        }))
-        btn.Activated:Connect(Window.Minimize)
-        return { Button = btn }
-    end
-    function Window:MakeTab(configs)
-        local TabName = configs[1] or configs.Title or "Tab"
-        local TabIcon = configs[2] or configs.Icon or ""
-        if not TabIcon:find("rbxassetid://") or #TabIcon:gsub("rbxassetid://","") < 6 then TabIcon = false end
-        
-        local TabBtn = Create("TextButton", TabScroll, {
-            Size = UDim2.new(1,0,0,24), Text = "",
-            BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false,
-            Name = TabName.."_TabBtn"
-        }, { Create("UICorner", { CornerRadius = UDim.new(0,6) }) })
-        local TabIconImg = Create("ImageLabel", TabBtn, {
-            Position = UDim2.new(0, 8, 0.5), Size = UDim2.new(0, 13, 0, 13),
-            AnchorPoint = Vector2.new(0, 0.5), Image = TabIcon or "",
-            BackgroundTransparency = 1, ImageTransparency = FirstTab and 0.3 or 0
-        })
-        local TabTitle = Create("TextLabel", TabBtn, {
-            Size = UDim2.new(1, TabIcon and -25 or -15, 1),
-            Position = UDim2.fromOffset(TabIcon and 25 or 15),
-            BackgroundTransparency = 1, Font = Enum.Font.GothamMedium,
-            Text = TabName, TextColor3 = Theme["Color Text"], TextSize = 10,
-            TextXAlignment = "Left", TextTransparency = FirstTab and 0.3 or 0,
-            TextTruncate = "AtEnd"
-        })
-        local Selected = Create("Frame", TabBtn, {
-            Size = FirstTab and UDim2.new(0,4,0,4) or UDim2.new(0,4,0,13),
-            Position = UDim2.new(0,1,0.5), AnchorPoint = Vector2.new(0,0.5),
-            BackgroundColor3 = Theme["Color Theme"],
-            BackgroundTransparency = FirstTab and 1 or 0, Name = "Indicator"
-        }, { Create("UICorner", { CornerRadius = UDim.new(0.5,0) }) })
-        
-        local Container = Create("ScrollingFrame", {
-            Size = UDim2.new(1,0,1,0), Position = UDim2.new(0,0,1),
-            AnchorPoint = Vector2.new(0,1), ScrollBarThickness = 1.5,
-            BackgroundTransparency = 1, ScrollBarImageColor3 = Theme["Color Theme"],
-            ScrollBarImageTransparency = 0.2, CanvasSize = UDim2.new(),
-            AutomaticCanvasSize = "Y", ScrollingDirection = "Y", BorderSizePixel = 0,
-            Name = TabName.."_Page",
-        }, {
-            Create("UIPadding", { PaddingLeft = UDim.new(0,10), PaddingRight = UDim.new(0,10), PaddingTop = UDim.new(0,10), PaddingBottom = UDim.new(0,10) }),
-            Create("UIListLayout", { Padding = UDim.new(0,5) })
-        })
-        
-        if not FirstTab then Container.Parent = Containers end
-        FirstTab = true
-        
-        table.insert(redzlib.Tabs, {Cont = Container, func = { Enable = function() end, Disable = function() end }})
-        
-        local function EnableTab()
-            for _, otherTab in pairs(redzlib.Tabs) do
-                if otherTab.Cont ~= Container and otherTab.Cont.Parent then
-                    otherTab.Cont.Parent = nil
-                end
-            end
-            Container.Parent = Containers
-            Container.Size = UDim2.new(1,0,1,150)
-            Tween(Container, {Size = UDim2.new(1,0,1,0)}, 0.3)
-            Tween(TabTitle, {TextTransparency = 0}, 0.35)
-            Tween(TabIconImg, {ImageTransparency = 0}, 0.35)
-            Tween(Selected, {Size = UDim2.new(0,4,0,13), BackgroundTransparency = 0}, 0.35)
-        end
-        TabBtn.Activated:Connect(EnableTab)
-        if #redzlib.Tabs == 1 then EnableTab() end
-        
-        local Tab = {
-            Cont = Container,
-            Enable = EnableTab,
-            Disable = function() Container.Parent = nil end
-        }
-        return Tab
-    end
-    
-    -- Component builders (akan ditambahkan setelah ini)
-    local Component = {}
-    
-    function Component:AddSection(sectionTitle)
-        local frame = Create("Frame", self.Cont, { Size = UDim2.new(1,0,0,20), BackgroundTransparency = 1, Name = "Option" })
-        Create("TextLabel", frame, {
-            Font = Enum.Font.GothamBold, Text = sectionTitle,
-            TextColor3 = Theme["Color Text"], Size = UDim2.new(1,-25,1,0),
-            Position = UDim2.new(0,5), BackgroundTransparency = 1,
-            TextTruncate = "AtEnd", TextSize = 14, TextXAlignment = "Left"
-        })
-        return frame
-    end
-    
-    function Component:AddParagraph(title, desc)
-        local frame = Create("TextButton", self.Cont, {
-            Size = UDim2.new(1,0,0,25), AutomaticSize = "Y",
-            BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false,
-            Text = "", Name = "Option"
-        })
-        Create("UICorner", frame, { CornerRadius = UDim.new(0,6) })
-        local holder = Create("Frame", frame, {
-            AutomaticSize = "Y", BackgroundTransparency = 1,
-            Size = UDim2.new(1,-20), Position = UDim2.new(0,10,0), AnchorPoint = Vector2.new(0,0)
-        }, {
-            Create("UIListLayout", { SortOrder = "LayoutOrder", VerticalAlignment = "Center", Padding = UDim.new(0,2) }),
-            Create("UIPadding", { PaddingBottom = UDim.new(0,5), PaddingTop = UDim.new(0,5) }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamMedium, TextColor3 = Theme["Color Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = title, TextSize = 10,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true
-            }),
-            Create("TextLabel", {
-                Font = Enum.Font.Gotham, TextColor3 = Theme["Color Dark Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = desc or "", TextSize = 8,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true, TextWrapped = true
-            })
-        })
-        return frame
-    end
-    
-    function Component:AddToggle(title, desc, default, flag, callback)
-        local frame = Create("TextButton", self.Cont, {
-            Size = UDim2.new(1,0,0,25), AutomaticSize = "Y",
-            BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false,
-            Text = "", Name = title.."_Toggle"
-        })
-        Create("UICorner", frame, { CornerRadius = UDim.new(0,6) })
-        local holder = Create("Frame", frame, {
-            AutomaticSize = "Y", BackgroundTransparency = 1,
-            Size = UDim2.new(1,-38), Position = UDim2.new(0,10,0), AnchorPoint = Vector2.new(0,0)
-        }, {
-            Create("UIListLayout", { SortOrder = "LayoutOrder", VerticalAlignment = "Center", Padding = UDim.new(0,2) }),
-            Create("UIPadding", { PaddingBottom = UDim.new(0,5), PaddingTop = UDim.new(0,5) }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamMedium, TextColor3 = Theme["Color Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = title, TextSize = 10,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true
-            }),
-            (desc and Create("TextLabel", {
-                Font = Enum.Font.Gotham, TextColor3 = Theme["Color Dark Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = desc, TextSize = 8,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true, TextWrapped = true
-            }) or nil)
-        })
-        local track = Create("Frame", frame, {
-            Size = UDim2.new(0,35,0,18), Position = UDim2.new(1,-10,0.5),
-            AnchorPoint = Vector2.new(1,0.5), BackgroundColor3 = Theme["Color Stroke"]
-        }, { Create("UICorner", { CornerRadius = UDim.new(0.5,0) }) })
-        local slider = Create("Frame", track, {
-            BackgroundTransparency = 1, Size = UDim2.new(0.8,0,0.8,0),
-            Position = UDim2.new(0.5,0,0.5,0), AnchorPoint = Vector2.new(0.5,0.5)
-        })
-        local dot = Create("Frame", slider, {
-            Size = UDim2.new(0,12,0,12), Position = UDim2.new(0,0,0.5),
-            AnchorPoint = Vector2.new(0,0.5), BackgroundColor3 = Theme["Color Theme"]
-        }, { Create("UICorner", { CornerRadius = UDim.new(0.5,0) }) })
-        
-        local state = default or false
-        local waitClick = false
-        local function setState(newState)
-            if waitClick then return end
-            waitClick = true
-            state = newState
-            if state then
-                Tween(dot, {Position = UDim2.new(1,0,0.5), BackgroundTransparency = 0, AnchorPoint = Vector2.new(1,0.5)}, 0.25)
-            else
-                Tween(dot, {Position = UDim2.new(0,0,0.5), BackgroundTransparency = 0.8, AnchorPoint = Vector2.new(0,0.5)}, 0.25)
-            end
-            if flag then redzlib.Flags[flag] = state end
-            if callback then callback(state) end
-            waitClick = false
-        end
-        setState(state)
-        frame.MouseButton1Click:Connect(function() setState(not state) end)
-        return frame
-    end
-    
-    function Component:AddButton(title, desc, callback)
-        local frame = Create("TextButton", self.Cont, {
-            Size = UDim2.new(1,0,0,25), AutomaticSize = "Y",
-            BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false,
-            Text = "", Name = title.."_Btn"
-        })
-        Create("UICorner", frame, { CornerRadius = UDim.new(0,6) })
-        local holder = Create("Frame", frame, {
-            AutomaticSize = "Y", BackgroundTransparency = 1,
-            Size = UDim2.new(1,-20), Position = UDim2.new(0,10,0), AnchorPoint = Vector2.new(0,0)
-        }, {
-            Create("UIListLayout", { SortOrder = "LayoutOrder", VerticalAlignment = "Center", Padding = UDim.new(0,2) }),
-            Create("UIPadding", { PaddingBottom = UDim.new(0,5), PaddingTop = UDim.new(0,5) }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamMedium, TextColor3 = Theme["Color Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = title, TextSize = 10,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true
-            }),
-            (desc and Create("TextLabel", {
-                Font = Enum.Font.Gotham, TextColor3 = Theme["Color Dark Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = desc, TextSize = 8,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true, TextWrapped = true
-            }) or nil)
-        })
-        Create("ImageLabel", frame, {
-            Size = UDim2.new(0,14,0,14), Position = UDim2.new(1,-10,0.5),
-            AnchorPoint = Vector2.new(1,0.5), BackgroundTransparency = 1,
-            Image = "rbxassetid://10709791437" -- arrow right
-        })
-        frame.MouseButton1Click:Connect(callback or function() end)
-        return frame
-    end
-    
-    function Component:AddDropdown(title, desc, options, default, multi, flag, callback)
-        local Multi = multi or false
-        local Selected = Multi and {} or (type(default) == "table" and default[1] or default or options[1])
-        if Multi and type(default) == "table" then for _, v in pairs(default) do Selected[v] = true end end
-        
-        local frame = Create("TextButton", self.Cont, {
-            Size = UDim2.new(1,0,0,25), AutomaticSize = "Y",
-            BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false,
-            Text = "", Name = title.."_Dropdown"
-        })
-        Create("UICorner", frame, { CornerRadius = UDim.new(0,6) })
-        local holder = Create("Frame", frame, {
-            AutomaticSize = "Y", BackgroundTransparency = 1,
-            Size = UDim2.new(1,-180), Position = UDim2.new(0,10,0), AnchorPoint = Vector2.new(0,0)
-        }, {
-            Create("UIListLayout", { SortOrder = "LayoutOrder", VerticalAlignment = "Center", Padding = UDim.new(0,2) }),
-            Create("UIPadding", { PaddingBottom = UDim.new(0,5), PaddingTop = UDim.new(0,5) }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamMedium, TextColor3 = Theme["Color Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = title, TextSize = 10,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true
-            }),
-            (desc and Create("TextLabel", {
-                Font = Enum.Font.Gotham, TextColor3 = Theme["Color Dark Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = desc, TextSize = 8,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true, TextWrapped = true
-            }) or nil)
-        })
-        local display = Create("TextLabel", frame, {
-            Size = UDim2.new(0,150,0,18), Position = UDim2.new(1,-10,0.5),
-            AnchorPoint = Vector2.new(1,0.5), BackgroundColor3 = Theme["Color Stroke"],
-            Font = Enum.Font.GothamBold, TextScaled = true, TextColor3 = Theme["Color Text"],
-            Text = "..."
-        }, {
-            Create("UICorner", { CornerRadius = UDim.new(0,4) }),
-            Create("ImageLabel", {
-                Size = UDim2.new(0,15,0,15), Position = UDim2.new(0,-5,0.5),
-                AnchorPoint = Vector2.new(1,0.5), Image = "rbxassetid://10709791523",
-                BackgroundTransparency = 1, Name = "Arrow"
-            })
-        })
-        
-        local dropFrame = Create("Frame", nil, {
-            Size = UDim2.new(0,152,0,0), BackgroundTransparency = 0.1,
-            BackgroundColor3 = Color3.fromRGB(255,255,255), ClipsDescendants = true,
-            Active = true, Name = "DropdownFrame", Visible = false,
-            Parent = ScreenGui
-        })
-        Create("UICorner", dropFrame, { CornerRadius = UDim.new(0,4) })
-        Create("UIStroke", dropFrame, { Color = Theme["Color Stroke"] })
-        Create("UIGradient", dropFrame, { Color = Theme["Color Hub 1"], Rotation = 60 })
-        local scroll = Create("ScrollingFrame", dropFrame, {
-            Size = UDim2.new(1,0,1,0), ScrollBarThickness = 1.5,
-            BackgroundTransparency = 1, ScrollBarImageColor3 = Theme["Color Theme"],
-            BorderSizePixel = 0, CanvasSize = UDim2.new(), ScrollingDirection = "Y",
-            AutomaticCanvasSize = "Y"
-        }, {
-            Create("UIPadding", { PaddingLeft = UDim.new(0,8), PaddingRight = UDim.new(0,8), PaddingTop = UDim.new(0,5), PaddingBottom = UDim.new(0,5) }),
-            Create("UIListLayout", { Padding = UDim.new(0,4) })
-        })
-        
-        local optionsCache = {}
-        local function updateDisplay()
-            if Multi then
-                local list = {}
-                for name, val in pairs(Selected) do if val then table.insert(list, name) end end
-                display.Text = #list>0 and table.concat(list, ", ") or "..."
-            else
-                display.Text = tostring(Selected or "...")
-            end
-        end
-        local function selectOption(name, value)
-            if Multi then Selected[name] = not Selected[name] else Selected = value end
-            if flag then redzlib.Flags[flag] = Selected end
-            if callback then callback(Selected) end
-            updateDisplay()
-            for _, opt in pairs(optionsCache) do
-                local isSel = Multi and Selected[opt.name] or (Selected == opt.value)
-                opt.dot.BackgroundTransparency = isSel and 0 or 1
-                opt.dot.Size = isSel and UDim2.new(0,4,0,14) or UDim2.new(0,4,0,4)
-                opt.text.TextTransparency = isSel and 0 or 0.4
-            end
-        end
-        for _, opt in ipairs(options) do
-            local name = tostring(opt)
-            local value = opt
-            local selNow = Multi and Selected[name] or (Selected == value)
-            local optBtn = Create("TextButton", scroll, {
-                Size = UDim2.new(1,0,0,21), Name = "Option", BackgroundTransparency = 1,
-                Text = "", AutoButtonColor = false
-            })
-            local dotOpt = Create("Frame", optBtn, {
-                Position = UDim2.new(0,1,0.5), Size = UDim2.new(0,4,0,4),
-                BackgroundColor3 = Theme["Color Theme"],
-                BackgroundTransparency = selNow and 0 or 1, AnchorPoint = Vector2.new(0,0.5)
-            }, { Create("UICorner", { CornerRadius = UDim.new(0.5,0) }) })
-            local labelOpt = Create("TextLabel", optBtn, {
-                Size = UDim2.new(1,0,1), Position = UDim2.new(0,10), Text = name,
-                TextColor3 = Theme["Color Text"], Font = Enum.Font.GothamBold,
-                TextXAlignment = "Left", BackgroundTransparency = 1,
-                TextTransparency = selNow and 0 or 0.4
-            })
-            optBtn.MouseButton1Click:Connect(function()
-                selectOption(name, value)
-                dropFrame.Visible = false
-                Tween(dropFrame, {Size = UDim2.new(0,152,0,0)}, 0.2)
-            end)
-            table.insert(optionsCache, {name=name, value=value, dot=dotOpt, text=labelOpt})
-        end
-        local function reposition()
-            local abs = display.AbsolutePosition
-            dropFrame.Position = UDim2.fromOffset(abs.X/UIScale, (abs.Y+display.AbsoluteSize.Y)/UIScale)
-        end
-        display:GetPropertyChangedSignal("AbsolutePosition"):Connect(reposition)
-        reposition()
-        
-        local antiClick = Create("TextButton", ScreenGui, {
-            Size = UDim2.new(1,0,1,0), BackgroundTransparency = 1, Text = "",
-            Visible = false, Name = "DropdownAntiClick"
-        })
-        antiClick.MouseButton1Click:Connect(function()
-            dropFrame.Visible = false; antiClick.Visible = false
-            Tween(dropFrame, {Size = UDim2.new(0,152,0,0)}, 0.2)
-        end)
-        frame.MouseButton1Click:Connect(function()
-            if dropFrame.Visible then
-                dropFrame.Visible = false; antiClick.Visible = false
-                Tween(dropFrame, {Size = UDim2.new(0,152,0,0)}, 0.2)
-            else
-                dropFrame.Visible = true; antiClick.Visible = true
-                Tween(dropFrame, {Size = UDim2.new(0,152,0, #optionsCache*25+10)}, 0.2)
-            end
-        end)
-        updateDisplay()
-        return frame
-    end
-    
-    function Component:AddSlider(title, desc, min, max, default, step, flag, callback)
-        local frame = Create("TextButton", self.Cont, {
-            Size = UDim2.new(1,0,0,25), AutomaticSize = "Y",
-            BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false,
-            Text = "", Name = title.."_Slider"
-        })
-        Create("UICorner", frame, { CornerRadius = UDim.new(0,6) })
-        local holder = Create("Frame", frame, {
-            AutomaticSize = "Y", BackgroundTransparency = 1,
-            Size = UDim2.new(1,-180), Position = UDim2.new(0,10,0), AnchorPoint = Vector2.new(0,0)
-        }, {
-            Create("UIListLayout", { SortOrder = "LayoutOrder", VerticalAlignment = "Center", Padding = UDim.new(0,2) }),
-            Create("UIPadding", { PaddingBottom = UDim.new(0,5), PaddingTop = UDim.new(0,5) }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamMedium, TextColor3 = Theme["Color Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = title, TextSize = 10,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true
-            }),
-            (desc and Create("TextLabel", {
-                Font = Enum.Font.Gotham, TextColor3 = Theme["Color Dark Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = desc, TextSize = 8,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true, TextWrapped = true
-            }) or nil)
-        })
-        local sliderHolder = Create("TextButton", frame, {
-            Size = UDim2.new(0.45,0,1), Position = UDim2.new(1,0),
-            AnchorPoint = Vector2.new(1,0), AutoButtonColor = false, Text = "", BackgroundTransparency = 1
-        })
-        local bar = Create("Frame", sliderHolder, {
-            BackgroundColor3 = Theme["Color Stroke"], Size = UDim2.new(1,-20,0,6),
-            Position = UDim2.new(0.5,0,0.5), AnchorPoint = Vector2.new(0.5,0.5)
-        }, { Create("UICorner", { CornerRadius = UDim.new(0,3) }) })
-        local fill = Create("Frame", bar, {
-            BackgroundColor3 = Theme["Color Theme"], Size = UDim2.fromScale(0.3,1),
-            BorderSizePixel = 0
-        }, { Create("UICorner", { CornerRadius = UDim.new(0,3) }) })
-        local dotSlide = Create("Frame", bar, {
-            Size = UDim2.new(0,6,0,12), BackgroundColor3 = Color3.fromRGB(220,220,220),
-            Position = UDim2.fromScale(0.3,0.5), AnchorPoint = Vector2.new(0.5,0.5),
-            BackgroundTransparency = 0.2
-        }, { Create("UICorner", { CornerRadius = UDim.new(0,3) }) })
-        local valLabel = Create("TextLabel", sliderHolder, {
-            Size = UDim2.new(0,14,0,14), AnchorPoint = Vector2.new(1,0.5),
-            Position = UDim2.new(0,0,0.5), BackgroundTransparency = 1,
-            TextColor3 = Theme["Color Text"], Font = Enum.Font.FredokaOne, TextSize = 12,
-            Text = tostring(default)
-        })
-        local curVal = default
-        local function updateVal()
-            local scale = dotSlide.Position.X.Scale
-            curVal = math.floor((scale*(max-min)+min)/step+0.5)*step
-            valLabel.Text = tostring(curVal)
-            fill.Size = UDim2.new(scale,0,1,0)
-            if callback then callback(curVal) end
-        end
-        local function setSlide(input)
-            local mouse = Player:GetMouse()
-            local rel = math.clamp((mouse.X-bar.AbsolutePosition.X)/bar.AbsoluteSize.X,0,1)
-            dotSlide.Position = UDim2.fromScale(rel,0.5)
-        end
-        sliderHolder.MouseButton1Down:Connect(function()
-            Tween(dotSlide, {Transparency=0},0.3)
-            local old = self.Cont.ScrollingEnabled
-            self.Cont.ScrollingEnabled = false
-            while UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                setSlide(); updateVal(); task.wait()
-            end
-            Tween(dotSlide, {Transparency=0.2},0.3)
-            self.Cont.ScrollingEnabled = old
-            if flag then redzlib.Flags[flag] = curVal end
-        end)
-        local initScale = (default-min)/(max-min)
-        dotSlide.Position = UDim2.fromScale(initScale,0.5)
-        updateVal()
-        return frame
-    end
-    
-    function Component:AddTextBox(title, desc, placeholder, clearOnFocus, flag, callback)
-        local frame = Create("TextButton", self.Cont, {
-            Size = UDim2.new(1,0,0,25), AutomaticSize = "Y",
-            BackgroundColor3 = Theme["Color Hub 2"], AutoButtonColor = false,
-            Text = "", Name = title.."_TextBox"
-        })
-        Create("UICorner", frame, { CornerRadius = UDim.new(0,6) })
-        local holder = Create("Frame", frame, {
-            AutomaticSize = "Y", BackgroundTransparency = 1,
-            Size = UDim2.new(1,-38), Position = UDim2.new(0,10,0), AnchorPoint = Vector2.new(0,0)
-        }, {
-            Create("UIListLayout", { SortOrder = "LayoutOrder", VerticalAlignment = "Center", Padding = UDim.new(0,2) }),
-            Create("UIPadding", { PaddingBottom = UDim.new(0,5), PaddingTop = UDim.new(0,5) }),
-            Create("TextLabel", {
-                Font = Enum.Font.GothamMedium, TextColor3 = Theme["Color Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = title, TextSize = 10,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true
-            }),
-            (desc and Create("TextLabel", {
-                Font = Enum.Font.Gotham, TextColor3 = Theme["Color Dark Text"],
-                AutomaticSize = "Y", Size = UDim2.new(1,0), Text = desc, TextSize = 8,
-                TextXAlignment = "Left", BackgroundTransparency = 1, RichText = true, TextWrapped = true
-            }) or nil)
-        })
-        local inputArea = Create("Frame", frame, {
-            Size = UDim2.new(0,150,0,18), Position = UDim2.new(1,-10,0.5),
-            AnchorPoint = Vector2.new(1,0.5), BackgroundColor3 = Theme["Color Stroke"]
-        }, {
-            Create("UICorner", { CornerRadius = UDim.new(0,4) }),
-            Create("ImageLabel", {
-                Size = UDim2.new(0,12,0,12), Position = UDim2.new(0,-5,0.5),
-                AnchorPoint = Vector2.new(1,0.5), Image = "rbxassetid://15637081879",
-                BackgroundTransparency = 1
-            })
-        })
-        local box = Create("TextBox", inputArea, {
-            Size = UDim2.new(0.85,0,0.85,0), AnchorPoint = Vector2.new(0.5,0.5),
-            Position = UDim2.new(0.5,0,0.5,0), BackgroundTransparency = 1,
-            Font = Enum.Font.GothamBold, TextScaled = true, TextColor3 = Theme["Color Text"],
-            ClearTextOnFocus = clearOnFocus, PlaceholderText = placeholder or "", Text = ""
-        })
-        local function onInput()
-            local txt = box.Text
-            if txt:gsub(" ",""):len()>0 then
-                if flag then redzlib.Flags[flag] = txt end
-                if callback then callback(txt) end
-            end
-        end
-        box.FocusLost:Connect(onInput)
-        onInput()
-        box.FocusLost:Connect(function() Tween(inputArea.ImageLabel, {ImageColor3=Color3.fromRGB(255,255,255)},0.2) end)
-        box.Focused:Connect(function() Tween(inputArea.ImageLabel, {ImageColor3=Theme["Color Theme"]},0.2) end)
-        return frame
-    end
-    
-    function Component:AddWebhookBox(title, desc, placeholder, flag)
-        return self:AddTextBox(title, desc, placeholder, false, flag)
-    end
-    
-    function Component:AddDiscordInvite(configs)
-        local title = configs[1] or configs.Title or "Discord"
-        local desc = configs[2] or configs.Description or ""
-        local logo = configs.Logo or ""
-        local invite = configs.Invite or ""
-        local frame = Create("Frame", self.Cont, {
-            Size = UDim2.new(1,0,0,80), BackgroundTransparency = 1, Name = "Option"
-        })
-        Create("TextLabel", frame, {
-            Size = UDim2.new(1,0,0,15), Position = UDim2.new(0,5),
-            TextColor3 = Color3.fromRGB(40,150,255), Font = Enum.Font.GothamBold,
-            TextXAlignment = "Left", BackgroundTransparency = 1, TextSize = 10, Text = invite
-        })
-        local card = Create("Frame", frame, {
-            Size = UDim2.new(1,0,0,65), AnchorPoint = Vector2.new(0,1),
-            Position = UDim2.new(0,0,1), BackgroundColor3 = Theme["Color Hub 2"]
-        }, { Create("UICorner", { CornerRadius = UDim.new(0,6) }) })
-        if logo~="" then
-            local logoImg = Create("ImageLabel", card, {
-                Size = UDim2.new(0,30,0,30), Position = UDim2.new(0,7,0,7),
-                Image = logo, BackgroundTransparency = 1
-            })
-            Create("UICorner", logoImg, { CornerRadius = UDim.new(0,4) })
-        end
-        Create("TextLabel", card, {
-            Size = UDim2.new(1,-52,0,15), Position = UDim2.new(0,44,0,7),
-            Font = Enum.Font.GothamBold, TextColor3 = Theme["Color Text"],
-            TextXAlignment = "Left", BackgroundTransparency = 1, TextSize = 10, Text = title
-        })
-        Create("TextLabel", card, {
-            Size = UDim2.new(1,-52,0,0), Position = UDim2.new(0,44,0,22),
-            TextWrapped = true, AutomaticSize = "Y", Font = Enum.Font.Gotham,
-            TextColor3 = Theme["Color Dark Text"], TextXAlignment = "Left",
-            BackgroundTransparency = 1, TextSize = 8, Text = desc
-        })
-        local joinBtn = Create("TextButton", card, {
-            Size = UDim2.new(1,-14,0,16), AnchorPoint = Vector2.new(0.5,1),
-            Position = UDim2.new(0.5,0,1,-7), Text = "Join",
-            Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = Color3.fromRGB(220,220,220),
-            BackgroundColor3 = Color3.fromRGB(50,150,50)
-        }, { Create("UICorner", { CornerRadius = UDim.new(0,5) }) })
-        local clickDelay = false
-        joinBtn.MouseButton1Click:Connect(function()
-            if invite~="" then
-                pcall(function() setclipboard(invite) end)
-                if not clickDelay then
-                    clickDelay = true
-                    joinBtn.Text = "Copied!"; joinBtn.BackgroundColor3 = Color3.fromRGB(100,100,100)
-                    task.wait(2)
-                    joinBtn.Text = "Join"; joinBtn.BackgroundColor3 = Color3.fromRGB(50,150,50)
-                    clickDelay = false
-                end
-            end
-        end)
-        return frame
-    end
-    
-    -- Attach methods to Tab
-    local originalMakeTab = Window.MakeTab
-    Window.MakeTab = function(self, configs)
-        local Tab = originalMakeTab(self, configs)
-        for name, func in pairs(Component) do
-            Tab[name] = func
-        end
-        return Tab
-    end
-    
-    CloseButton.Activated:Connect(Window.CloseBtn)
-    return Window
-end
+    end,
+    Desc = "Bikin tombol kecil di layar untuk buka/tutup UI (Khusus Mobile)"
+})
 
--- ==========================================
--- GLOBAL API & PERSISTENCE
--- ==========================================
-local Flags = redzlib.Flags
-local Settings = redzlib.Settings
-local Connections = { FlagsChanged={}, ThemeChanged={}, FileSaved={}, ThemeChanging={}, OptionAdded={} }
-
-function redzlib:FireConnection(name, ...)
-    if Connections[name] then for _, f in ipairs(Connections[name]) do task.spawn(f, ...) end end
-end
-
-local lastWrite = 0
-local function saveFlags()
-    if not Settings.ScriptFile or not writefile then return end
-    if tick()-lastWrite < 0.5 then return end
-    lastWrite = tick()
-    pcall(function() writefile(Settings.ScriptFile, HttpService:JSONEncode(Flags)) end)
-    redzlib:FireConnection("FileSaved", "Flags", Settings.ScriptFile)
-end
-
-local function loadFlags()
-    if not Settings.ScriptFile or not isfile or not readfile then return end
-    if isfile(Settings.ScriptFile) then
-        pcall(function()
-            local data = readfile(Settings.ScriptFile)
-            local decoded = HttpService:JSONDecode(data)
-            if type(decoded)=="table" then for k,v in pairs(decoded) do Flags[k]=v end end
-        end)
-    end
-end
-loadFlags()
-table.insert(Connections.FlagsChanged, function() saveFlags() end)
-
-local function saveConfig()
-    if not writefile then return end
-    pcall(function()
-        writefile("redz library V5.json", HttpService:JSONEncode({
-            UISize = redzlib.Save.UISize,
-            TabSize = redzlib.Save.TabSize,
-            Theme = redzlib.Save.Theme
-        }))
-    end)
-end
-
-local function loadConfig()
-    if not readfile or not isfile then return end
-    local file = "redz library V5.json"
-    if isfile(file) then
-        pcall(function()
-            local data = readfile(file)
-            local decoded = HttpService:JSONDecode(data)
-            if type(decoded)=="table" then
-                if decoded.UISize then redzlib.Save.UISize = decoded.UISize end
-                if decoded.TabSize then redzlib.Save.TabSize = decoded.TabSize end
-                if decoded.Theme and redzlib:VerifyTheme(decoded.Theme) then redzlib.Save.Theme = decoded.Theme end
-            end
-        end)
-    end
-end
-loadConfig()
-table.insert(Connections.ThemeChanged, function(t) redzlib.Save.Theme = t; saveConfig() end)
-
-function redzlib:VerifyTheme(name)
-    for k,_ in pairs(self.Themes) do if k==name then return true end end
-    return false
-end
-
-function redzlib:GetIcon(name)
-    local Icons = self.Icons or {}
-    if not name or name:find("rbxassetid://") or #name==0 then return name end
-    local s = name:lower():gsub("lucide",""):gsub("-","")
-    if Icons[s] then return Icons[s] end
-    for icon, id in pairs(Icons) do if icon:find(s,1,true) then return id end end
-    return name
-end
-
-function redzlib:SetTheme(newTheme)
-    if not self:VerifyTheme(newTheme) then return end
-    Theme = self.Themes[newTheme]
-    self:FireConnection("ThemeChanging", newTheme)
-    for _, d in ipairs(self.Instances) do
-        local inst, t = d.Instance, d.Type
-        if t=="Gradient" then inst.Color = Theme["Color Hub 1"]
-        elseif t=="Frame" then inst.BackgroundColor3 = Theme["Color Hub 2"]
-        elseif t=="Stroke" then inst[inst:IsA("UIStroke") and "Color" or "ImageColor3"] = Theme["Color Stroke"]
-        elseif t=="Theme" then inst[inst:IsA("Frame") and "BackgroundColor3" or "ImageColor3" or "TextColor3"] = Theme["Color Theme"]
-        elseif t=="Text" then inst.TextColor3 = Theme["Color Text"]
-        elseif t=="DarkText" then inst.TextColor3 = Theme["Color Dark Text"]
-        elseif t=="ScrollBar" then inst.ScrollBarImageColor3 = Theme["Color Theme"]
-        end
-    end
-    self:FireConnection("ThemeChanged", newTheme)
-end
-
-function redzlib:SetScale(newScale)
-    local v = workspace.CurrentCamera.ViewportSize.Y
-    UIScale = v / math.clamp(newScale, 300, 2000)
-    ScreenGui.Scale.Scale = UIScale
-end
-
-warn("[CatHUB v3.0] Full library loaded without errors.")
-return {
-    MakeWindow = MakeWindow,
-    redzlib = redzlib,
-    Theme = Theme
-}
+TabSettings:AddParagraph({
+    "UI Information",
+    "UI Engine: Redz Lib V5\nCreated for: CatHUB\nStatus: Shell Ready"
+})
