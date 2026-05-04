@@ -1,5 +1,9 @@
 -- [[ CAT HUB: FULL UI LAYOUT (REDZ STYLE) ]]
 -- STRICTLY USING REDZ LIB V5 API SIGNATURES
+-- FETCH LIBRARY DULU SEBELUM BIKIN UI
+
+
+local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/newredzv3/Scripts/refs/heads/main/Library/V5/Source.lua"))()
 
 local Window = redzlib:MakeWindow({
     "CatHUB",
